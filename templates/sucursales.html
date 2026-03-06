@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Sucursal{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <h2 class="mb-4">Cenefas en Base de Datos</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span>Listado de Cenefas</span>
+
+            <select id="cantidadCenefas" class="form-select form-select-sm" style="width:120px;">
+                <option value="1">1 por hoja</option>
+                <option value="2">2 por hoja</option>
+                <option value="3">3 por hoja</option>
+                <option value="5">5 por hoja</option>
+            </select>
+
+            <!-- 🖨 Botón imprimir -->
+            <button onclick="imprimirTabla()" class="btn btn-light btn-sm">
+                🖨 Imprimir
+            </button>
+        </div>
+
+        <div class="card-body p-2">
+            <div style="max-height:600px; overflow:auto;" id="areaImpresion">
+
+                <table class="table table-bordered table-sm table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Código</th>
+                            <th>EAN</th>
+                            <th>Descripción</th>
+                            <th>Normal</th>
+                            <th>Oferta</th>
+                            <th>Cenefa</th>
+                            <th>Desde</th>
+                            <th>Hasta</th>
+                            <th>Sucursales</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in datos %}
+                        <tr>
+                            <td>{{ row[0] }}</td>
+                            <td>{{ row[1] }}</td>
+                            <td>{{ row[2] }}</td>
+                            <td>{{ row[3] }}</td>
+                            <td>{{ row[4] }}</td>
+                            <td>{{ row[5] }}</td>
+                            <td>{{ row[6] }}</td>
+                            <td>{{ row[7] }}</td>
+                            <td>{{ row[8] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+function imprimirTabla() {
+
+    const filas = document.querySelectorAll("#areaImpresion tbody tr");
+    const cantidad = parseInt(document.getElementById("cantidadCenefas").value);
+
+    let cenefas = "";
+
+    filas.forEach((fila, index) => {
+
+        const codigo = fila.cells[0].innerText;
+        const ean = fila.cells[1].innerText;
+        const descripcion = fila.cells[2].innerText;
+        const normal = fila.cells[3].innerText;
+        const oferta = fila.cells[4].innerText;
+        const cenefa = fila.cells[5].innerText;
+
+        cenefas += `
+        <div class="cenefa">
+            
+            <div class="cenefa-titulo">${cenefa}</div>
+
+            <div class="cenefa-desc">
+                ${descripcion}
+            </div>
+
+            <div class="precio-oferta">
+                $ ${oferta}
+            </div>
+
+            <div class="precio-normal">
+                $ ${normal}
+            </div>
+
+            <div class="codigo">
+                Código: ${codigo}
+            </div>
+
+            <div class="ean">
+                Scanning: ${ean}
+            </div>
+
+        </div>
+        `;
+
+        if ((index + 1) % cantidad === 0) {
+            cenefas += `<div class="page-break"></div>`;
+        }
+
+    });
+
+    const ventana = window.open("", "", "width=900,height=700");
+
+    ventana.document.write(`
+        <html>
+        <head>
+        <title>Impresión Cenefas</title>
+
+        <style>
+
+        body{
+            font-family: Arial;
+            padding:20px;
+            display:flex;
+            flex-wrap:wrap;
+            gap:15px;
+        }
+
+        .cenefa{
+            width:320px;
+            border:2px solid black;
+            padding:10px;
+            margin-bottom:10px;
+        }
+
+        .cenefa-titulo{
+            font-size:16px;
+            font-weight:bold;
+            text-align:center;
+        }
+
+        .cenefa-desc{
+            font-size:14px;
+            text-align:center;
+            margin-top:5px;
+            min-height:35px;
+        }
+
+        .precio-oferta{
+            font-size:32px;
+            font-weight:bold;
+            text-align:center;
+            margin-top:8px;
+        }
+
+        .precio-normal{
+            font-size:16px;
+            text-align:center;
+        }
+
+        .codigo{
+            font-size:12px;
+            margin-top:6px;
+        }
+
+        .ean{
+            font-size:12px;
+        }
+
+        .page-break{
+            flex-basis:100%;
+            height:0;
+            page-break-after:always;
+        }
+
+        @media print{
+            body{
+                margin:0;
+            }
+        }
+
+        </style>
+
+        </head>
+
+        <body>
+
+        ${cenefas}
+
+        </body>
+        </html>
+    `);
+
+    ventana.document.close();
+    ventana.focus();
+    ventana.print();
+}
+</script>
+
+{% endblock %}

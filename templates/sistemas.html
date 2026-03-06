@@ -1,0 +1,29 @@
+{% extends "base.html" %} 
+  {% block title %}Panel de Sistemas - Alberdi SA{% endblock %} 
+{% block content %} 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel de Sistemas - Alberdi SA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+      <h2>Panel de Sistemas - Alberdi SA</h2>
+      <p class="info">
+        Bienvenido al panel del área de <span class="highlight">Sistemas</span>.  
+        Desde aquí podrás acceder a los distintos módulos internos.  
+        Actualmente solo <strong>Precios Puntuales</strong> está disponible.
+      </p>
+
+      <ul>
+        <li><span>Precios Puntuales:</span> Ver todos los pedidos y autorizaciones.</li>
+        <li><span>Cenefas:</span> Generacion y descarga de archivo de cenefas</li>
+        <li><span>Vencimientos:</span> Generacion y descarga de archivo de venciomientos</li>
+        <li><span>Promociones:</span> Listar Promociones activas en cada sucursal con respectiva vigencia</li>
+      </ul>
+    </div>
+</body>
+</html>
+{% endblock %} 

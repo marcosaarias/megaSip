@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Folder{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Gestión de Cenefas</h2>
+
+    <!-- 🔹 Selector global de fechas -->
+    <div class="card p-4 shadow-sm mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <label><strong>Desde:</strong></label>
+                <input type="date"
+                       id="fecha_desde"
+                       class="form-control"
+                       value="{{ fecha_desde }}"
+                       required>
+            </div>
+
+            <div class="col-md-3">
+                <label><strong>Hasta:</strong></label>
+                <input type="date"
+                       id="fecha_hasta"
+                       class="form-control"
+                       value="{{ fecha_hasta }}"
+                       required>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Cenefa -->
+        <div class="col-md-6">
+            <div class="card p-4 shadow-sm">
+                <h4>Cargar Cenefas</h4>
+
+                <form method="POST" enctype="multipart/form-data" class="folder-form">
+                    <input type="hidden" name="tipo" value="mayorista">
+                    <input type="hidden" name="fecha_desde">
+                    <input type="hidden" name="fecha_hasta">
+
+                    <input type="file" name="archivo" class="form-control mb-3" required>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Cargar Cenefas
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔹 Preview -->
+    {% if preview %}
+    <div class="mt-5">
+        <div class="card shadow-sm">
+
+            <!-- Header -->
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    Previsualización - {{ tipo|capitalize }}
+                    {% if total_registros %}
+                        | Total: {{ total_registros }}
+                    {% endif %}
+                </h5>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body p-2">
+                <div style="max-height:600px; overflow:auto;">
+                    {{ preview|safe }}
+                </div>
+
+                <!-- 🔥 Botón Transmitir al final -->
+                <div class="text-end mt-4">
+                    <form method="POST" action="{{ url_for('compras.transmitir') }}">
+                        <input type="hidden" name="tipo" value="{{ tipo }}">
+                        <input type="hidden" name="fecha_desde" value="{{ fecha_desde }}">
+                        <input type="hidden" name="fecha_hasta" value="{{ fecha_hasta }}">
+
+                        <button type="submit" class="btn btn-success px-4">
+                            Transmitir
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 🔥 Script simple para copiar fechas -->
+<script>
+document.querySelectorAll(".folder-form").forEach(form => {
+    form.addEventListener("submit", function(event) {
+        const desde = document.getElementById("fecha_desde").value;
+        const hasta = document.getElementById("fecha_hasta").value;
+
+        if (!desde || !hasta) {
+            alert("Debe seleccionar las fechas Desde y Hasta.");
+            event.preventDefault();
+            return;
+        }
+
+        form.querySelector("input[name='fecha_desde']").value = desde;
+        form.querySelector("input[name='fecha_hasta']").value = hasta;
+    });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Cenefas - Alberdi SA{% endblock %}
+
+{% block content %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alberdi SA</title>
+  <link rel="stylesheet" href="{{ url_for ('static', filename='css/index.css')}}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+<body>
+  <div class="container-cenefas">
+    <h2>Cenefas - Alberdi SA</h2>
+
+    <form action="{{ url_for('cenefas.preview') }}" method="post" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".xlsx,.xls" required>
+      <button type="submit">Vista previa</button>
+    </form>
+
+    {% if preview %}
+      <h3>Vista previa del archivo</h3>
+      {% set all_codes = [] %}
+      {% for name, codes in sucursales.items() %}
+        {% for c in codes.split(',') %}
+          {% set _ = all_codes.append(c.strip()) %}
+        {% endfor %}
+      {% endfor %}
+      {% set all_codes = all_codes|unique %}
+      
+      <input type="hidden" id="all-codes" value="{{ all_codes|join(',') }}">
+
+      <form id="download_form" action="{{ url_for('cenefas.convertir') }}" method="post">
+        <input type="hidden" name="filename" value="{{ filename }}">
+        <input type="hidden" id="table_data" name="table_data">
+
+        <div class="control-group-container">
+          <div class="search-group">
+            <label for="search_code">Buscar por Código:</label>
+            <input type="text" id="search_code" name="search_code" onkeyup="filterPreview()">
+            <button type="button" onclick="clearSearch()">Limpiar</button>
+          </div>
+
+          <div class="form-group-1">
+            <label for="fecha-desde">Fecha Desde:</label>
+            <input type="date" id="fecha-desde" name="fecha_desde" required onchange="updateTableDates()">
+          </div>
+
+          <div class="form-group-2">
+            <label for="fecha-hasta">Fecha Hasta:</label>
+            <input type="date" id="fecha-hasta" name="fecha_hasta" required onchange="updateTableDates()">
+          </div>
+
+          <div class="form-group-3">
+            <label for="global-sucursal-selector">Sucursales:</label>
+            <select id="global-sucursal-selector" onchange="updateAllSucursales()">
+              {% for name, codes in sucursales.items() %}
+                <option value="{{ codes }}">{{ name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </form>
+      
+      {% if preview is mapping %}
+        <input type="hidden" id="is-multi-sheet" value="true" >
+        <div class="tab-container">
+          <div class="tab-buttons">
+            {% for sheet, html in preview.items() %}
+              <button id="btn-{{sheet}}" data-tab="{{ tab_keys[sheet] }}">{{sheet}}</button>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <input type="hidden" id="is-multi-sheet" value="false" >
+      {% endif %}
+      <div id="preview_container" data-codigos='{{ sucursales|tojson | safe }}'>
+        
+        {% if preview is mapping %}
+        <div class="tab-container">
+            {% for sheet, html in preview.items() %}
+              <div id="{{ tab_keys[sheet] }}" class="tab-content" style="display:none;">
+                {{ html|safe }}
+              </div>
+                
+            {% endfor %}
+          </div>
+        {% else %}
+          <div id="hoja" class="tab-content" style="display:block;">
+            {{ preview|safe }}
+          </div>
+        {% endif %}
+      </div>
+      <div class="table-actions">
+  <button type="button" class="btn-download" onclick="showConfirmationModal()">
+    <i class="fa-solid fa-download"></i>
+    Descargar Archivo
+  </button>
+</div>
+  {% endif %}
+
+
+         <div style="text-align:center; margin-top:20px;">
+      <button type="button" onclick="nuevaCenefa()">Guardar</button>
+    <!--<button type="button" onclick="transmitirArchivo()">Transmitir</button>-->
+    <!--<button type="button" onclick="verificarCambios()">Verificar</button>-->
+ 
+</div>    
+  </div>
+       <div id="confirmation-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); padding-top:60px;">
+       <div class="modal-content" style="background:#fff; margin:5% auto; padding:20px; border:1px solid #888; width:80%; max-width:500px; border-radius:10px; text-align:center;">
+            <p>¿Está seguro que desea descargar el archivo? No olvide revisar los datos antes de descargar.</p>
+            <button onclick="confirmAndDownload()">Aceptar</button>
+            <button onclick="hideConfirmationModal()">Cancelar</button>
+      </div>
+  </div>
+  
+</body>
+</html>
+ 
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}
+
+

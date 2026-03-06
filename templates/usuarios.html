@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Gestión de Usuarios{% endblock %}
+{% block content %}
+
+<div class="container py-4">
+  <h2 class="mb-4 text-center">Gestión de Usuarios</h2>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form action="{{ url_for('usuarios.agregar_usuario') }}" method="POST" class="row g-3">
+        <div class="col-md-3">
+          <input type="text" name="usuario" class="form-control" placeholder="Usuario" required>
+        </div>
+        <div class="col-md-3">
+          <input type="password" name="password" class="form-control" placeholder="Contraseña" required>
+        </div>
+        <div class="col-md-2">
+          <select name="rol" class="form-select">
+            <option value="sistemas">sistemas</option>
+            <option value="sucursal">sucursal</option>
+            <option value="gerencia">gerencia</option>
+            <option value="compras">compras</option>
+            <option value="farmacia">farmacia</option>
+          </select>
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-primary w-100">+</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<div class="text-end mb-2">
+  <button id="goBottomBtn" class="nav-btn-table">
+    ⬇ Ir al final
+  </button>
+</div>
+
+  <table class="table table-striped table-bordered align-middle">
+    <thead class="table-dark text-center">
+      <tr>
+        <th>ID</th>
+        <th>Usuario</th>
+        <th>Password</th>
+        <th>Rol</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in usuarios %}
+      <tr class="text-center {% if nuevo and nuevo|int == u.id %} highlight-new {% endif %}">
+        <td>{{ u.id }}</td>
+        <td>{{ u.usuario }}</td>
+        <td>***********</td>
+        <td>{{ u.rol }}</td>
+        <td>
+          <button class="btn btn-sm btn-info" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#editarModal{{ u.id }}">
+            Editar
+          </button>
+
+          <a href="{{ url_for('usuarios.eliminar_usuario', id=u.id) }}" class="btn btn-sm btn-danger">
+            Eliminar
+          </a>
+        </td>
+      </tr>
+
+      <div class="modal fade" id="editarModal{{ u.id }}" tabindex="-1" aria-labelledby="editarModalLabel{{ u.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form action="{{ url_for('usuarios.editar_usuario', id=u.id) }}" method="POST">
+              <div class="modal-header">
+                <h5 class="modal-title" id="editarModalLabel{{ u.id }}">Editar Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label">Usuario</label>
+                  <input type="text" name="usuario" class="form-control" value="{{ u.usuario }}" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Contraseña</label>
+                  <input type="text" name="password" class="form-control" value="{{ u.password }}" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Rol</label>
+                  <select name="rol" class="form-select">
+                    <option value="sistemas" {% if u.rol == 'sistemas' %}selected{% endif %}>sistemas</option>
+                    <option value="sucursal" {% if u.rol == 'sucursal' %}selected{% endif %}>sucursal</option>
+                    <option value="gerencia" {% if u.rol == 'gerencia' %}selected{% endif %}>gerencia</option>
+                    <option value="compras" {% if u.rol == 'compras' %}selected{% endif %}>compras</option>
+                    <option value="farmacia" {% if u.rol == 'farmacia' %}selected{% endif %}>farmacia</option>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="text-end mt-2">
+  <button id="goTopBtn" class="nav-btn-table">⬆ Ir al inicio</button>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

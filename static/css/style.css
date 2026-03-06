@@ -1,0 +1,458 @@
+/* --- Body --- */
+body {
+  font-family: Inter, system-ui, Arial, sans-serif;
+  background: #fff;
+  color: #333;
+  margin: 0;
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden; /* evitar exceso de scroll*/
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  position:fixed;
+  height: 100vh;
+  width: 240px;
+  background: #231F20;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 10px;
+  box-shadow: 2px 0 8px rgba(0,0,0,.2);
+}
+
+.sidebar h2 {
+  color: #F9BC20;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 10px;
+}
+
+.menu a {
+  display: block;
+  text-decoration: none;
+  color: #fff;
+  background: transparent;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.menu a:hover {
+  background: #F9BC20;
+  color: #231F20;
+  transform: translateX(5px);
+}
+
+.menu a.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.logout {
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,.2);
+  padding-top: 15px;
+}
+
+.logout a {
+  display: inline-block;
+  text-decoration: none;
+  background: #F9BC20;
+  color: #231F20;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: .2s;
+  box-shadow: 0 4px 6px rgba(0,0,0,.1);
+}
+
+.logout a:hover {
+  background: #A7ABAB;
+  color: #ffd700;
+  transform: translateY(-2px);
+}
+
+/* --- Main Content --- */
+.main-content {
+  margin-left: 230px;
+  flex: 1;
+  padding: 30px;
+  background: #fff;
+}
+.container-cenefas{ 
+  width: 100%; 
+  max-width: 100%; 
+  margin: auto; 
+  background: #fff; 
+  padding: 20px 30px; 
+  border-radius: 12px; 
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+} 
+
+.container {
+  width: 80%;
+  max-width: 80%;
+  margin: auto;
+  background: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+
+
+h2 {
+  color: #231F20;
+  border-bottom: 2px solid #333;
+  padding-bottom: 5px;
+  margin-bottom: 20px;
+}
+
+.info {
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* --- Listas --- */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+li span {
+  font-weight: bold;
+  color: #231F20;
+}
+
+.highlight {
+  color: #F9BC20;
+  font-weight: bold;
+}
+
+/* --- Tablas --- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background: #F9BC20;
+  color: #231F20;
+}
+
+/* --- Formularios: label + input en línea --- */
+.form-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 15px;
+}
+
+.form-group label {
+  width: 150px; /* Ajusta según necesites */
+  font-weight: bold;
+  color: #231F20;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* --- Botones --- */
+button, .btn {
+  background: #F9BC20;
+  color: #231F20;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: .2s;
+}
+
+button:hover, .btn:hover {
+  background: #231F20;
+  color: #F9BC20;
+  transform: translateY(-2px);
+}
+
+.nav-btn-table {
+  background-color: #F9BC20;     /* amarillo */
+  color: #000;                   /* texto negro */
+  padding: 4px 10px;             /* botón pequeño */
+  font-size: 0.75rem;            /* texto pequeño */
+  border-radius: 6px;            /* esquinas redondeadas */
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+}
+
+ .nav-btn-table:active {
+  background-color: #dda71f;     /* tono más oscuro al presionar */
+}
+/* --- PRECIOS PUNTUALES --- */
+.pp-container {
+    font-family: Inter, system-ui, Arial, sans-serif;
+    background: #fff;
+    padding: 20px 40px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 900px;
+    margin: 40px auto;
+    text-align: center;
+}
+
+/* --- TITULOS --- */
+.pp-container h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.pp-container h2 {
+  font-size: 1.5rem;
+  color: #222;
+  margin-top: 30px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* --- FORMULARIO --- */
+.pp-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pp-form input[type="file"] {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+/* --- BOTONES --- */
+.pp-btn {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.pp-btn:hover {
+    background-color: #357ab8;
+}
+
+/* --- TABLA --- */
+.pp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 15px;
+
+}
+
+.pp-table th,
+.pp-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.pp-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+#preview_container {
+    margin-bottom: 2px !important;
+}
+/* --- BOTÓN DESCARGAR --- */
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  padding: 5px 5px;
+  font-size: 13.5px;
+  font-weight: bold;
+
+  background-color:#ffc107;
+  color: #000000;
+
+ 
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.btn-download:hover {
+  background-color: #e6e6e6;
+  color:#000000;
+}
+
+.btn-download .icon {
+  font-size: 14px;
+}
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+
+/* Tabla casos especiales */
+/* Fila de sucursales - Estado normal */
+.sucursal-row td {
+    font-size: 17px !important;
+    white-space: normal;
+    word-wrap: break-word !important; 
+    overflow-wrap: break-word !important;
+    padding: 4px 8px;   
+    color: #000000;
+    background-color: #f8f8f8 !important;
+    line-height: 1.3em;
+    transition: background-color 0.3s ease, border-left 0.3s ease; /* Transición suave */
+    border-top: 1.5px solid #000000 !important; 
+    border-bottom: 1.5px solid #000000 !important;
+    word-break: break-word; 
+}
+
+/* Resaltado para cambios en sucursales */
+.sucursal-row td.modificada {
+    background-color: #fff3cd !important;
+    border-left: 4px solid #ffc107 !important; /* Aumentado a 4px para más visibilidad */
+}
+
+/* Error en sucursales (códigos inválidos) */
+.sucursal-row td.sucursal-error {
+    background-color: #f8d7da !important;
+    border-left: 4px solid #dc3545 !important; /* Borde rojo para errores */
+}
+
+/* Prioridad cuando hay modificada Y error */
+.sucursal-row td.modificada.sucursal-error {
+    background-color: #f8d7da !important; /* Error tiene prioridad */
+    border-left: 4px solid #dc3545 !important;
+}
+
+/* Resaltado para cambios en sucursales */
+.sucursal-row td.modificada {
+    background-color: #fff3cd !important;
+    border-left: 3px solid #ffc107;
+}
+
+
+
+
+
+/* permitir interacciones con el select dentro del td */
+td.no-edit select, td[contenteditable="false"] select {
+  pointer-events: auto;
+  user-select: text !important;
+}
+
+
+/* Error de celda vacía/NaN en filas normales */
+td.cell-empty-error {
+    background-color: #f8d7da !important;
+    border: 2px solid #dc3545 !important;
+}
+
+/* Error de celda vacía en sucursales */
+.sucursal-row td.cell-empty-error {
+    background-color: #f8d7da !important;
+    border-left: 4px solid #dc3545 !important;
+}
+
+/* sub item - menu base */
+
+.menu-section {
+  margin-top: 10px;
+}
+
+.submenu-item {
+  padding-left: 25px;
+  font-size: 0.95em;
+  opacity: 0.85;
+}
+
+.submenu-item:hover {
+  opacity: 1;
+}
+
+/* --- SUBMENU DESPLEGABLE --- */
+
+.submenu {
+  display: none;
+  flex-direction: column;
+  margin-top: 5px;
+  gap: 5px;
+}
+
+.submenu-item {
+  padding-left: 30px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.submenu-item:hover {
+  opacity: 1;
+}
+
+.menu-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.arrow {
+  transition: transform 0.3s ease;
+}
+
+.menu-section.active .submenu {
+  display: flex;
+}
+
+.menu-section.active .arrow {
+  transform: rotate(180deg);
+}

@@ -1,0 +1,12 @@
+
+services:
+  flaskapp:
+    build: .
+    container_name: MegaSIP
+    ports:
+      - "5012:5012"
+    volumes:
+      - .:/app
+      - /mnt/base_ventas/Asistente Ventas:/mnt/excel
+    environment:
+      - FLASK_ENV=production

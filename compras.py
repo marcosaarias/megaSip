@@ -1,0 +1,390 @@
+import os
+import pandas as pd
+import numpy as np
+import unicodedata
+from flask import Blueprint, render_template, request, session
+from sistemas import login_requerido
+import sqlite3
+
+DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
+
+compras_bp = Blueprint("compras", __name__, url_prefix="/compras")
+
+#RUTA_MATERIAL = r"U:\Asistente Ventas\ARCHIVOS IMPORTANTES\Base de datos completa.xlsx"
+RUTA_MATERIAL = "/mnt/excel/ARCHIVOS IMPORTANTES/Base de datos completa.xlsx"
+
+HEADERS = ["CODIGO", "ean", "DESCRIPCION", "Normal", "Oferta", "cenefa", "desde", "hasta", "sucursales", "CÓD. SUCURSALES"]
+
+ALIAS = {
+    "CODIGO": ["CODIGO","codigo","id","cod","material","mat","Cód.","CODGO"],
+    "ean": ["ean","codigo ean"],
+    "DESCRIPCION": ["descripcion","DESCRIPCION","Descripción","Descrip","nombre","texto breve de material","Texto breve de material"],
+    "Normal": ["normal","precio normal","precio unitario","Precio","PVN","pvn","Nrmal"],
+    "Oferta": ["oferta","promo","Ofrta"],
+    "cenefa": ["cenefa","cenefas","Cenefas"],
+    "desde": ["desde","inicio"],
+    "hasta": ["hasta","fin"],
+    "sucursales": ["sucursales","tiendas"],
+    "CÓD. SUCURSALES": ["codigos sucursales","cod sucursales","sucursales codigos"],
+}
+
+
+SUCURSAL_MAP = {
+    "minorista": {
+        "Total-empresa-minorista" : "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO24,CO25,CO26,CO27,CO28",
+        "tucuman": "CO24,CO25,CO26,CO27",
+        "jujuy": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
+        "salta": "CO18,CO23"
+    },
+    "mayorista": {
+        "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO29,MA02",
+        "jujuy": "CO05,CO12,CO15,MA02",
+        "salta": "CO09,CO29,CO21",
+        "oran": "CO21"
+    }
+}
+
+
+
+
+
+# ---------------- EAN MAP ----------------
+
+def cargar_material_map():
+    try:
+        material_df = pd.read_excel(
+            RUTA_MATERIAL,
+            sheet_name="Hoja2",
+            dtype=str,
+            header=1
+        )
+
+        material_df.columns = material_df.columns.str.strip().str.lower()
+
+        material_df["material"] = (
+            material_df["material"]
+            .astype(str)
+            .str.strip()
+            .str.lstrip("0")
+        )
+
+        material_df["scaner"] = (
+            material_df["scaner"]
+            .astype(str)
+            .str.strip()
+        )
+
+        material_df.dropna(subset=["material", "scaner"], inplace=True)
+
+        return dict(zip(material_df["material"], material_df["scaner"]))
+
+    except Exception as e:
+        print("Error cargando archivo EAN:", e)
+        return {}
+
+MATERIAL_MAP = cargar_material_map()
+
+def completar_ean(df):
+
+    if "CODIGO" not in df.columns:
+        return df
+
+    codigos_str = (
+        pd.to_numeric(df["CODIGO"], errors="coerce")
+        .fillna(0)
+        .astype(int)
+        .astype(str)
+    )
+
+    material_map_normalized = {
+        str(int(float(k))) if str(k).replace(".", "", 1).isdigit()
+        else str(k).strip(): v
+        for k, v in MATERIAL_MAP.items()
+    }
+
+    mapped = codigos_str.map(material_map_normalized).fillna("")
+
+    if "ean" not in df.columns:
+        df.insert(1, "ean", mapped)
+    else:
+        df["ean"] = df["ean"].replace(["nan","NaN","None"], "")
+        df["ean"] = df["ean"].fillna(mapped)
+
+    return df
+
+# ---------------- UTIL ----------------
+
+def normalizar_texto(texto):
+    if not texto:
+        return ""
+    texto = str(texto).strip().lower()
+    texto = unicodedata.normalize("NFD", texto)
+    texto = texto.encode("ascii", "ignore").decode("utf-8")
+    return texto
+
+# ---------------- ROUTES ----------------
+
+@compras_bp.route("/")
+def dashboard():
+    return render_template("compras.html")
+
+@compras_bp.route("/folder", methods=["GET", "POST"])
+def folder():
+    preview = None
+    tipo = None
+    mensaje_error = None
+    total_registros = 0
+    fecha_desde = None
+    fecha_hasta = None
+
+    if request.method == "POST":
+        archivo = request.files.get("archivo")
+        tipo = request.form.get("tipo")
+        fecha_desde = request.form.get("fecha_desde")
+        fecha_hasta = request.form.get("fecha_hasta")
+
+        if archivo and archivo.filename != "":
+
+            df_temp = pd.read_excel(archivo, header=None)
+
+            fila_header = None
+            for i, row in df_temp.iterrows():
+                valores = [normalizar_texto(x) for x in row.values]
+                if "codigo" in valores:
+                    fila_header = i
+                    break
+
+            if fila_header is None:
+                mensaje_error = "No se encontró la fila de encabezados (CODIGO)."
+            else:
+                archivo.seek(0)
+                df = pd.read_excel(archivo, header=fila_header)
+
+                df.columns = [normalizar_texto(col).strip() for col in df.columns]
+
+                column_mapping = {}
+
+                for header in HEADERS:
+                    header_norm = normalizar_texto(header)
+                    posibles = ALIAS.get(header, [])
+                    posibles_norm = [normalizar_texto(p) for p in posibles]
+
+                    for col in df.columns:
+                        if col == header_norm or col in posibles_norm:
+                            column_mapping[col] = header
+                            break
+
+                if not column_mapping:
+                    mensaje_error = "No se encontraron columnas válidas."
+                else:
+                    df = df.rename(columns=column_mapping)
+
+                    if tipo in SUCURSAL_MAP:
+
+                        clave_total = (
+                            "Total Empresa - Mayorista"
+                            if tipo == "mayorista"
+                            else "Total-empresa-minorista"
+                        )
+
+                        # Si no existe la columna, la creamos vacía
+                        if "sucursales" not in df.columns:
+                            df["sucursales"] = ""
+
+                        def generar_codigos(valor):
+
+                            # Si está vacío → usar TOTAL
+                            if pd.isna(valor) or str(valor).strip() == "":
+                                return SUCURSAL_MAP[tipo].get(clave_total, "")
+
+                            provincia = normalizar_texto(valor)
+
+                            return SUCURSAL_MAP[tipo].get(
+                                provincia,
+                                SUCURSAL_MAP[tipo].get(clave_total, "")
+                            )
+
+                        df["sucursales"] = df["sucursales"].apply(generar_codigos)
+
+                    columnas_validas = [col for col in df.columns if col in HEADERS]
+                    df = df[columnas_validas]
+
+
+                    df = df.replace(r'^\s*$', pd.NA, regex=True)
+                    df = df.dropna(how="all")
+
+                    if "CODIGO" in df.columns:
+                        df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
+                        df = df.dropna(subset=["CODIGO"])
+                        df["CODIGO"] = df["CODIGO"].astype(int)
+
+                    df = completar_ean(df)
+
+                    if "ean" in df.columns:
+                        df.rename(columns={"ean": "EAN"}, inplace=True)
+
+                    # MOVER EAN
+                    columnas = list(df.columns)
+                    if "CODIGO" in columnas and "EAN" in columnas:
+                        columnas.remove("EAN")
+                        index_codigo = columnas.index("CODIGO")
+                        columnas.insert(index_codigo + 1, "EAN")
+                        df = df[columnas]
+
+                    # PRECIOS
+                    if "Oferta" in df.columns:
+                        df["Oferta"] = pd.to_numeric(df["Oferta"], errors="coerce")
+                        df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
+
+                    if "Normal" in df.columns:
+                        df["Normal"] = pd.to_numeric(df["Normal"], errors="coerce")
+                        df["Normal"] = np.floor(df["Normal"] * 100) / 100
+
+                    # FECHAS
+                    if fecha_desde:
+                        df["Desde"] = fecha_desde
+
+                    if fecha_hasta:
+                        df["Hasta"] = fecha_hasta
+
+                    df = df.reset_index(drop=True)
+                    total_registros = len(df)
+
+                    df = df.fillna("")
+
+                    # Guardar temporalmente en la sesión
+                    # session["cenefa_data"] = df.to_json(orient="records")
+
+                    print("DEBUG columnas:", df.columns)
+                    print("DEBUG registros:", len(df))
+
+                    guardar_cenefas_en_db(df)
+
+                    preview = df.to_html(
+                        classes="table table-striped table-bordered",
+                        index=False
+                    )
+
+    return render_template(
+        "folder.html",
+        preview=preview,
+        tipo=tipo,
+        mensaje_error=mensaje_error,
+        total_registros=total_registros,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta
+    )
+
+compras_bp.route("/cenefas", methods=["GET", "POST"])
+def cenefas():
+
+    tipo = request.args.get("tipo", "folder")
+
+    return render_template(
+        "cenefas.html",
+        tipo=tipo
+    )
+
+
+# ---------------- GUARDAR EN DB ----------------
+
+def guardar_cenefas_en_db(df):
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    for _, row in df.iterrows():
+        cursor.execute("""
+            INSERT OR REPLACE INTO cenefas
+            (Codigo, ean, descripcion, Normal, Oferta, cenefa, desde, hasta, sucursales)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            row.get("CODIGO"),
+            row.get("EAN"),
+            row.get("DESCRIPCION"),
+            row.get("Normal"),
+            row.get("Oferta"),
+            row.get("cenefa"),
+            row.get("Desde"),
+            row.get("Hasta"),
+            row.get("sucursales")
+        ))
+
+    conn.commit()
+    conn.close()
+
+
+# ---------------- SUCURSAL ----------------
+
+@compras_bp.route("/sucursal")
+@login_requerido("sucursal")
+def sucursal():
+
+    from datetime import datetime
+    from flask import session, render_template
+    import sqlite3
+
+    def convertir_fecha(valor):
+
+        if not valor:
+            return None
+
+        valor = str(valor).strip()
+
+        for formato in ("%Y-%m-%d", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(valor, formato).date()
+            except:
+                pass
+
+        return None
+
+
+    # usuario logueado
+    sucursal_codigo = session.get("usuario_nombre", "").strip().upper()
+
+    print("DEBUG sucursal usuario:", sucursal_codigo)
+
+    hoy = datetime.now().date()
+
+    print("DEBUG fecha hoy:", hoy)
+
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT Codigo, ean, descripcion, Normal, Oferta, cenefa, desde, hasta, sucursales
+        FROM cenefas
+        ORDER BY desde DESC
+    """)
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+
+    filtradas = []
+
+    for r in rows:
+
+        sucursales = str(r[8]).upper().replace(" ", "")
+        lista_suc = [s.strip() for s in sucursales.split(",")]
+
+        print("DEBUG sucursales registro:", lista_suc)
+
+        desde = convertir_fecha(r[6])
+        hasta = convertir_fecha(r[7])
+
+        if not desde or not hasta:
+            print("ERROR fecha:", r[6], r[7])
+            continue
+
+        print("DEBUG desde:", desde, "hasta:", hasta)
+
+        if sucursal_codigo in lista_suc and desde <= hoy <= hasta:
+            filtradas.append(r)
+
+    print("DEBUG registros vigentes encontrados:", len(filtradas))
+
+    return render_template("sucursales.html", datos=filtradas)
