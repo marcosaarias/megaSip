@@ -5,6 +5,7 @@ from sistemas import sistemas_bp
 from usuarios import usuarios_bp
 from farmacia import farmacia_bp
 from compras import compras_bp
+from vencimientos import vencimientos_bp
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta_demo"
@@ -14,6 +15,7 @@ app.register_blueprint(sistemas_bp, url_prefix='/sistemas')
 app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
 app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
 app.register_blueprint(compras_bp, url_prefix='/compras')
+app.register_blueprint(vencimientos_bp)
 
 @app.route("/")
 def home():

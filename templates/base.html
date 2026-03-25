@@ -16,44 +16,87 @@
 
 <div class="sidebar">
   <div>
-    <h2>Sistemas</h2>
+    <h2>Alberdi SA</h2>
 
     <div class="menu">
 
       <!-- GESTION DE USUARIOS SOLO SISTEMAS -->
       {% if session.get("usuario_rol") == "sistemas" %}
-      <a href="{{ url_for('usuarios.index') }}" class="btn btn-primary">
-        Gestión de Usuarios
-      </a>
+      <a href="{{ url_for('usuarios.index') }}" class="btn btn-primary">Gestión de Usuarios</a>
+      <a href="{{ url_for('vencimientos.index') }}" class="btn btn-primary">Vencimientos</a>
       {% endif %}
 
       <!-- FARMACIA SOLO FARMACIA -->
       {% if session.get("usuario_rol") == "farmacia" %}
-      <a href="{{ url_for('farmacia.index') }}">
-        Farmacia
-      </a>
+      <a href="{{ url_for('compras.farmacia_folder') }}" class="submenu-item"> Folder Farmacia </a>
+      <a href="{{ url_for('farmacia.index') }}"> Variacion de Farmacia </a>
       {% endif %}
 
-      <!-- COMPRAS SOLO COMPRAS Y SISTEMAS -->
-      {% if session.get("usuario_rol") in ["compras"] %}
+      <!-- COMPRAS -->
+      
+       <!-- COMPRAS -->
+      {% if session.get("usuario_rol") == "compras" %}
       <div class="menu-section">
-
         <a href="#" class="menu-toggle" onclick="toggleCompras(event)">
-          Compras <i class="bi bi-chevron-down arrow"></i>
+          Cenefas <i class="bi bi-chevron-down arrow"></i>
         </a>
 
         <div class="submenu" id="submenu-compras">
-
-          <!--<a href="{{ url_for('compras.dashboard') }}" class="submenu-item">
-            Dashboard
-          </a>-->
-
           <a href="{{ url_for('compras.folder') }}" class="submenu-item">
             Cargar Folder
           </a>
 
-        </div>
+          <a href="{{ url_for('compras.ofertas', modo='competencia') }}" class="submenu-item">
+            Oferta Por Competencia
+          </a>
 
+          <a href="{{ url_for('compras.ofertas', modo='interna') }}" class="submenu-item">
+            Oferta Interna
+          </a>
+
+          <a href="{{ url_for('compras.ofertas', modo='vencimientos') }}" class="submenu-item">
+            Oferta por Vencimientos
+          </a>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <a href="#" class="menu-toggle" onclick="toggleCompras(event)">
+          Promociones <i class="bi bi-chevron-down arrow"></i>
+        </a>
+
+        <div class="submenu" id="submenu-promociones">
+          <a href="{{ url_for('compras.folder') }}" class="submenu-item">
+            Promociones Activas
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- SUCURSAL -->
+      {% if session.get("usuario_rol") == "sucursal" %}
+      <div class="menu-section">
+        <a href="#" class="menu-toggle" onclick="toggleSucursal(event)">
+          Cenefas <i class="bi bi-chevron-down arrow"></i>
+        </a>
+
+        <div class="submenu" id="submenu-sucursal">
+          <a href="{{ url_for('compras.sucursal') }}" class="submenu-item">
+            Folder
+          </a>
+
+          <a href="{{ url_for('compras.sucursal', tipo='competencia') }}" class="submenu-item">
+            Cenefa por Competencia
+          </a>
+
+          <a href="{{ url_for('compras.sucursal', tipo='interna') }}" class="submenu-item">
+            Cenefa por Oferta Interna
+          </a>
+
+          <a href="{{ url_for('compras.sucursal', tipo='vencimientos') }}" class="submenu-item">
+            Cenefa por Vencimientos
+          </a>
+        </div>
       </div>
       {% endif %}
 
@@ -61,7 +104,6 @@
   </div>
 
   <div class="logout">
-
     {% if session.get('usuario_nombre') %}
       <p style="margin-bottom:8px;">
         👤 {{ session.get('usuario_nombre') }}
@@ -70,15 +112,11 @@
       <a href="{{ url_for('sistemas.logout') }}">
         Cerrar Sesión
       </a>
-
     {% else %}
-
       <a href="{{ url_for('sistemas.login') }}">
         Login
       </a>
-
     {% endif %}
-
   </div>
 </div>
 
@@ -92,6 +130,12 @@
 
 <script>
 function toggleCompras(event) {
+  event.preventDefault();
+  const section = event.target.closest(".menu-section");
+  section.classList.toggle("active");
+}
+
+function toggleSucursal(event) {
   event.preventDefault();
   const section = event.target.closest(".menu-section");
   section.classList.toggle("active");

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Folder Farmacia{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Folder Farmacia</h2>
+
+    {% if mensaje_error %}
+    <div class="alert alert-danger">
+        {{ mensaje_error }}
+    </div>
+    {% endif %}
+
+    <div class="card p-4 shadow-sm mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <label><strong>Desde:</strong></label>
+                <input type="date"
+                       id="fecha_desde"
+                       class="form-control"
+                       value="{{ fecha_desde or '' }}"
+                       required>
+            </div>
+
+            <div class="col-md-3">
+                <label><strong>Hasta:</strong></label>
+                <input type="date"
+                       id="fecha_hasta"
+                       class="form-control"
+                       value="{{ fecha_hasta or '' }}"
+                       required>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card p-4 shadow-sm">
+                <h4>Cargar Folder Farmacia</h4>
+
+                <form method="POST" enctype="multipart/form-data" class="farmacia-form">
+                    <input type="hidden" name="fecha_desde">
+                    <input type="hidden" name="fecha_hasta">
+
+                    <input type="file" name="archivo" class="form-control mb-3" required>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Actualizar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if preview %}
+    <div class="mt-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    Previsualización - Folder Farmacia
+                    {% if total_registros %}
+                        | Total: {{ total_registros }}
+                    {% endif %}
+                </h5>
+            </div>
+
+            <div class="card-body p-2">
+                <div style="max-height:600px; overflow:auto;">
+                    {{ preview|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".farmacia-form").forEach(form => {
+        form.addEventListener("submit", function(event) {
+            const desde = document.getElementById("fecha_desde").value;
+            const hasta = document.getElementById("fecha_hasta").value;
+
+            if (!desde || !hasta) {
+                alert("Debe seleccionar las fechas Desde y Hasta.");
+                event.preventDefault();
+                return;
+            }
+
+            form.querySelector("input[name='fecha_desde']").value = desde;
+            form.querySelector("input[name='fecha_hasta']").value = hasta;
+        });
+    });
+});
+</script>
+{% endblock %}

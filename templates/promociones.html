@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="card shadow p-4">
+
+        <h2 class="text-center mb-4">ALBERDI SA - PROMOCIONES</h2>
+
+        <!-- 🔎 FORM CONSULTA SUCURSAL -->
+        <form method="POST" class="mb-4">
+            <div class="row align-items-end g-3">
+
+                <div class="col-md-8">
+                    <label class="form-label fw-bold">Sucursal</label>
+                    <input type="text"
+                           name="sucursal"
+                           class="form-control"
+                           placeholder="Ingrese sucursal (Ej: CO01)"
+                           required>
+                </div>
+
+                <div class="col-md-4">
+                    <button type="submit"
+                            class="btn btn-warning w-100">
+                        Consultar
+                    </button>
+                </div>
+
+            </div>
+        </form>
+
+        <!-- 🔎 FILTROS -->
+        <div class="card bg-light p-3 mb-4">
+            <div class="row align-items-end g-3">
+
+                <!-- Material -->
+                <div class="col-md-3">
+                    <label class="form-label">Material</label>
+                    <input type="text"
+                           id="buscadorMaterial"
+                           class="form-control"
+                           placeholder="Código o nombre..."
+                           onkeyup="filtrarTabla()">
+                </div>
+
+                <!-- Estado -->
+                <div class="col-md-2">
+                    <label class="form-label">Estado</label>
+                    <select id="filtroEstado"
+                            class="form-select"
+                            onchange="filtrarTabla()">
+                        <option value="">Todos</option>
+                        <option value="Vigente">Vigente</option>
+                        <option value="Vencido">Vencido</option>
+                    </select>
+                </div>
+
+                <!-- Fecha Desde -->
+                <div class="col-md-2">
+                    <label class="form-label">Desde</label>
+                    <input type="date"
+                           id="filtroFechaDesde"
+                           class="form-control"
+                           onchange="filtrarTabla()">
+                </div>
+
+                <!-- Fecha Hasta -->
+                <div class="col-md-2">
+                    <label class="form-label">Hasta</label>
+                    <input type="date"
+                           id="filtroFechaHasta"
+                           class="form-control"
+                           onchange="filtrarTabla()">
+                </div>
+
+                <!-- Botón Limpiar -->
+                <div class="col-md-3">
+                    <button type="button"
+                            class="btn btn-secondary w-100"
+                            onclick="limpiarFiltros()">
+                        Limpiar filtros
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TABLA -->
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover align-middle"
+                   id="tablaPromos">
+
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th>Material</th>
+                        <th>Descripción</th>
+                        <th>Vigencia</th>
+                        <th>Promoción</th>
+                        <th>Tipo</th>
+                        <th>Descarga</th>
+                        <th>Sucursal</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ row.material }}</td>
+                        <td>{{ row.descripcion }}</td>
+                        <td class="col-vigencia text-center">
+                            {{ row.vigencia }}
+                        </td>
+                        <td>{{ row.promocion }}</td>
+                        <td>{{ row.tipo_promocion }}</td>
+                        <td>{{ row.descarga }}</td>
+                        <td class="text-center">{{ row.sucursal }}</td>
+                        <td class="col-estado text-center">
+                            {% if row.estado == "Vigente" %}
+                                <span class="badge bg-success">Vigente</span>
+                            {% elif row.estado == "Vencido" %}
+                                <span class="badge bg-danger">Vencido</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Sin fecha</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function parseFechaDDMMYYYY(fechaTexto) {
+    const partes = fechaTexto.split("/");
+    return new Date(partes[2], partes[1] - 1, partes[0]);
+}
+
+function filtrarTabla() {
+
+    const filtroMaterial = document.getElementById("buscadorMaterial").value.toLowerCase();
+    const filtroEstado = document.getElementById("filtroEstado").value;
+    const filtroDesde = document.getElementById("filtroFechaDesde").value;
+    const filtroHasta = document.getElementById("filtroFechaHasta").value;
+
+    const filas = document.querySelectorAll("#tablaPromos tbody tr");
+
+    filas.forEach(fila => {
+
+        let material = fila.cells[0].textContent.toLowerCase();
+        let vigencia = fila.querySelector(".col-vigencia").textContent.trim();
+        let estado = fila.querySelector(".col-estado").innerText.trim();
+
+        let mostrar = true;
+
+        // 🔎 MATERIAL
+        if (filtroMaterial && !material.includes(filtroMaterial)) {
+            mostrar = false;
+        }
+
+        // 🔎 ESTADO
+        if (filtroEstado && estado !== filtroEstado) {
+            mostrar = false;
+        }
+
+        // 🔎 RANGO DE FECHAS
+        if (vigencia.includes("-")) {
+
+            let partes = vigencia.split("-");
+            let fechaDesdePromo = parseFechaDDMMYYYY(partes[0].trim());
+            let fechaHastaPromo = parseFechaDDMMYYYY(partes[1].trim());
+
+            if (filtroDesde) {
+                let fechaFiltroDesde = new Date(filtroDesde);
+                if (fechaHastaPromo < fechaFiltroDesde) {
+                    mostrar = false;
+                }
+            }
+
+            if (filtroHasta) {
+                let fechaFiltroHasta = new Date(filtroHasta);
+                if (fechaDesdePromo > fechaFiltroHasta) {
+                    mostrar = false;
+                }
+            }
+        }
+
+        fila.style.display = mostrar ? "" : "none";
+    });
+}
+
+function limpiarFiltros() {
+    document.getElementById("buscadorMaterial").value = "";
+    document.getElementById("filtroEstado").value = "";
+    document.getElementById("filtroFechaDesde").value = "";
+    document.getElementById("filtroFechaHasta").value = "";
+    filtrarTabla();
+}
+</script>
+
+{% endblock %}
