@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Logs Compras{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">Logs Compras</h1>
+            <p class="text-muted mb-0">
+                Monitoreo de procesos, errores y transmisiones del módulo de compras
+            </p>
+        </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="text-muted">Eventos hoy</h6>
+                    <h3 class="mb-0">{{ resumen.eventos_hoy or 0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="text-muted">Errores hoy</h6>
+                    <h3 class="mb-0 text-danger">{{ resumen.errores_hoy or 0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="text-muted">Último error</h6>
+                    <p class="mb-0">
+                        {{ resumen.ultimo_error if resumen.ultimo_error else "Sin errores recientes" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="text-muted">Última ejecución exitosa</h6>
+                    <p class="mb-0">
+                        {{ resumen.ultima_ejecucion if resumen.ultima_ejecucion else "Sin ejecuciones" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Nivel</label>
+                    <select name="nivel" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="INFO" {% if filtros.nivel == "INFO" %}selected{% endif %}>INFO</option>
+                        <option value="WARNING" {% if filtros.nivel == "WARNING" %}selected{% endif %}>WARNING</option>
+                        <option value="ERROR" {% if filtros.nivel == "ERROR" %}selected{% endif %}>ERROR</option>
+                        <option value="CRITICAL" {% if filtros.nivel == "CRITICAL" %}selected{% endif %}>CRITICAL</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Origen</label>
+                    <select name="origen" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="backend" {% if filtros.origen == "backend" %}selected{% endif %}>Backend</option>
+                        <option value="base_datos" {% if filtros.origen == "base_datos" %}selected{% endif %}>Base de datos</option>
+                        <option value="comunicacion" {% if filtros.origen == "comunicacion" %}selected{% endif %}>Comunicación</option>
+                        <option value="archivo" {% if filtros.origen == "archivo" %}selected{% endif %}>Archivo</option>
+                        <option value="validacion" {% if filtros.origen == "validacion" %}selected{% endif %}>Validación</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Módulo</label>
+                    <select name="modulo" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="folder" {% if filtros.modulo == "folder" %}selected{% endif %}>Folder</option>
+                        <option value="ofertas" {% if filtros.modulo == "ofertas" %}selected{% endif %}>Ofertas</option>
+                        <option value="transmitir" {% if filtros.modulo == "transmitir" %}selected{% endif %}>Transmitir</option>
+                        <option value="farmacia" {% if filtros.modulo == "farmacia" %}selected{% endif %}>Farmacia</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Estado</label>
+                    <select name="estado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="exitoso" {% if filtros.estado == "exitoso" %}selected{% endif %}>Exitoso</option>
+                        <option value="fallido" {% if filtros.estado == "fallido" %}selected{% endif %}>Fallido</option>
+                        <option value="parcial" {% if filtros.estado == "parcial" %}selected{% endif %}>Parcial</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Buscar</label>
+                    <input
+                        type="text"
+                        name="q"
+                        class="form-control"
+                        placeholder="usuario, archivo, detalle..."
+                        value="{{ filtros.q or '' }}"
+                    >
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <a href="{{ url_for('logs.logs_compras') }}" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Nivel</th>
+                            <th>Origen</th>
+                            <th>Módulo</th>
+                            <th>Acción</th>
+                            <th>Usuario</th>
+                            <th>Archivo</th>
+                            <th>Estado</th>
+                            <th>Registros</th>
+                            <th>Detalle</th>
+                            <th>Ver</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.fecha }}</td>
+                            <td>
+                                {% if log.nivel == "INFO" %}
+                                    <span class="badge bg-primary">INFO</span>
+                                {% elif log.nivel == "WARNING" %}
+                                    <span class="badge bg-warning text-dark">WARNING</span>
+                                {% elif log.nivel == "ERROR" %}
+                                    <span class="badge bg-danger">ERROR</span>
+                                {% else %}
+                                    <span class="badge bg-dark">CRITICAL</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ log.origen }}</span>
+                            </td>
+                            <td>{{ log.modulo }}</td>
+                            <td>{{ log.accion }}</td>
+                            <td>{{ log.usuario }}</td>
+                            <td>{{ log.archivo or "-" }}</td>
+                            <td>
+                                {% if log.estado == "exitoso" %}
+                                    <span class="badge bg-success">Exitoso</span>
+                                {% elif log.estado == "parcial" %}
+                                    <span class="badge bg-warning text-dark">Parcial</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Fallido</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ log.total_registros }}</td>
+                            <td>{{ log.detalle[:60] ~ ('...' if log.detalle and log.detalle|length > 60 else '') }}</td>
+                            <td>
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#logModal{{ log.id }}"
+                                >
+                                    Ver
+                                </button>
+                            </td>
+                        </tr>
+
+                        <div class="modal fade" id="logModal{{ log.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Detalle del log #{{ log.id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p><strong>Fecha:</strong> {{ log.fecha }}</p>
+                                        <p><strong>Usuario:</strong> {{ log.usuario }}</p>
+                                        <p><strong>Nivel:</strong> {{ log.nivel }}</p>
+                                        <p><strong>Origen:</strong> {{ log.origen }}</p>
+                                        <p><strong>Módulo:</strong> {{ log.modulo }}</p>
+                                        <p><strong>Acción:</strong> {{ log.accion }}</p>
+                                        <p><strong>Archivo:</strong> {{ log.archivo or '-' }}</p>
+                                        <p><strong>Estado:</strong> {{ log.estado }}</p>
+                                        <p><strong>Total registros:</strong> {{ log.total_registros }}</p>
+
+                                        <hr>
+
+                                        <p><strong>Detalle:</strong></p>
+                                        <div class="bg-light border rounded p-3 mb-3">
+                                            {{ log.detalle or "Sin detalle" }}
+                                        </div>
+
+                                        <p><strong>Trace técnico:</strong></p>
+                                        <pre class="bg-dark text-light p-3 rounded small">{{ log.error_trace or "Sin traceback" }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <div class="alert alert-info mb-0">
+                    No hay logs de compras registrados.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

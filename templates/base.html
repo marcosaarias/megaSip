@@ -24,20 +24,34 @@
       {% if session.get("usuario_rol") == "sistemas" %}
       <a href="{{ url_for('usuarios.index') }}" class="btn btn-primary">Gestión de Usuarios</a>
       <a href="{{ url_for('vencimientos.index') }}" class="btn btn-primary">Vencimientos</a>
-      {% endif %}
-
-      <!-- FARMACIA SOLO FARMACIA -->
-      {% if session.get("usuario_rol") == "farmacia" %}
-      <a href="{{ url_for('compras.farmacia_folder') }}" class="submenu-item"> Folder Farmacia </a>
-      <a href="{{ url_for('farmacia.index') }}"> Variacion de Farmacia </a>
-      {% endif %}
-
-      <!-- COMPRAS -->
       
-       <!-- COMPRAS -->
+      <div class="menu-section">
+        <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+          Logs <i class="bi bi-chevron-down arrow"></i>
+        </a>
+
+        <div class="submenu" id="submenu-logs">
+          <a href="{{ url_for('logs.logs_compras') }}" class="submenu-item">
+            Logs Compras
+          </a>
+
+          <a href="{{ url_for('logs.logs_farmacia') }}" class="submenu-item">
+            Logs Farmacia
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- FARMACIA -->
+      {% if session.get("usuario_rol") == "farmacia" %}
+      <a href="{{ url_for('compras.farmacia_folder') }}" class="submenu-item">Folder Farmacia</a>
+      <a href="{{ url_for('farmacia.index') }}">Variación de Farmacia</a>
+      {% endif %}
+      
+      <!-- COMPRAS -->
       {% if session.get("usuario_rol") == "compras" %}
       <div class="menu-section">
-        <a href="#" class="menu-toggle" onclick="toggleCompras(event)">
+        <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
           Cenefas <i class="bi bi-chevron-down arrow"></i>
         </a>
 
@@ -47,7 +61,7 @@
           </a>
 
           <a href="{{ url_for('compras.ofertas', modo='competencia') }}" class="submenu-item">
-            Oferta Por Competencia
+            Oferta por Competencia
           </a>
 
           <a href="{{ url_for('compras.ofertas', modo='interna') }}" class="submenu-item">
@@ -61,7 +75,7 @@
       </div>
 
       <div class="menu-section">
-        <a href="#" class="menu-toggle" onclick="toggleCompras(event)">
+        <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
           Promociones <i class="bi bi-chevron-down arrow"></i>
         </a>
 
@@ -76,7 +90,7 @@
       <!-- SUCURSAL -->
       {% if session.get("usuario_rol") == "sucursal" %}
       <div class="menu-section">
-        <a href="#" class="menu-toggle" onclick="toggleSucursal(event)">
+        <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
           Cenefas <i class="bi bi-chevron-down arrow"></i>
         </a>
 
@@ -129,13 +143,7 @@
 {% block scripts %}{% endblock %}
 
 <script>
-function toggleCompras(event) {
-  event.preventDefault();
-  const section = event.target.closest(".menu-section");
-  section.classList.toggle("active");
-}
-
-function toggleSucursal(event) {
+function toggleMenu(event) {
   event.preventDefault();
   const section = event.target.closest(".menu-section");
   section.classList.toggle("active");

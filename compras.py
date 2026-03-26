@@ -4,6 +4,8 @@ import numpy as np
 import unicodedata
 from flask import Blueprint, render_template, request, session, redirect, url_for
 from sistemas import login_requerido
+from logs import guardar_log_compras
+import traceback
 import sqlite3
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
@@ -280,16 +282,74 @@ def folder():
         tipo = request.form.get("tipo")
         fecha_desde = request.form.get("fecha_desde")
         fecha_hasta = request.form.get("fecha_hasta")
+        usuario = session.get("usuario_nombre", "desconocido")
 
-        df, preview, mensaje_error, total_registros = procesar_archivo_cenefas(
-            archivo=archivo,
-            tipo=tipo,
-            fecha_desde=fecha_desde,
-            fecha_hasta=fecha_hasta
-        )
+        try:
+            df, preview, mensaje_error, total_registros = procesar_archivo_cenefas(
+                archivo=archivo,
+                tipo=tipo,
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta
+            )
 
-        if df is not None:
-            guardar_cenefas_en_db(df, "folder")
+            if df is not None:
+                guardar_cenefas_en_db(df, "folder")
+
+                guardar_log_compras(
+                    usuario=usuario,
+                    nivel="INFO",
+                    origen="backend",
+                    modulo="folder",
+                    accion="Carga de folder",
+                    archivo=archivo.filename if archivo else None,
+                    detalle="Archivo procesado y guardado correctamente",
+                    estado="exitoso",
+                    total_registros=total_registros
+                )
+            else:
+                guardar_log_compras(
+                    usuario=usuario,
+                    nivel="ERROR",
+                    origen="validacion",
+                    modulo="folder",
+                    accion="Error carga folder",
+                    archivo=archivo.filename if archivo else None,
+                    detalle=mensaje_error or "No se pudo procesar el archivo",
+                    estado="fallido",
+                    total_registros=0
+                )
+
+        except sqlite3.Error as e:
+            mensaje_error = f"Error de base de datos: {e}"
+
+            guardar_log_compras(
+                usuario=usuario,
+                nivel="CRITICAL",
+                origen="base_datos",
+                modulo="folder",
+                accion="Error guardando folder",
+                archivo=archivo.filename if archivo else None,
+                detalle=str(e),
+                estado="fallido",
+                total_registros=0,
+                error_trace=traceback.format_exc()
+            )
+
+        except Exception as e:
+            mensaje_error = f"Error de backend: {e}"
+
+            guardar_log_compras(
+                usuario=usuario,
+                nivel="ERROR",
+                origen="backend",
+                modulo="folder",
+                accion="Excepción en folder",
+                archivo=archivo.filename if archivo else None,
+                detalle=str(e),
+                estado="fallido",
+                total_registros=0,
+                error_trace=traceback.format_exc()
+            )
 
     return render_template(
         "folder.html",
@@ -366,6 +426,7 @@ def transmitir_ofertas():
     tipo = session.get("ofertas_preview_tipo", "mayorista")
     fecha_desde = session.get("ofertas_preview_fecha_desde")
     fecha_hasta = session.get("ofertas_preview_fecha_hasta")
+    usuario = session.get("usuario_nombre", "desconocido")
 
     modos_validos = {
         "competencia": "Oferta por Competencia",
@@ -374,29 +435,78 @@ def transmitir_ofertas():
     }
 
     if not data_json or not modo:
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="ERROR",
+            origen="validacion",
+            modulo="transmitir",
+            accion="Transmitir ofertas",
+            detalle="No hay datos para transmitir",
+            estado="fallido",
+            total_registros=0
+        )
         return "No hay datos para transmitir.", 400
 
-    df = pd.read_json(data_json)
+    try:
+        df = pd.read_json(data_json)
+        guardar_cenefas_en_db(df, modo)
 
-    guardar_cenefas_en_db(df, modo)
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="INFO",
+            origen="backend",
+            modulo="transmitir",
+            accion="Transmitir ofertas",
+            detalle="Datos transmitidos correctamente",
+            estado="exitoso",
+            total_registros=len(df)
+        )
 
-    session.pop("ofertas_preview_data", None)
-    session.pop("ofertas_preview_modo", None)
-    session.pop("ofertas_preview_tipo", None)
-    session.pop("ofertas_preview_fecha_desde", None)
-    session.pop("ofertas_preview_fecha_hasta", None)
+        session.pop("ofertas_preview_data", None)
+        session.pop("ofertas_preview_modo", None)
+        session.pop("ofertas_preview_tipo", None)
+        session.pop("ofertas_preview_fecha_desde", None)
+        session.pop("ofertas_preview_fecha_hasta", None)
 
-    return render_template(
-        "ofertas.html",
-        modo=modo,
-        titulo_vista=modos_validos.get(modo, "Ofertas"),
-        preview="<div class='alert alert-success'>Datos transmitidos correctamente.</div>",
-        tipo=tipo,
-        mensaje_error=None,
-        total_registros=0,
-        fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta
-    )
+        return render_template(
+            "ofertas.html",
+            modo=modo,
+            titulo_vista=modos_validos.get(modo, "Ofertas"),
+            preview="<div class='alert alert-success'>Datos transmitidos correctamente.</div>",
+            tipo=tipo,
+            mensaje_error=None,
+            total_registros=0,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta
+        )
+
+    except sqlite3.Error as e:
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="CRITICAL",
+            origen="base_datos",
+            modulo="transmitir",
+            accion="Error transmitiendo ofertas",
+            detalle=str(e),
+            estado="fallido",
+            total_registros=0,
+            error_trace=traceback.format_exc()
+        )
+        return f"Error de base de datos: {e}", 500
+
+    except Exception as e:
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="ERROR",
+            origen="backend",
+            modulo="transmitir",
+            accion="Excepción transmitiendo ofertas",
+            detalle=str(e),
+            estado="fallido",
+            total_registros=0,
+            error_trace=traceback.format_exc()
+        )
+        return f"Error interno: {e}", 500
 
 # ---------------- SUCURSAL ----------------
 
