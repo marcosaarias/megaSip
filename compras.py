@@ -14,7 +14,6 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
 compras_bp = Blueprint("compras", __name__, url_prefix="/compras")
 
-# RUTA_MATERIAL = r"U:\Asistente Ventas\ARCHIVOS IMPORTANTES\Base de datos completa.xlsx"
 RUTA_MATERIAL = "/mnt/excel/ARCHIVOS IMPORTANTES/Base de datos completa.xlsx"
 
 HEADERS = ["CODIGO", "ean", "DESCRIPCION", "Normal", "Oferta", "cenefa", "desde", "hasta", "sucursales", "CÓD. SUCURSALES"]
