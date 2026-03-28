@@ -773,3 +773,72 @@ def farmacia_folder():
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta
     )
+
+
+
+# Historial cenefas
+
+@compras_bp.route("/historico")
+@login_requerido("sucursal")
+def historico_cenefas():
+    filtro_codigo = request.args.get("codigo", "").strip()
+    filtro_tipo = request.args.get("tipo", "").strip()
+    filtro_lote = request.args.get("lote", "").strip()
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    query = """
+        SELECT id, Codigo, ean, descripcion, Normal, Oferta, cenefa,
+               desde, hasta, sucursales, tipo_cenefa,
+               fecha_carga, lote_carga, usuario_carga
+        FROM cenefas
+        WHERE 1=1
+    """
+    params = []
+
+    if filtro_codigo:
+        query += " AND Codigo LIKE ?"
+        params.append(f"%{filtro_codigo}%")
+
+    if filtro_tipo:
+        query += " AND tipo_cenefa = ?"
+        params.append(filtro_tipo)
+
+    if filtro_lote:
+        query += " AND lote_carga LIKE ?"
+        params.append(f"%{filtro_lote}%")
+
+    query += " ORDER BY fecha_carga DESC, id DESC"
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    datos = []
+    for r in rows:
+        datos.append({
+            "id": r["id"],
+            "Codigo": r["Codigo"],
+            "ean": r["ean"],
+            "descripcion": r["descripcion"],
+            "Normal": r["Normal"],
+            "Oferta": r["Oferta"],
+            "cenefa": r["cenefa"],
+            "desde": r["desde"],
+            "hasta": r["hasta"],
+            "sucursales": r["sucursales"],
+            "tipo_cenefa": r["tipo_cenefa"],
+            "fecha_carga": r["fecha_carga"],
+            "lote_carga": r["lote_carga"],
+            "usuario_carga": r["usuario_carga"],
+        })
+
+    return render_template(
+        "historico_cenefas.html",
+        datos=datos,
+        filtro_codigo=filtro_codigo,
+        filtro_tipo=filtro_tipo,
+        filtro_lote=filtro_lote
+    )

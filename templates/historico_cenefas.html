@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+{% block title %}Histórico de Cenefas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <h2 class="mb-4">Histórico de Cenefas</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Código</label>
+                    <input
+                        type="text"
+                        name="codigo"
+                        class="form-control"
+                        value="{{ filtro_codigo }}"
+                        placeholder="Buscar por código"
+                    >
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Tipo</label>
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="folder" {% if filtro_tipo == "folder" %}selected{% endif %}>Folder</option>
+                        <option value="competencia" {% if filtro_tipo == "competencia" %}selected{% endif %}>Competencia</option>
+                        <option value="interna" {% if filtro_tipo == "interna" %}selected{% endif %}>Interna</option>
+                        <option value="vencimientos" {% if filtro_tipo == "vencimientos" %}selected{% endif %}>Vencimientos</option>
+                        <option value="farmacia" {% if filtro_tipo == "farmacia" %}selected{% endif %}>Farmacia</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Lote</label>
+                    <input
+                        type="text"
+                        name="lote"
+                        class="form-control"
+                        value="{{ filtro_lote }}"
+                        placeholder="Buscar por lote"
+                    >
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <a href="{{ url_for('compras.historico_cenefas') }}" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span>Listado histórico</span>
+
+            <div class="d-flex gap-2">
+                <select id="cantidadCenefas" class="form-select form-select-sm" style="width:140px;">
+                    <option value="1">1 por hoja</option>
+                    <option value="2">2 por hoja</option>
+                    <option value="3">3 por hoja</option>
+                    <option value="5">5 por hoja</option>
+                </select>
+
+                <button type="button" class="btn btn-light btn-sm" onclick="seleccionarTodas()">
+                    Seleccionar todas
+                </button>
+
+                <button type="button" class="btn btn-warning btn-sm" onclick="limpiarSeleccion()">
+                    Limpiar
+                </button>
+
+                <button type="button" class="btn btn-success btn-sm" onclick="imprimirSeleccionadas()">
+                    🖨 Imprimir seleccionadas
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body p-2">
+            <p class="mb-2">
+                Total de registros: <strong>{{ datos|length }}</strong>
+            </p>
+
+            <div style="max-height:650px; overflow:auto;">
+                <table class="table table-bordered table-sm table-striped align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width:50px;">Sel</th>
+                            <th>ID</th>
+                            <th>Código</th>
+                            <th>EAN</th>
+                            <th>Descripción</th>
+                            <th>Normal</th>
+                            <th>Oferta</th>
+                            <th>Cenefa</th>
+                            <th>Desde</th>
+                            <th>Hasta</th>
+                            <th>Tipo</th>
+                            <th>Fecha carga</th>
+                            <th>Lote</th>
+                            <th>Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in datos %}
+                        <tr>
+                            <td class="text-center">
+                                <input
+                                    type="checkbox"
+                                    class="check-cenefa"
+                                    value="{{ item.id }}"
+                                >
+                            </td>
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.Codigo }}</td>
+                            <td>{{ item.ean }}</td>
+                            <td>{{ item.descripcion }}</td>
+                            <td>{{ item.Normal }}</td>
+                            <td>{{ item.Oferta }}</td>
+                            <td>{{ item.cenefa }}</td>
+                            <td>{{ item.desde }}</td>
+                            <td>{{ item.hasta }}</td>
+                            <td>{{ item.tipo_cenefa }}</td>
+                            <td>{{ item.fecha_carga }}</td>
+                            <td>{{ item.lote_carga }}</td>
+                            <td>{{ item.usuario_carga }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const datosHistoricos = {{ datos|tojson }};
+</script>
+
+<script>
+function seleccionarTodas() {
+    document.querySelectorAll(".check-cenefa").forEach(chk => {
+        chk.checked = true;
+    });
+}
+
+function limpiarSeleccion() {
+    document.querySelectorAll(".check-cenefa").forEach(chk => {
+        chk.checked = false;
+    });
+}
+
+function imprimirSeleccionadas() {
+    const seleccionados = Array.from(document.querySelectorAll(".check-cenefa:checked"))
+        .map(chk => String(chk.value));
+
+    if (seleccionados.length === 0) {
+        alert("Seleccioná al menos una cenefa.");
+        return;
+    }
+
+    const cantidad = parseInt(document.getElementById("cantidadCenefas").value, 10) || 1;
+
+    const visibles = datosHistoricos.filter(row =>
+        seleccionados.includes(String(row.id))
+    );
+
+    if (visibles.length === 0) {
+        alert("No se encontraron cenefas seleccionadas.");
+        return;
+    }
+
+    let partes = [];
+
+    visibles.forEach((row, index) => {
+        const codigo = row.Codigo ?? "";
+        const ean = row.ean ?? "";
+        const descripcion = row.descripcion ?? "";
+        const normal = row.Normal ?? "";
+        const oferta = row.Oferta ?? "";
+        const cenefa = row.cenefa ?? "";
+        const desde = row.desde ?? "";
+        const hasta = row.hasta ?? "";
+
+        if (cantidad === 1) {
+            partes.push(`
+                <div class="cenefa-hoja-completa">
+                    <div class="zona-encabezado"></div>
+                    <div class="zona-central">
+                        <div class="cenefa-titulo-grande">${cenefa}</div>
+                        <div class="descripcion-grande">${descripcion}</div>
+                        <div class="texto-paga">Ud paga c/u</div>
+                        <div class="precio-oferta-grande">$ ${oferta}</div>
+                        <div class="precio-normal-mediano">$ ${normal}</div>
+                        <div class="datos-finales">
+                            <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
+                            <strong>Desde:</strong> ${desde} &nbsp;&nbsp;
+                            <strong>Hasta:</strong> ${hasta}
+                        </div>
+                    </div>
+                    <div class="zona-footer"></div>
+                </div>
+            `);
+        } else if (cantidad === 2) {
+            partes.push(`
+                <div class="cenefa-media-hoja">
+                    <div class="contenido-media-hoja">
+                        <div class="cenefa-titulo-media">${cenefa}</div>
+                        <div class="descripcion-media">${descripcion}</div>
+                        <div class="texto-paga-media">Ud paga c/u</div>
+                        <div class="precio-oferta-media">$ ${oferta}</div>
+                        <div class="precio-normal-media">$ ${normal}</div>
+                        <div class="datos-finales-media">
+                            <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
+                            <strong>Desde:</strong> ${desde} &nbsp;&nbsp;
+                            <strong>Hasta:</strong> ${hasta}
+                        </div>
+                    </div>
+                </div>
+            `);
+        } else if (cantidad === 3) {
+            partes.push(`
+                <div class="cenefa-tercio-hoja">
+                    <div class="contenido-tercio-hoja">
+                        <div class="cenefa-titulo-tercio">${cenefa}</div>
+                        <div class="descripcion-tercio">${descripcion}</div>
+                        <div class="texto-paga-tercio">Ud paga c/u</div>
+                        <div class="precio-oferta-tercio">$ ${oferta}</div>
+                        <div class="precio-normal-tercio">$ ${normal}</div>
+                        <div class="datos-finales-tercio">
+                            <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
+                            <strong>Desde:</strong> ${desde} &nbsp;&nbsp;
+                            <strong>Hasta:</strong> ${hasta}
+                        </div>
+                    </div>
+                </div>
+            `);
+        } else if (cantidad === 5) {
+            partes.push(`
+                <div class="cenefa-quinto-hoja">
+                    <div class="contenido-quinto-hoja">
+                        <div class="cenefa-titulo-quinto">${cenefa}</div>
+                        <div class="descripcion-quinto">${descripcion}</div>
+                        <div class="texto-paga-quinto">Ud paga c/u</div>
+                        <div class="precio-oferta-quinto">$ ${oferta}</div>
+                        <div class="precio-normal-quinto">$ ${normal}</div>
+                        <div class="datos-finales-quinto">
+                            <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
+                            <strong>Desde:</strong> ${desde} &nbsp;&nbsp;
+                            <strong>Hasta:</strong> ${hasta}
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        if ((index + 1) % cantidad === 0 && (index + 1) < visibles.length) {
+            partes.push('<div class="page-break"></div>');
+        }
+    });
+
+    const contenido = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Impresión Histórico de Cenefas</title>
+            <style>
+                @page { margin: 10mm; }
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    font-family: Arial, sans-serif;
+                    overflow: hidden;
+                }
+                body {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    gap: 0;
+                }
+                .page-break {
+                    page-break-after: always;
+                    height: 0;
+                }
+
+                .cenefa-hoja-completa {
+                    width: 100%;
+                    height: calc(100vh - 20mm);
+                    box-sizing: border-box;
+                    display: flex;
+                    flex-direction: column;
+                    page-break-inside: avoid;
+                }
+                .zona-encabezado { height: 25%; }
+                .zona-central {
+                    height: 50%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    padding: 20px 30px;
+                    box-sizing: border-box;
+                }
+                .zona-footer { height: 25%; }
+                .cenefa-titulo-grande {
+                    font-size: 60px;
+                    font-weight: bold;
+                    margin-bottom: 12px;
+                    line-height: 1.1;
+                }
+                .descripcion-grande {
+                    font-size: 28px;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                    line-height: 1.2;
+                }
+                .texto-paga { font-size: 18px; margin-bottom: 10px; }
+                .precio-oferta-grande {
+                    font-size: 52px;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                    line-height: 1;
+                }
+                .precio-normal-mediano {
+                    font-size: 32px;
+                    font-weight: bold;
+                    margin-bottom: 12px;
+                    line-height: 1.1;
+                }
+                .datos-finales {
+                    font-size: 18px;
+                    line-height: 1.4;
+                    text-align: center;
+                    white-space: nowrap;
+                }
+
+                .cenefa-media-hoja {
+                    width: 100%;
+                    height: calc((100vh - 20mm) / 2);
+                    box-sizing: border-box;
+                    display: flex;
+                    page-break-inside: avoid;
+                }
+                .contenido-media-hoja {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    padding: 18px 28px;
+                    box-sizing: border-box;
+                }
+                .cenefa-titulo-media {
+                    font-size: 36px;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                    line-height: 1.1;
+                }
+                .descripcion-media {
+                    font-size: 20px;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                    line-height: 1.2;
+                }
+                .texto-paga-media { font-size: 14px; margin-bottom: 6px; }
+                .precio-oferta-media {
+                    font-size: 34px;
+                    font-weight: bold;
+                    margin-bottom: 6px;
+                    line-height: 1;
+                }
+                .precio-normal-media {
+                    font-size: 22px;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                    line-height: 1.1;
+                }
+                .datos-finales-media {
+                    font-size: 12px;
+                    line-height: 1.3;
+                    text-align: center;
+                    white-space: nowrap;
+                }
+
+                .cenefa-tercio-hoja {
+                    width: 100%;
+                    height: calc((100vh - 20mm) / 3);
+                    box-sizing: border-box;
+                    display: flex;
+                    page-break-inside: avoid;
+                }
+                .contenido-tercio-hoja {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    padding: 12px 22px;
+                    box-sizing: border-box;
+                }
+                .cenefa-titulo-tercio {
+                    font-size: 28px;
+                    font-weight: bold;
+                    margin-bottom: 6px;
+                    line-height: 1.1;
+                }
+                .descripcion-tercio {
+                    font-size: 16px;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    line-height: 1.15;
+                }
+                .texto-paga-tercio { font-size: 11px; margin-bottom: 4px; }
+                .precio-oferta-tercio {
+                    font-size: 28px;
+                    font-weight: bold;
+                    margin-bottom: 4px;
+                    line-height: 1;
+                }
+                .precio-normal-tercio {
+                    font-size: 16px;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    line-height: 1.1;
+                }
+                .datos-finales-tercio {
+                    font-size: 10px;
+                    line-height: 1.2;
+                    text-align: center;
+                    white-space: nowrap;
+                }
+
+                .cenefa-quinto-hoja {
+                    width: 100%;
+                    height: calc((100vh - 20mm) / 5);
+                    box-sizing: border-box;
+                    display: flex;
+                    page-break-inside: avoid;
+                }
+                .contenido-quinto-hoja {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    padding: 8px 16px;
+                    box-sizing: border-box;
+                }
+                .cenefa-titulo-quinto {
+                    font-size: 20px;
+                    font-weight: bold;
+                    margin-bottom: 4px;
+                    line-height: 1.05;
+                }
+                .descripcion-quinto {
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-bottom: 3px;
+                    line-height: 1.1;
+                }
+                .texto-paga-quinto { font-size: 9px; margin-bottom: 2px; }
+                .precio-oferta-quinto {
+                    font-size: 20px;
+                    font-weight: bold;
+                    margin-bottom: 2px;
+                    line-height: 1;
+                }
+                .precio-normal-quinto {
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-bottom: 3px;
+                    line-height: 1.05;
+                }
+                .datos-finales-quinto {
+                    font-size: 8px;
+                    line-height: 1.1;
+                    text-align: center;
+                    white-space: nowrap;
+                }
+            </style>
+        </head>
+        <body>
+            ${partes.join("")}
+        </body>
+        </html>
+    `;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.setAttribute("aria-hidden", "true");
+
+    document.body.appendChild(iframe);
+
+    const imprimirIframe = () => {
+        try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } catch (e) {
+            console.error("Error al imprimir:", e);
+            alert("Ocurrió un error al generar la impresión.");
+        }
+
+        iframe.contentWindow.onafterprint = function () {
+            if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+            }
+        };
+    };
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(contenido);
+    doc.close();
+
+    setTimeout(imprimirIframe, 300);
+}
+</script>
+
+{% endblock %}
