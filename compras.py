@@ -5,6 +5,8 @@ import unicodedata
 from flask import Blueprint, render_template, request, session, redirect, url_for
 from sistemas import login_requerido
 from logs import guardar_log_compras
+from datetime import datetime
+import uuid
 import traceback
 import sqlite3
 
@@ -237,15 +239,51 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
 # ---------------- GUARDAR EN DB ----------------
 
-def guardar_cenefas_en_db(df, tipo_cenefa):
+#def guardar_cenefas_en_db(df, tipo_cenefa):
+#    conn = sqlite3.connect(DB_PATH)
+#    cursor = conn.cursor()
+
+#    for _, row in df.iterrows():
+#        cursor.execute("""
+#            INSERT OR REPLACE INTO cenefas
+#            (Codigo, ean, descripcion, Normal, Oferta, cenefa, desde, hasta, sucursales, tipo_cenefa)
+#            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+#        """, (
+#            row.get("CODIGO"),
+#            row.get("EAN"),
+#            row.get("DESCRIPCION"),
+#            row.get("Normal"),
+#            row.get("Oferta"),
+#            row.get("cenefa"),
+#            row.get("Desde"),
+#            row.get("Hasta"),
+#            row.get("sucursales"),
+#            tipo_cenefa
+#        ))
+
+#    conn.commit()
+#    conn.close()
+
+
+
+def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    if lote_carga is None:
+        lote_carga = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + str(uuid.uuid4())[:8]
+
+    fecha_carga = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     for _, row in df.iterrows():
         cursor.execute("""
-            INSERT OR REPLACE INTO cenefas
-            (Codigo, ean, descripcion, Normal, Oferta, cenefa, desde, hasta, sucursales, tipo_cenefa)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO cenefas
+            (
+                Codigo, ean, descripcion, Normal, Oferta, cenefa,
+                desde, hasta, sucursales, tipo_cenefa,
+                fecha_carga, lote_carga, usuario_carga
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             row.get("CODIGO"),
             row.get("EAN"),
@@ -256,11 +294,19 @@ def guardar_cenefas_en_db(df, tipo_cenefa):
             row.get("Desde"),
             row.get("Hasta"),
             row.get("sucursales"),
-            tipo_cenefa
+            tipo_cenefa,
+            fecha_carga,
+            lote_carga,
+            usuario
         ))
 
     conn.commit()
     conn.close()
+
+    return lote_carga, fecha_carga
+
+
+
 
 # ---------------- ROUTES ----------------
 
@@ -293,7 +339,9 @@ def folder():
             )
 
             if df is not None:
-                guardar_cenefas_en_db(df, "folder")
+                #guardar_cenefas_en_db(df, "folder")
+                usuario = session.get("usuario_nombre", "desconocido")
+                lote_carga, fecha_carga = guardar_cenefas_en_db(df, "folder", usuario=usuario)
 
                 guardar_log_compras(
                     usuario=usuario,
@@ -449,8 +497,11 @@ def transmitir_ofertas():
 
     try:
         df = pd.read_json(data_json)
-        guardar_cenefas_en_db(df, modo)
+        #guardar_cenefas_en_db(df, modo)
 
+        usuario = session.get("usuario_nombre", "desconocido")
+        lote_carga, fecha_carga = guardar_cenefas_en_db(df, modo, usuario=usuario)
+        
         guardar_log_compras(
             usuario=usuario,
             nivel="INFO",
@@ -510,6 +561,70 @@ def transmitir_ofertas():
 
 # ---------------- SUCURSAL ----------------
 
+#@compras_bp.route("/sucursal")
+#@login_requerido("sucursal")
+#def sucursal():
+#    from datetime import datetime
+
+#    def convertir_fecha(valor):
+#        if not valor:
+#            return None
+
+#        valor = str(valor).strip()
+
+#        for formato in ("%Y-%m-%d", "%d/%m/%Y"):
+#            try:
+#                return datetime.strptime(valor, formato).date()
+#            except:
+#                pass
+
+#        return None
+
+#    sucursal_codigo = session.get("usuario_nombre", "").strip().upper()
+#    tipo = request.args.get("tipo", "folder")
+#    hoy = datetime.now().date()
+
+#    print("DEBUG sucursal usuario:", sucursal_codigo)
+#    print("DEBUG fecha hoy:", hoy)
+#    print("DEBUG tipo solicitado:", tipo)
+
+#    conn = sqlite3.connect(DB_PATH)
+#    cursor = conn.cursor()
+
+#    cursor.execute("""
+#        SELECT Codigo, ean, descripcion, Normal, Oferta, cenefa, desde, hasta, sucursales, tipo_cenefa
+#        FROM cenefas
+#        WHERE tipo_cenefa = ?
+#        ORDER BY desde DESC
+#    """, (tipo,))
+
+#    rows = cursor.fetchall()
+#    conn.close()
+
+#    filtradas = []
+
+#    for r in rows:
+#        sucursales = str(r[8]).upper().replace(" ", "")
+#        lista_suc = [s.strip() for s in sucursales.split(",")]
+
+#        print("DEBUG sucursales registro:", lista_suc)
+
+#        desde = convertir_fecha(r[6])
+#        hasta = convertir_fecha(r[7])
+
+#        if not desde or not hasta:
+#            print("ERROR fecha:", r[6], r[7])
+#            continue
+
+#        print("DEBUG desde:", desde, "hasta:", hasta)
+
+#        if sucursal_codigo in lista_suc and desde <= hoy <= hasta:
+#            filtradas.append(r)
+
+#    print("DEBUG registros vigentes encontrados:", len(filtradas))
+
+#    return render_template("sucursales.html", datos=filtradas, tipo=tipo)
+
 @compras_bp.route("/sucursal")
 @login_requerido("sucursal")
 def sucursal():
@@ -541,10 +656,12 @@ def sucursal():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT Codigo, ean, descripcion, Normal, Oferta, cenefa, desde, hasta, sucursales, tipo_cenefa
+        SELECT Codigo, ean, descripcion, Normal, Oferta, cenefa,
+               desde, hasta, sucursales, tipo_cenefa,
+               fecha_carga, lote_carga, usuario_carga
         FROM cenefas
         WHERE tipo_cenefa = ?
-        ORDER BY desde DESC
+        ORDER BY fecha_carga DESC, desde DESC
     """, (tipo,))
 
     rows = cursor.fetchall()
@@ -568,11 +685,54 @@ def sucursal():
         print("DEBUG desde:", desde, "hasta:", hasta)
 
         if sucursal_codigo in lista_suc and desde <= hoy <= hasta:
-            filtradas.append(r)
+            filtradas.append({
+                "Codigo": r[0],
+                "ean": r[1],
+                "descripcion": r[2],
+                "Normal": r[3],
+                "Oferta": r[4],
+                "cenefa": r[5],
+                "desde": r[6],
+                "hasta": r[7],
+                "sucursales": r[8],
+                "tipo_cenefa": r[9],
+                "fecha_carga": r[10],
+                "lote_carga": r[11],
+                "usuario_carga": r[12],
+                "es_nueva": False
+            })
+
+    lote_mas_reciente = None
+    ultima_fecha_carga = None
+    ultimo_usuario_carga = None
+
+    if filtradas:
+        ordenadas_por_carga = sorted(
+            [x for x in filtradas if x["fecha_carga"]],
+            key=lambda x: x["fecha_carga"],
+            reverse=True
+        )
+
+        if ordenadas_por_carga:
+            lote_mas_reciente = ordenadas_por_carga[0]["lote_carga"]
+            ultima_fecha_carga = ordenadas_por_carga[0]["fecha_carga"]
+            ultimo_usuario_carga = ordenadas_por_carga[0]["usuario_carga"]
+
+        for item in filtradas:
+            if item["lote_carga"] == lote_mas_reciente:
+                item["es_nueva"] = True
 
     print("DEBUG registros vigentes encontrados:", len(filtradas))
+    print("DEBUG lote más reciente:", lote_mas_reciente)
 
-    return render_template("sucursales.html", datos=filtradas, tipo=tipo)
+    return render_template(
+        "sucursales.html",
+        datos=filtradas,
+        tipo=tipo,
+        ultima_fecha_carga=ultima_fecha_carga,
+        ultimo_usuario_carga=ultimo_usuario_carga
+    )
+
 
     # --------------- FARMACIA --------------
 

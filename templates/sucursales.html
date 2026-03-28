@@ -66,17 +66,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for row in datos[:100] %}
-                        <tr>
-                            <td>{{ row[0] }}</td>
-                            <td>{{ row[1] }}</td>
-                            <td>{{ row[2] }}</td>
-                            <td>{{ row[3] }}</td>
-                            <td>{{ row[4] }}</td>
-                            <td>{{ row[5] }}</td>
-                            <td>{{ row[6] }}</td>
-                            <td>{{ row[7] }}</td>
-                            <td>{{ row[8] }}</td>
+                        {% for item in datos[:100] %}
+                        <tr class="{% if item.es_nueva %}table-warning{% endif %}">
+                            <td>{{ item.Codigo }}</td>
+                            <td>{{ item.ean }}</td>
+                            <td>{{ item.descripcion }}</td>
+                            <td>{{ item.Normal }}</td>
+                            <td>{{ item.Oferta }}</td>
+                            <td>{{ item.cenefa }}</td>
+                            <td>{{ item.desde }}</td>
+                            <td>{{ item.hasta }}</td>
+                            <td>{{ item.sucursales }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -118,7 +118,7 @@ function imprimirTabla() {
     const filtro = document.getElementById("buscadorMaterial").value.toLowerCase().trim();
 
     const visibles = datosCompletos.filter(row => {
-        const codigo = String(row[0] ?? "").toLowerCase();
+        const codigo = String(row.Codigo ?? "").toLowerCase();
         return codigo.includes(filtro);
     });
 
@@ -131,14 +131,14 @@ function imprimirTabla() {
     let partes = [];
 
     visibles.forEach((row, index) => {
-        const codigo = row[0] ?? "";
-        const ean = row[1] ?? "";
-        const descripcion = row[2] ?? "";
-        const normal = row[3] ?? "";
-        const oferta = row[4] ?? "";
-        const cenefa = row[5] ?? "";
-        const desde = row[6] ?? "";
-        const hasta = row[7] ?? "";
+        const codigo = row.Codigo ?? "";
+        const ean = row.ean ?? "";
+        const descripcion = row.descripcion ?? "";
+        const normal = row.Normal ?? "";
+        const oferta = row.Oferta ?? "";
+        const cenefa = row.cenefa ?? "";
+        const desde = row.desde ?? "";
+        const hasta = row.hasta ?? "";
 
 if (cantidad === 1) {
     partes.push(`
