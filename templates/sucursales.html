@@ -117,13 +117,19 @@ function imprimirTabla() {
     const cantidad = parseInt(document.getElementById("cantidadCenefas").value, 10) || 1;
     const filtro = document.getElementById("buscadorMaterial").value.toLowerCase().trim();
 
-    const visibles = datosCompletos.filter(row => {
+    //const visibles = datosCompletos.filter(row => {
+    //    const codigo = String(row.Codigo ?? "").toLowerCase();
+    //    return codigo.includes(filtro);
+    //});
+
+        const visibles = datosCompletos.filter(row => {
         const codigo = String(row.Codigo ?? "").toLowerCase();
-        return codigo.includes(filtro);
+        const esNueva = row.es_nueva === true;
+        return esNueva && codigo.includes(filtro);
     });
 
     if (visibles.length === 0) {
-        alert("No hay registros que coincidan con el filtro.");
+        alert("No hay cenefas nuevas que coincidan con el filtro.");
         return;
     }
 
