@@ -15,8 +15,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 compras_bp = Blueprint("compras", __name__, url_prefix="/compras")
 
 #RUTA_MATERIAL = "/mnt/excel/ARCHIVOS IMPORTANTES/Base de datos completa.xlsx"
-t
-ry:
+try:
     df = pd.read_excel("/mnt/excel/ARCHIVOS IMPORTANTES/Base de datos completa.xlsx")
 except Exception as e:
     print("⚠️ No se pudo cargar EAN, usando vacío:", e)
