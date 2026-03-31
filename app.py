@@ -6,6 +6,7 @@ from usuarios import usuarios_bp
 from farmacia import farmacia_bp
 from compras import compras_bp
 from vencimientos import vencimientos_bp
+from promociones import promociones_bp
 from logs import logs_bp
 
 app = Flask(__name__)
@@ -18,6 +19,7 @@ app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
 app.register_blueprint(compras_bp, url_prefix='/compras')
 app.register_blueprint(vencimientos_bp)
 app.register_blueprint(logs_bp)
+app.register_blueprint(promociones_bp)
 
 
 @app.route("/")
