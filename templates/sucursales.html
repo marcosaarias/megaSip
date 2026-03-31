@@ -24,19 +24,33 @@
     <h2 class="mb-4">Cenefas en Base de Datos</h2>
 
     <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>Listado de Cenefas</span>
 
-            <select id="cantidadCenefas" class="form-select form-select-sm" style="width:120px;">
-                <option value="1">1 por hoja</option>
-                <option value="2">2 por hoja</option>
-                <option value="3">3 por hoja</option>
-                <option value="5">5 por hoja</option>
-            </select>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-light btn-sm" onclick="marcarTodas()">
+                    Marcar todas
+                </button>
 
-            <button onclick="imprimirTabla()" class="btn btn-light btn-sm">
-                🖨 Imprimir
-            </button>
+                <button type="button" class="btn btn-outline-light btn-sm" onclick="desmarcarTodas()">
+                    Desmarcar todas
+                </button>
+
+                <button type="button" class="btn btn-outline-light btn-sm" onclick="cantidadUnoTodas()">
+                    Cantidad = 1
+                </button>
+
+                <select id="cantidadCenefas" class="form-select form-select-sm" style="width:120px;">
+                    <option value="1">1 por hoja</option>
+                    <option value="2">2 por hoja</option>
+                    <option value="3">3 por hoja</option>
+                    <option value="5">5 por hoja</option>
+                </select>
+
+                <button onclick="imprimirTabla()" class="btn btn-light btn-sm">
+                    🖨 Imprimir
+                </button>
+            </div>
         </div>
 
         <div class="card-body p-2">
@@ -54,6 +68,8 @@
                 <table class="table table-bordered table-sm table-striped">
                     <thead class="table-dark">
                         <tr>
+                            <th style="width: 80px;">Imprimir</th>
+                            <th style="width: 90px;">Cant.</th>
                             <th>Código</th>
                             <th>EAN</th>
                             <th>Descripción</th>
@@ -67,7 +83,24 @@
                     </thead>
                     <tbody>
                         {% for item in datos[:100] %}
-                        <tr class="{% if item.es_nueva %}table-warning{% endif %}">
+                        <tr class="{% if item.es_nueva %}table-warning{% endif %}" data-index="{{ loop.index0 }}">
+                            <td class="text-center">
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input chk-imprimir"
+                                    data-index="{{ loop.index0 }}"
+                                    {% if item.es_nueva %}checked{% endif %}
+                                >
+                            </td>
+                            <td>
+                                <input
+                                    type="number"
+                                    class="form-control form-control-sm cant-imprimir"
+                                    data-index="{{ loop.index0 }}"
+                                    min="1"
+                                    value="1"
+                                >
+                            </td>
                             <td>{{ item.Codigo }}</td>
                             <td>{{ item.ean }}</td>
                             <td>{{ item.descripcion }}</td>
@@ -88,7 +121,12 @@
 </div>
 
 <script>
-    const datosCompletos = {{ datos|tojson }};
+    const datosCompletos = {{ datos[:100]|tojson }};
+
+    datosCompletos.forEach(row => {
+        row.seleccionado = row.es_nueva === true;
+        row.cantidad_imprimir = 1;
+    });
 </script>
 
 <script>
@@ -101,12 +139,88 @@ document.addEventListener("DOMContentLoaded", function () {
             const filas = document.querySelectorAll("#areaImpresion tbody tr");
 
             filas.forEach(fila => {
-                const codigo = fila.cells[0].innerText.toLowerCase();
+                const codigo = fila.cells[2].innerText.toLowerCase();
                 fila.style.display = codigo.includes(filtro) ? "" : "none";
             });
         });
     }
+
+    document.querySelectorAll(".chk-imprimir").forEach(chk => {
+        chk.addEventListener("change", function () {
+            const index = parseInt(this.dataset.index, 10);
+            if (!isNaN(index) && datosCompletos[index]) {
+                datosCompletos[index].seleccionado = this.checked;
+            }
+        });
+    });
+
+    document.querySelectorAll(".cant-imprimir").forEach(inp => {
+        inp.addEventListener("input", function () {
+            const index = parseInt(this.dataset.index, 10);
+            let valor = parseInt(this.value, 10);
+
+            if (isNaN(valor) || valor < 1) {
+                valor = 1;
+                this.value = 1;
+            }
+
+            if (!isNaN(index) && datosCompletos[index]) {
+                datosCompletos[index].cantidad_imprimir = valor;
+            }
+        });
+    });
 });
+
+function marcarTodas() {
+    document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
+        if (fila.style.display === "none") return;
+
+        const index = parseInt(fila.dataset.index, 10);
+        const checkbox = fila.querySelector(".chk-imprimir");
+
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+
+        if (!isNaN(index) && datosCompletos[index]) {
+            datosCompletos[index].seleccionado = true;
+        }
+    });
+}
+
+function desmarcarTodas() {
+    document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
+        if (fila.style.display === "none") return;
+
+        const index = parseInt(fila.dataset.index, 10);
+        const checkbox = fila.querySelector(".chk-imprimir");
+
+        if (checkbox) {
+            checkbox.checked = false;
+        }
+
+        if (!isNaN(index) && datosCompletos[index]) {
+            datosCompletos[index].seleccionado = false;
+        }
+    });
+}
+
+function cantidadUnoTodas() {
+    document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
+        if (fila.style.display === "none") return;
+
+        const index = parseInt(fila.dataset.index, 10);
+        const inputCantidad = fila.querySelector(".cant-imprimir");
+
+        if (inputCantidad) {
+            inputCantidad.value = 1;
+        }
+
+        if (!isNaN(index) && datosCompletos[index]) {
+            datosCompletos[index].cantidad_imprimir = 1;
+        }
+    });
+}
 
 function imprimirTabla() {
     if (!Array.isArray(datosCompletos) || datosCompletos.length === 0) {
@@ -117,21 +231,24 @@ function imprimirTabla() {
     const cantidad = parseInt(document.getElementById("cantidadCenefas").value, 10) || 1;
     const filtro = document.getElementById("buscadorMaterial").value.toLowerCase().trim();
 
-    //const visibles = datosCompletos.filter(row => {
-    //    const codigo = String(row.Codigo ?? "").toLowerCase();
-    //    return codigo.includes(filtro);
-    //});
-
-        const visibles = datosCompletos.filter(row => {
+    const seleccionados = datosCompletos.filter(row => {
         const codigo = String(row.Codigo ?? "").toLowerCase();
-        const esNueva = row.es_nueva === true;
-        return esNueva && codigo.includes(filtro);
+        const seleccionado = row.seleccionado === true;
+        return seleccionado && codigo.includes(filtro);
     });
 
-    if (visibles.length === 0) {
-        alert("No hay cenefas nuevas que coincidan con el filtro.");
+    if (seleccionados.length === 0) {
+        alert("No hay registros seleccionados para imprimir.");
         return;
     }
+
+    const visibles = [];
+    seleccionados.forEach(row => {
+        const cantidadCopias = parseInt(row.cantidad_imprimir, 10) || 1;
+        for (let i = 0; i < cantidadCopias; i++) {
+            visibles.push(row);
+        }
+    });
 
     const totalVisibles = visibles.length;
     let partes = [];
@@ -146,28 +263,28 @@ function imprimirTabla() {
         const desde = row.desde ?? "";
         const hasta = row.hasta ?? "";
 
-if (cantidad === 1) {
-    partes.push(`
-        <div class="cenefa-hoja-completa">
-            <div class="zona-encabezado"></div>
+        if (cantidad === 1) {
+            partes.push(`
+                <div class="cenefa-hoja-completa">
+                    <div class="zona-encabezado"></div>
 
-            <div class="zona-central">
-                <div class="cenefa-titulo-grande">${cenefa}</div>
-                <div class="descripcion-grande">${descripcion}</div>
-                <div class="texto-paga">Ud paga c/u</div>
-                <div class="precio-oferta-grande">$ ${oferta}</div>
-                <div class="precio-normal-mediano">$ ${normal}</div>
+                    <div class="zona-central">
+                        <div class="cenefa-titulo-grande">${cenefa}</div>
+                        <div class="descripcion-grande">${descripcion}</div>
+                        <div class="texto-paga">Ud paga c/u</div>
+                        <div class="precio-oferta-grande">$ ${oferta}</div>
+                        <div class="precio-normal-mediano">$ ${normal}</div>
 
-                <div class="datos-finales">
-                    <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
-                    <strong>Desde:</strong> ${desde} &nbsp;&nbsp;
-                    <strong>Hasta:</strong> ${hasta}
+                        <div class="datos-finales">
+                            <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
+                            <strong>Desde:</strong> ${desde} &nbsp;&nbsp;
+                            <strong>Hasta:</strong> ${hasta}
+                        </div>
+                    </div>
+
+                    <div class="zona-footer"></div>
                 </div>
-            </div>
-
-            <div class="zona-footer"></div>
-        </div>
-    `);
+            `);
         } else if (cantidad === 2) {
             partes.push(`
                 <div class="cenefa-media-hoja">
@@ -186,24 +303,24 @@ if (cantidad === 1) {
                     </div>
                 </div>
             `);
-    } else if (cantidad === 3) {
-        partes.push(`
-            <div class="cenefa-tercio-hoja">
-                <div class="contenido-tercio-hoja">
-                    <div class="cenefa-titulo-tercio">${cenefa}</div>
-                    <div class="descripcion-tercio">${descripcion}</div>
-                    <div class="texto-paga-tercio">Ud paga c/u</div>
-                    <div class="precio-oferta-tercio">$ ${oferta}</div>
-                    <div class="precio-normal-tercio">$ ${normal}</div>
+        } else if (cantidad === 3) {
+            partes.push(`
+                <div class="cenefa-tercio-hoja">
+                    <div class="contenido-tercio-hoja">
+                        <div class="cenefa-titulo-tercio">${cenefa}</div>
+                        <div class="descripcion-tercio">${descripcion}</div>
+                        <div class="texto-paga-tercio">Ud paga c/u</div>
+                        <div class="precio-oferta-tercio">$ ${oferta}</div>
+                        <div class="precio-normal-tercio">$ ${normal}</div>
 
-                    <div class="datos-finales-tercio">
-                        <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
-                        <strong>Desde:</strong> ${desde} &nbsp;&nbsp;
-                        <strong>Hasta:</strong> ${hasta}
+                        <div class="datos-finales-tercio">
+                            <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
+                            <strong>Desde:</strong> ${desde} &nbsp;&nbsp;
+                            <strong>Hasta:</strong> ${hasta}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `);
+            `);
         } else if (cantidad === 5) {
             partes.push(`
                 <div class="cenefa-quinto-hoja">
@@ -223,6 +340,7 @@ if (cantidad === 1) {
                 </div>
             `);
         }
+
         if ((index + 1) % cantidad === 0 && (index + 1) < totalVisibles) {
             partes.push('<div class="page-break"></div>');
         }
@@ -253,7 +371,6 @@ if (cantidad === 1) {
                     gap: 0;
                 }
 
-                /* ===== Diseño normal para 3 y 5 ===== */
                 .cenefa {
                     width: 320px;
                     border: 2px solid black;
@@ -297,7 +414,6 @@ if (cantidad === 1) {
                     font-size: 12px;
                 }
 
-                /* ===== Diseño para 1 por hoja ===== */
                 .cenefa-hoja-completa {
                     width: 100%;
                     height: calc(100vh - 20mm);
@@ -307,12 +423,10 @@ if (cantidad === 1) {
                     page-break-inside: avoid;
                 }
 
-                /* 25% arriba vacío */
                 .zona-encabezado {
                     height: 25%;
                 }
 
-                /* 50% contenido */
                 .zona-central {
                     height: 50%;
                     display: flex;
@@ -324,7 +438,6 @@ if (cantidad === 1) {
                     box-sizing: border-box;
                 }
 
-                /* 25% abajo vacío */
                 .zona-footer {
                     height: 25%;
                 }
@@ -369,7 +482,6 @@ if (cantidad === 1) {
                     white-space: nowrap;
                 }
 
-                /* ===== Diseño para 2 por hoja (SIN header/footer) ===== */
                 .cenefa-media-hoja {
                     width: 100%;
                     height: calc((100vh - 20mm) / 2);
@@ -430,13 +542,11 @@ if (cantidad === 1) {
                     white-space: nowrap;
                 }
 
-                /* ===== salto de página ===== */
                 .page-break {
                     page-break-after: always;
                     height: 0;
                 }
 
-                /* ===== Diseño para 3 por hoja ===== */
                 .cenefa-tercio-hoja {
                     width: 100%;
                     height: calc((100vh - 20mm) / 3);
@@ -497,7 +607,6 @@ if (cantidad === 1) {
                     white-space: nowrap;
                 }
 
-                /* ===== Diseño para 5 por hoja ===== */
                 .cenefa-quinto-hoja {
                     width: 100%;
                     height: calc((100vh - 20mm) / 5);
@@ -557,7 +666,6 @@ if (cantidad === 1) {
                     text-align: center;
                     white-space: nowrap;
                 }
-
             </style>
         </head>
         <body>
