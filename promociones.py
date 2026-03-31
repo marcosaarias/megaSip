@@ -1,13 +1,13 @@
 import io
 import pandas as pd
-from flask import Flask, request, render_template, send_file, Blueprint
+from flask import request, render_template, Blueprint
 import re
-import json
 from datetime import datetime
 from sistemas import login_requerido
 import os
 from dotenv import load_dotenv
 from dbfread import DBF
+
 promociones_bp = Blueprint("promociones", __name__, url_prefix="/promociones")
 
 load_dotenv()
@@ -16,116 +16,110 @@ load_dotenv()
 # OBTENER IP DESDE .ENV
 # ---------------------------------------------------
 def obtener_ip_sucursal(codigo):
-     variable = f"IP_CAJAS_{codigo.upper()}"
-     return os.getenv(variable)
+    variable = f"IP_CAJAS_{codigo.upper()}"
+    return os.getenv(variable)
 
 
 # ---------------------------------------------------
-# NORMALIZAR CODIGO (quita ceros izquierda y limpia)
+# NORMALIZAR CODIGO
 # ---------------------------------------------------
 def normalizar_codigo(valor):
     if valor is None:
-         return ""
+        return ""
 
- valor = str(valor).strip()
- valor = valor.lstrip("0")
+    valor = str(valor).strip()
+    valor = valor.lstrip("0")
 
-     if valor == "":
+    if valor == "":
         valor = "0"
 
-     return valor
+    return valor
 
 
 # ---------------------------------------------------
-# 🎯 OBTENER TIPO DE PROMOCIÓN SEGÚN CANASTA
+# TIPO DE PROMOCION
 # ---------------------------------------------------
 def obtener_tipo_promocion(canasta):
 
-     if not canasta:
-         return "Descuento Total"
+    if not canasta:
+        return "Descuento Total"
 
-     canasta = int(canasta)
-    
-     if canasta == 200:
-         return "Feria de Frutas y Verduras"
+    canasta = int(canasta)
 
+    if canasta == 200:
+        return "Feria de Frutas y Verduras"
     elif canasta in [201, 202]:
-         return "Feria Pollo Trozado"
-    
+        return "Feria Pollo Trozado"
     elif canasta in [203, 204]:
-         return "Feria de Carnes de Cerdo"
-
+        return "Feria de Carnes de Cerdo"
     elif canasta == 206:
-         return "Feria de Vinos"
-
+        return "Feria de Vinos"
     elif canasta in [207, 208]:
-         return "Feria de Panadería"
-
+        return "Feria de Panadería"
     elif 532 <= canasta <= 553:
-         return "Feria de Perfumería y Limpieza"
-
+        return "Feria de Perfumería y Limpieza"
     elif 700 <= canasta <= 800:
-         return "Vencimientos"
+        return "Vencimientos"
 
-
- return "Descuento Total"
+    return "Descuento Total"
 
 
 # ---------------------------------------------------
-# OBTENER DESCRIPCIONES DESDE MPLU.DBF
+# DESCRIPCIONES DESDE DBF
 # ---------------------------------------------------
 def cargar_descripciones_materiales():
 
- ruta_base = os.getenv("MATERIALES_DESCRIPCION_MA02")
+    ruta_base = os.getenv("MATERIALES_DESCRIPCION_MA02")
 
-     if not ruta_base:
-         print("❌ Variable MATERIALES_DESCRIPCION_MA02 no definida")
-             return {}
+    if not ruta_base:
+        print("❌ Variable MATERIALES_DESCRIPCION_MA02 no definida")
+        return {}
 
-     ruta_mplu = fr"\\{ruta_base}\mplu.dbf"
+    ruta_mplu = fr"\\{ruta_base}\mplu.dbf"
 
-     if not os.path.exists(ruta_mplu):
-         print("❌ No existe mplu.dbf")
-         return {}
+    if not os.path.exists(ruta_mplu):
+        print("❌ No existe mplu.dbf")
+        return {}
 
     tabla = DBF(ruta_mplu, encoding="latin-1", load=True)
 
-     descripciones = {}
+    descripciones = {}
 
-     for row in tabla:
-         cod = row.get("Cod") or row.get("COD")
-         des = row.get("Des") or row.get("DES")
+    for row in tabla:
+        cod = row.get("Cod") or row.get("COD")
+        des = row.get("Des") or row.get("DES")
 
-         if cod is None:
-             continue
+        if cod is None:
+            continue
 
-     codigo_limpio = normalizar_codigo(cod)
-     descripcion_limpia = str(des).strip() if des else ""
+        codigo_limpio = normalizar_codigo(cod)
+        descripcion_limpia = str(des).strip() if des else ""
 
-     descripciones[codigo_limpio] = descripcion_limpia
+        descripciones[codigo_limpio] = descripcion_limpia
 
-     print("✔ Materiales cargados desde mplu:", len(descripciones))
-     return descripciones
+    print("✔ Materiales cargados:", len(descripciones))
+    return descripciones
 
 
 # ---------------------------------------------------
 # PARSEAR PROMO.INI
 # ---------------------------------------------------
 def parsear_promo_ini(path):
-     promociones = []
 
-     if not os.path.exists(path):
-         return promociones
+    promociones = []
 
-     with open(path, "r", encoding="latin-1") as f:
-     contenido = f.read()
+    if not os.path.exists(path):
+        return promociones
+
+    with open(path, "r", encoding="latin-1") as f:
+        contenido = f.read()
 
     bloques = re.findall(r"\[(promo\d+)\](.*?)(?=\n\[|$)", contenido, re.S | re.I)
 
     for nombre, bloque in bloques:
 
         if "activa = si" not in bloque.lower():
-             continue
+            continue
 
         canasta_match = re.search(r"VENTA_LISTA\s*\(\s*(\d+)\s*\)", bloque, re.I)
         canasta = canasta_match.group(1) if canasta_match else None
@@ -157,7 +151,7 @@ def parsear_promo_ini(path):
 
 
 # ---------------------------------------------------
-# OBTENER MATERIALES DESDE CANASTAS.DBF
+# MATERIALES DE CANASTA
 # ---------------------------------------------------
 def obtener_materiales_de_canasta(path_dbf, numero_canasta):
 
@@ -186,21 +180,19 @@ def obtener_materiales_de_canasta(path_dbf, numero_canasta):
 # RUTA PRINCIPAL
 # ---------------------------------------------------
 @promociones_bp.route("/", methods=["GET", "POST"])
-@login_requerido("sistemas")
+@login_requerido("compras")
 def index():
 
     rows = []
 
     if request.method == "POST":
 
-        print("========== DEBUG PROMOCIONES ==========")
-
         sucursal = request.form.get("sucursal")
         ip = obtener_ip_sucursal(sucursal)
 
         if not ip:
             return render_template(
-                     "promociones.html",
+                "promociones.html",
                 rows=[],
                 error="Sucursal no encontrada"
             )
@@ -209,7 +201,6 @@ def index():
         ruta_dbf = fr"\\{ip}\cajas\diego\canastas.dbf"
 
         promos = parsear_promo_ini(ruta_ini)
-
         descripciones_materiales = cargar_descripciones_materiales()
 
         for p in promos:
@@ -217,7 +208,7 @@ def index():
             if not p["canasta"]:
                 continue
 
-        materiales = obtener_materiales_de_canasta(ruta_dbf, p["canasta"])
+            materiales = obtener_materiales_de_canasta(ruta_dbf, p["canasta"])
 
             estado = "Sin fecha"
             vigencia = "-"
@@ -245,7 +236,7 @@ def index():
                 descripcion_real = descripciones_materiales.get(
                     material,
                     f"Material {material}"
-            )
+                )
 
                 rows.append({
                     "material": material,
@@ -257,8 +248,5 @@ def index():
                     "sucursal": sucursal,
                     "estado": estado
                 })
-
-        print("Filas finales:", len(rows))
-        print("=======================================")
 
     return render_template("promociones.html", rows=rows)
