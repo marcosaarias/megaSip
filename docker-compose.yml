@@ -4,9 +4,9 @@ services:
     build: .
     container_name: MegaSIP
     ports:
-      - "5008:5008"
+      - "5008:5012"
     volumes:
       - .:/app
-      - /mnt/base_ventas/Asistente Ventas:/mnt/excel
+      - /mnt/base_ventas:/mnt/excel
     environment:
       - FLASK_ENV=production
