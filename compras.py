@@ -118,7 +118,7 @@ def normalizar_texto(texto):
     return texto
 
 # ---------------- PROCESAMIENTO COMUN ----------------
-
+"""
 def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
     preview = None
     mensaje_error = None
@@ -233,7 +233,133 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
         )
 
     return df, preview, mensaje_error, total_registros
+"""
 
+def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
+    preview = None
+    mensaje_error = None
+    total_registros = 0
+    df = None
+
+    if archivo and archivo.filename != "":
+
+        excel_file = pd.ExcelFile(archivo)
+
+        hoja_objetivo = None
+        for hoja in excel_file.sheet_names:
+            if normalizar_texto(hoja).strip() in ["cenefa", "cenefas"]:
+                hoja_objetivo = hoja
+                break
+
+        if hoja_objetivo is None:
+            mensaje_error = "No se encontró la hoja 'Cenefas'."
+            return None, None, mensaje_error, 0
+
+        df_temp = pd.read_excel(excel_file, sheet_name=hoja_objetivo, header=None)
+
+        fila_header = None
+        for i, row in df_temp.iterrows():
+            valores = [normalizar_texto(x) for x in row.values]
+            if "codigo" in valores:
+                fila_header = i
+                break
+
+        if fila_header is None:
+            mensaje_error = "No se encontró la fila de encabezados (CODIGO)."
+            return None, None, mensaje_error, 0
+
+        df = pd.read_excel(excel_file, sheet_name=hoja_objetivo, header=fila_header)
+
+        df.columns = [normalizar_texto(col).strip() for col in df.columns]
+
+        column_mapping = {}
+
+        for header in HEADERS:
+            header_norm = normalizar_texto(header)
+            posibles = ALIAS.get(header, [])
+            posibles_norm = [normalizar_texto(p) for p in posibles]
+
+            for col in df.columns:
+                if col == header_norm or col in posibles_norm:
+                    column_mapping[col] = header
+                    break
+
+        if not column_mapping:
+            mensaje_error = "No se encontraron columnas válidas."
+            return None, None, mensaje_error, 0
+
+        df = df.rename(columns=column_mapping)
+
+        if tipo in SUCURSAL_MAP:
+            clave_total = (
+                "Total Empresa - Mayorista"
+                if tipo == "mayorista"
+                else "Total-empresa-minorista"
+            )
+
+            if "sucursales" not in df.columns:
+                df["sucursales"] = ""
+
+            def generar_codigos(valor):
+                if pd.isna(valor) or str(valor).strip() == "":
+                    return SUCURSAL_MAP[tipo].get(clave_total, "")
+
+                provincia = normalizar_texto(valor)
+
+                return SUCURSAL_MAP[tipo].get(
+                    provincia,
+                    SUCURSAL_MAP[tipo].get(clave_total, "")
+                )
+
+            df["sucursales"] = df["sucursales"].apply(generar_codigos)
+
+        columnas_validas = [col for col in df.columns if col in HEADERS]
+        df = df[columnas_validas]
+
+        df = df.replace(r'^\s*$', pd.NA, regex=True)
+        df = df.dropna(how="all")
+
+        if "CODIGO" in df.columns:
+            df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
+            df = df.dropna(subset=["CODIGO"])
+            df["CODIGO"] = df["CODIGO"].astype(int)
+
+        df = completar_ean(df)
+
+        if "ean" in df.columns:
+            df.rename(columns={"ean": "EAN"}, inplace=True)
+
+        columnas = list(df.columns)
+        if "CODIGO" in columnas and "EAN" in columnas:
+            columnas.remove("EAN")
+            index_codigo = columnas.index("CODIGO")
+            columnas.insert(index_codigo + 1, "EAN")
+            df = df[columnas]
+
+        if "Oferta" in df.columns:
+            df["Oferta"] = pd.to_numeric(df["Oferta"], errors="coerce")
+            df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
+
+        if "Normal" in df.columns:
+            df["Normal"] = pd.to_numeric(df["Normal"], errors="coerce")
+            df["Normal"] = np.floor(df["Normal"] * 100) / 100
+
+        if fecha_desde:
+            df["Desde"] = fecha_desde
+
+        if fecha_hasta:
+            df["Hasta"] = fecha_hasta
+
+        df = df.reset_index(drop=True)
+        total_registros = len(df)
+        df = df.fillna("")
+
+        preview = df.to_html(
+            classes="table table-striped table-bordered",
+            index=False
+        )
+
+    return df, preview, mensaje_error, total_registros
 
 def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
     conn = sqlite3.connect(DB_PATH)
