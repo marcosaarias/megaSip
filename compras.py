@@ -234,34 +234,6 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
     return df, preview, mensaje_error, total_registros
 
-# ---------------- GUARDAR EN DB ----------------
-
-#def guardar_cenefas_en_db(df, tipo_cenefa):
-#    conn = sqlite3.connect(DB_PATH)
-#    cursor = conn.cursor()
-
-#    for _, row in df.iterrows():
-#        cursor.execute("""
-#            INSERT OR REPLACE INTO cenefas
-#            (Codigo, ean, descripcion, Normal, Oferta, cenefa, desde, hasta, sucursales, tipo_cenefa)
-#            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-#        """, (
-#            row.get("CODIGO"),
-#            row.get("EAN"),
-#            row.get("DESCRIPCION"),
-#            row.get("Normal"),
-#            row.get("Oferta"),
-#            row.get("cenefa"),
-#            row.get("Desde"),
-#            row.get("Hasta"),
-#            row.get("sucursales"),
-#            tipo_cenefa
-#        ))
-
-#    conn.commit()
-#    conn.close()
-
-
 
 def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
     conn = sqlite3.connect(DB_PATH)
