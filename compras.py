@@ -673,6 +673,12 @@ def sucursal():
                 pass
 
         return None
+        
+    def formatear_fecha(valor):
+        fecha = convertir_fecha(valor)
+        if not fecha:
+            return ""
+        return fecha.strftime("%d/%m/%Y")
 
     sucursal_codigo = session.get("usuario_nombre", "").strip().upper()
     tipo = request.args.get("tipo", "folder")
@@ -722,8 +728,10 @@ def sucursal():
                 "Normal": r[3],
                 "Oferta": r[4],
                 "cenefa": r[5],
-                "desde": r[6],
-                "hasta": r[7],
+                #"desde": r[6],
+                #"hasta": r[7],
+                "desde": formatear_fecha(r[6]),
+                "hasta": formatear_fecha(r[7]),
                 "sucursales": r[8],
                 "tipo_cenefa": r[9],
                 "fecha_carga": r[10],
