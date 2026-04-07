@@ -25,16 +25,16 @@ HEADERS = [
 ]
 
 SUCURSAL_MAP = {
-    "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO29,MA02",
+    "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02",
     "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO29,MA02",
     "Jujuy - Mayorista": "CO05,CO12,CO15,MA02",
     "Salta - Mayorista": "CO09,CO29,CO21",
     "Oran - Mayorista": "CO21",
-    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO24,CO25,CO26,CO27",
-    "Jujuy - Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22",
+    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO24,CO25,CO26,CO27,CO28",
+    "Jujuy - Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
     "Salta - Minoristas": "CO18,CO23",
-    "Jujuy, Salta - Minoritas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23",
-    "Jujuy, Salta - Minoritas y Mayoristas": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO29,MA02",
+    "Jujuy, Salta - Minoritas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO28",
+    "Jujuy, Salta - Minoritas y Mayoristas": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO28,CO29,MA02",
     "Tucuman - Minoristas": "CO24,CO25,CO26,CO27",
 }
 
@@ -219,6 +219,13 @@ def preview():
 
             new_row = row.to_dict()
             new_row["sucursal"] = ",".join(sucursales_finales)
+
+            if "desde" in new_row:
+                new_row["desde"] = format_date(str(new_row["desde"]))
+
+            if "hasta" in new_row:
+                new_row["hasta"] = format_date(str(new_row["hasta"]))
+
             rows.append(new_row)
 
         df_expanded = pd.DataFrame(rows)
