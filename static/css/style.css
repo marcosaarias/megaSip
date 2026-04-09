@@ -1,17 +1,29 @@
+/* =========================
+   RESET / BASE
+========================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 /* --- Body --- */
 body {
-  font-family: Inter, system-ui, Arial, sans-serif;
+  font-family: Arial, sans-serif;
   background: #fff;
   color: #333;
   margin: 0;
-  display: flex;
   min-height: 100vh;
-  overflow-x: hidden; /* evitar exceso de scroll*/
+  overflow-x: hidden;
 }
 
-/* --- Sidebar --- */
+/* =========================
+   SIDEBAR
+========================= */
 .sidebar {
-  position:fixed;
+  position: fixed;
+  top: 0;
+  left: 0;
   height: 100vh;
   width: 240px;
   background: #231F20;
@@ -21,6 +33,8 @@ body {
   justify-content: space-between;
   padding: 20px 10px;
   box-shadow: 2px 0 8px rgba(0,0,0,.2);
+  overflow-y: auto;
+  z-index: 1000;
 }
 
 .sidebar h2 {
@@ -84,34 +98,39 @@ body {
   transform: translateY(-2px);
 }
 
-/* --- Main Content --- */
+/* =========================
+   MAIN CONTENT
+========================= */
 .main-content {
-  margin-left: 230px;
-  flex: 1;
+  margin-left: 240px;
+  min-height: 100vh;
   padding: 30px;
   background: #fff;
+  width: calc(100% - 240px);
 }
-.container-cenefas{ 
-  width: 100%; 
-  max-width: 100%; 
-  margin: auto; 
-  background: #fff; 
-  padding: 20px 30px; 
-  border-radius: 12px; 
-  box-shadow: 0 4px 12px rgba(0,0,0,.1);
-} 
 
-.container {
-  width: 80%;
-  max-width: 80%;
-  margin: auto;
+/* =========================
+   CONTENEDORES
+========================= */
+.container-cenefas {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   background: #fff;
   padding: 20px 30px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,.1);
 }
 
-
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
 
 h2 {
   color: #231F20;
@@ -125,7 +144,9 @@ h2 {
   margin-bottom: 20px;
 }
 
-/* --- Listas --- */
+/* =========================
+   LISTAS
+========================= */
 ul {
   list-style: none;
   padding: 0;
@@ -147,7 +168,9 @@ li span {
   font-weight: bold;
 }
 
-/* --- Tablas --- */
+/* =========================
+   TABLAS
+========================= */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -155,12 +178,14 @@ table {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  table-layout: auto;
 }
 
 th, td {
   border: 1px solid #ddd;
   padding: 12px;
   text-align: left;
+  vertical-align: middle;
 }
 
 th {
@@ -168,7 +193,9 @@ th {
   color: #231F20;
 }
 
-/* --- Formularios: label + input en línea --- */
+/* =========================
+   FORMULARIOS
+========================= */
 .form-group {
   display: flex;
   align-items: center;
@@ -177,7 +204,8 @@ th {
 }
 
 .form-group label {
-  width: 150px; /* Ajusta según necesites */
+  width: 150px;
+  min-width: 150px;
   font-weight: bold;
   color: #231F20;
 }
@@ -186,13 +214,16 @@ th {
 .form-group select,
 .form-group textarea {
   flex: 1;
+  min-width: 0;
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 14px;
 }
 
-/* --- Botones --- */
+/* =========================
+   BOTONES
+========================= */
 button, .btn {
   background: #F9BC20;
   color: #231F20;
@@ -211,32 +242,34 @@ button:hover, .btn:hover {
 }
 
 .nav-btn-table {
-  background-color: #F9BC20;     /* amarillo */
-  color: #000;                   /* texto negro */
-  padding: 4px 10px;             /* botón pequeño */
-  font-size: 0.75rem;            /* texto pequeño */
-  border-radius: 6px;            /* esquinas redondeadas */
+  background-color: #F9BC20;
+  color: #000;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
   cursor: pointer;
   transition: 0.2s ease-in-out;
 }
 
- .nav-btn-table:active {
-  background-color: #dda71f;     /* tono más oscuro al presionar */
-}
-/* --- PRECIOS PUNTUALES --- */
-.pp-container {
-    font-family: Inter, system-ui, Arial, sans-serif;
-    background: #fff;
-    padding: 20px 40px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    width: 90%;
-    max-width: 900px;
-    margin: 40px auto;
-    text-align: center;
+.nav-btn-table:active {
+  background-color: #dda71f;
 }
 
-/* --- TITULOS --- */
+/* =========================
+   PRECIOS PUNTUALES
+========================= */
+.pp-container {
+  font-family: Arial, sans-serif;
+  background: #fff;
+  padding: 20px 40px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 900px;
+  margin: 40px auto;
+  text-align: center;
+}
+
 .pp-container h1 {
   font-size: 2rem;
   font-weight: 700;
@@ -253,61 +286,61 @@ button:hover, .btn:hover {
   text-align: center;
 }
 
-/* --- FORMULARIO --- */
 .pp-form {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .pp-form input[type="file"] {
-    padding: 6px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
-/* --- BOTONES --- */
 .pp-btn {
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
 .pp-btn:hover {
-    background-color: #357ab8;
+  background-color: #357ab8;
 }
 
-/* --- TABLA --- */
 .pp-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    font-size: 15px;
-
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 15px;
 }
 
 .pp-table th,
 .pp-table td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: center;
-    vertical-align: middle;
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .pp-table th {
-    background-color: #f5f5f5;
-    font-weight: bold;
+  background-color: #f5f5f5;
+  font-weight: bold;
 }
+
 #preview_container {
-    margin-bottom: 2px !important;
+  margin-bottom: 2px !important;
 }
-/* --- BOTÓN DESCARGAR --- */
+
+/* =========================
+   BOTON DESCARGAR
+========================= */
 .btn-download {
   display: inline-flex;
   align-items: center;
@@ -315,112 +348,87 @@ button:hover, .btn:hover {
   margin-bottom: 2px;
   padding: 5px 5px;
   font-size: 13.5px;
-  font-weight: bold;
-
-  background-color:#ffc107;
+  font-weight: 700;
+  background-color: #ffc107;
   color: #000000;
-
- 
   border-radius: 4px;
   cursor: pointer;
-  font-weight: 700;
 }
 
 .btn-download:hover {
   background-color: #e6e6e6;
-  color:#000000;
+  color: #000000;
 }
 
 .btn-download .icon {
   font-size: 14px;
 }
+
 .table-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-
-/* Tabla casos especiales */
-/* Fila de sucursales - Estado normal */
+/* =========================
+   TABLA CASOS ESPECIALES
+========================= */
 .sucursal-row td {
-    font-size: 17px !important;
-    white-space: normal;
-    word-wrap: break-word !important; 
-    overflow-wrap: break-word !important;
-    padding: 4px 8px;   
-    color: #000000;
-    background-color: #f8f8f8 !important;
-    line-height: 1.3em;
-    transition: background-color 0.3s ease, border-left 0.3s ease; /* Transición suave */
-    border-top: 1.5px solid #000000 !important; 
-    border-bottom: 1.5px solid #000000 !important;
-    word-break: break-word; 
+  font-size: 17px !important;
+  white-space: normal;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word;
+  padding: 4px 8px;
+  color: #000000;
+  background-color: #f8f8f8 !important;
+  line-height: 1.3em;
+  transition: background-color 0.3s ease, border-left 0.3s ease;
+  border-top: 1.5px solid #000000 !important;
+  border-bottom: 1.5px solid #000000 !important;
 }
 
-/* Resaltado para cambios en sucursales */
 .sucursal-row td.modificada {
-    background-color: #fff3cd !important;
-    border-left: 4px solid #ffc107 !important; /* Aumentado a 4px para más visibilidad */
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107 !important;
 }
 
-/* Error en sucursales (códigos inválidos) */
 .sucursal-row td.sucursal-error {
-    background-color: #f8d7da !important;
-    border-left: 4px solid #dc3545 !important; /* Borde rojo para errores */
+  background-color: #f8d7da !important;
+  border-left: 4px solid #dc3545 !important;
 }
 
-/* Prioridad cuando hay modificada Y error */
 .sucursal-row td.modificada.sucursal-error {
-    background-color: #f8d7da !important; /* Error tiene prioridad */
-    border-left: 4px solid #dc3545 !important;
+  background-color: #f8d7da !important;
+  border-left: 4px solid #dc3545 !important;
 }
-
-/* Resaltado para cambios en sucursales */
-.sucursal-row td.modificada {
-    background-color: #fff3cd !important;
-    border-left: 3px solid #ffc107;
-}
-
-
-
-
 
 /* permitir interacciones con el select dentro del td */
-td.no-edit select, td[contenteditable="false"] select {
+td.no-edit select,
+td[contenteditable="false"] select {
   pointer-events: auto;
   user-select: text !important;
 }
 
-
 /* Error de celda vacía/NaN en filas normales */
 td.cell-empty-error {
-    background-color: #f8d7da !important;
-    border: 2px solid #dc3545 !important;
+  background-color: #f8d7da !important;
+  border: 2px solid #dc3545 !important;
 }
 
 /* Error de celda vacía en sucursales */
 .sucursal-row td.cell-empty-error {
-    background-color: #f8d7da !important;
-    border-left: 4px solid #dc3545 !important;
+  background-color: #f8d7da !important;
+  border-left: 4px solid #dc3545 !important;
 }
 
-/* sub item - menu base */
-
+/* =========================
+   SUBMENU
+========================= */
 .menu-section {
   margin-top: 10px;
 }
-
-.submenu-item {
-  padding-left: 25px;
-  font-size: 0.95em;
-  opacity: 0.85;
-}
-
-.submenu-item:hover {
-  opacity: 1;
-}
-
-/* --- SUBMENU DESPLEGABLE --- */
 
 .submenu {
   display: none;
@@ -455,4 +463,66 @@ td.cell-empty-error {
 
 .menu-section.active .arrow {
   transform: rotate(180deg);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 992px) {
+  .sidebar {
+    width: 210px;
+  }
+
+  .main-content {
+    margin-left: 210px;
+    width: calc(100% - 210px);
+    padding: 20px;
+  }
+
+  .container,
+  .container-cenefas {
+    padding: 15px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: relative;
+    width: 100%;
+    height: auto;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 15px;
+  }
+
+  .container,
+  .container-cenefas,
+  .pp-container {
+    max-width: 100%;
+    padding: 15px;
+  }
+
+  .form-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .form-group label {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .table-actions {
+    justify-content: flex-start;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 }
