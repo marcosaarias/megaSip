@@ -353,8 +353,9 @@ function imprimirTabla() {
             <meta charset="utf-8">
             <title>Impresión Cenefas</title>
             <style>
-                @page {
-                    margin: 10mm;
+               @page {
+                    size: A4 portrait; 
+                    margin: 0;
                 }
 
                 html, body {
@@ -548,12 +549,14 @@ function imprimirTabla() {
                 }
 
                 .cenefa-tercio-hoja {
-                    width: 320px;
+                    width: calc(100% - 25px);
+                    max-width: 420px;
                     height: calc((100vh - 20mm) / 3);
                     box-sizing: border-box;
                     display: flex;
                     page-break-inside: avoid;
                     margin-left: auto;
+                    margin-right: 20px;
                 }
 
                 .contenido-tercio-hoja {
@@ -566,55 +569,60 @@ function imprimirTabla() {
                     text-align: center;
                     padding: 12px 16px;
                     box-sizing: border-box;
-                    overflow: hidden;
+                    overflow: visible;
                 }
 
                 .cenefa-titulo-tercio {
-                    font-size: 22px;
+                    font-size: 32px;
                     font-weight: bold;
-                    margin-bottom: 4px;
-                    line-height: 1.05;
+                    margin-bottom: 6px;
+                    line-height: 1.15;
+                    white-space: nowrap;
+                    padding-top: 2px;
                 }
 
                 .descripcion-tercio {
-                    font-size: 14px;
+                    font-size: 20px;
                     font-weight: bold;
-                    margin-bottom: 4px;
+                    margin-bottom: 6px;
                     line-height: 1.1;
                 }
 
                 .texto-paga-tercio {
-                    font-size: 10px;
-                    margin-bottom: 3px;
+                    font-size: 14px;
+                    margin-bottom: 4px;
                 }
 
                 .precio-oferta-tercio {
-                    font-size: 24px;
+                    font-size: 38px;
                     font-weight: bold;
-                    margin-bottom: 3px;
+                    margin-bottom: 4px;
                     line-height: 1;
                 }
 
                 .precio-normal-tercio {
-                    font-size: 14px;
+                    font-size: 22px;
                     font-weight: bold;
-                    margin-bottom: 4px;
+                    margin-bottom: 5px;
                     line-height: 1.05;
                 }
 
                 .datos-finales-tercio {
-                    font-size: 9px;
-                    line-height: 1.1;
+                    font-size: 11px;
+                    line-height: 1.15;
                     text-align: center;
-                    white-space: normal; /* 🔥 clave */
+                    white-space: normal;
                 }
+
                 .cenefa-quinto-hoja {
-                    width: 320px;
+                    width: calc(100% - 25px);
+                    max-width: 420px;
                     height: calc((100vh - 20mm) / 5);
                     box-sizing: border-box;
                     display: flex;
                     page-break-inside: avoid;
                     margin-left: auto;
+                    margin-right: 20px;
                 }
 
                 .contenido-quinto-hoja {
@@ -625,49 +633,51 @@ function imprimirTabla() {
                     justify-content: center;
                     align-items: center;
                     text-align: center;
-                    padding: 8px 12px;
+                    padding: 6px 10px;
                     box-sizing: border-box;
-                    overflow: hidden;
+                    overflow: visible;
                 }
 
                 .cenefa-titulo-quinto {
-                    font-size: 16px;
+                    font-size: 22px;
                     font-weight: bold;
                     margin-bottom: 3px;
-                    line-height: 1.0;
+                    line-height: 1.05;
+                    white-space: nowrap;
+                    padding-top: 1px;
                 }
 
                 .descripcion-quinto {
-                    font-size: 10px;
+                    font-size: 13px;
                     font-weight: bold;
                     margin-bottom: 2px;
                     line-height: 1.05;
                 }
 
                 .texto-paga-quinto {
-                    font-size: 8px;
+                    font-size: 10px;
                     margin-bottom: 2px;
                 }
 
                 .precio-oferta-quinto {
-                    font-size: 16px;
+                    font-size: 24px;
                     font-weight: bold;
                     margin-bottom: 2px;
                     line-height: 1;
                 }
 
                 .precio-normal-quinto {
-                    font-size: 10px;
+                    font-size: 14px;
                     font-weight: bold;
                     margin-bottom: 2px;
                     line-height: 1.0;
                 }
 
                 .datos-finales-quinto {
-                    font-size: 7px;
+                    font-size: 9px;
                     line-height: 1.0;
                     text-align: center;
-                    white-space: normal; /* 🔥 clave */
+                    white-space: normal;
                 }
             </style>
         </head>
