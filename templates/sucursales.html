@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <h2 class="mb-4">Cenefas en Base de Datos</h2>
+    <h2 class="mb-4">Cenefas Disponibles</h2>
 
     <div class="card shadow-sm">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -119,6 +119,34 @@
     </div>
 
 </div>
+<style>
+input.chk-imprimir.form-check-input {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border: 2px solid black !important;
+    background-color: white !important;
+    cursor: pointer !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    position: relative;
+}
+
+input.chk-imprimir.form-check-input:checked {
+    background-color: #FFEB3B !important;
+}
+
+input.chk-imprimir.form-check-input:checked::after {
+    content: "✔";
+    color: black;
+    font-size: 14px;
+    font-weight: bold;
+    position: absolute;
+    top: -3px;
+    left: 2px;
+}
+</style>
 
 <script>
     const datosCompletos = {{ datos[:100]|tojson }};
