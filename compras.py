@@ -10,6 +10,14 @@ import uuid
 import traceback
 import sqlite3
 
+CACHE_TEMP = {}
+
+def guardar_temporal(lote_id, df):
+    CACHE_TEMP[lote_id] = df
+
+def recuperar_temporal(lote_id):
+    return CACHE_TEMP.get(lote_id)
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
 compras_bp = Blueprint("compras", __name__, url_prefix="/compras")
@@ -543,12 +551,24 @@ def ofertas(modo):
             fecha_hasta=fecha_hasta
         )
 
+#modificar ---
+        #if df is not None:
+        #    session["ofertas_preview_data"] = df.to_json(orient="records")
+        #    session["ofertas_preview_modo"] = modo
+        #    session["ofertas_preview_tipo"] = tipo
+        #    session["ofertas_preview_fecha_desde"] = fecha_desde
+        #    session["ofertas_preview_fecha_hasta"] = fecha_hasta
+        
         if df is not None:
-            session["ofertas_preview_data"] = df.to_json(orient="records")
-            session["ofertas_preview_modo"] = modo
-            session["ofertas_preview_tipo"] = tipo
-            session["ofertas_preview_fecha_desde"] = fecha_desde
-            session["ofertas_preview_fecha_hasta"] = fecha_hasta
+                lote_id = str(uuid.uuid4())
+
+                guardar_temporal(lote_id, df)
+
+                session["ofertas_lote_id"] = lote_id
+                session["ofertas_preview_modo"] = modo
+                session["ofertas_preview_tipo"] = tipo
+                session["ofertas_preview_fecha_desde"] = fecha_desde
+                session["ofertas_preview_fecha_hasta"] = fecha_hasta
 
     return render_template(
         "ofertas.html",
@@ -564,7 +584,8 @@ def ofertas(modo):
 
 @compras_bp.route("/transmitir_ofertas", methods=["POST"])
 def transmitir_ofertas():
-    data_json = session.get("ofertas_preview_data")
+    lote_id = session.get("ofertas_lote_id")
+    df = recuperar_temporal(lote_id)
     modo = session.get("ofertas_preview_modo")
     tipo = session.get("ofertas_preview_tipo", "mayorista")
     fecha_desde = session.get("ofertas_preview_fecha_desde")
@@ -577,7 +598,7 @@ def transmitir_ofertas():
         "vencimientos": "Oferta por Vencimientos"
     }
 
-    if not data_json or not modo:
+    if not lote_id or df is None or not modo:
         guardar_log_compras(
             usuario=usuario,
             nivel="ERROR",
@@ -591,8 +612,13 @@ def transmitir_ofertas():
         return "No hay datos para transmitir.", 400
 
     try:
-        df = pd.read_json(data_json)
+        #df = pd.read_json(data_json)
         #guardar_cenefas_en_db(df, modo)
+        
+        df = recuperar_temporal(lote_id)
+
+        if df is None:
+            return "Los datos ya no están disponibles. Volvé a cargar el archivo.", 400
 
         usuario = session.get("usuario_nombre", "desconocido")
         lote_carga, fecha_carga = guardar_cenefas_en_db(df, modo, usuario=usuario)
