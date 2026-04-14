@@ -386,7 +386,7 @@ function imprimirTabla() {
                         <div class="descripcion-quinto">${descripcion}</div>
                         <div class="texto-paga-quinto">Ud paga c/u</div>
                         <div class="precio-oferta-quinto">$ ${oferta}</div>
-                        <div class="precio-normal-tercio">
+                        <div class="precio-normal-quinto">
                             <span class="etiqueta-unitario">Precio Unitario</span> $${normal}
                         </div>
 
@@ -424,7 +424,7 @@ function imprimirTabla() {
                 }
 
                 .precio-normal-quinto .etiqueta-unitario {
-                    font-size: 10px;
+                    font-size: 12px;
                 }
 
                 @font-face {
@@ -656,12 +656,17 @@ function imprimirTabla() {
                 .cenefa-titulo-tercio {
                     font-size: 40px;
                     font-family: 'Anton', Arial, sans-serif;
-                    font-weight: normal;                     
+                    font-weight: normal;
                     margin-bottom: 8px;
                     line-height: 1.3;
                     white-space: nowrap;
                     padding-top: 2px;
                     letter-spacing: 1px;
+
+                    text-shadow: 
+                        1px 0 black,
+                        -1px 0 black,
+                        0 0.5px black;
                 }
 
                 .descripcion-tercio {
@@ -683,10 +688,15 @@ function imprimirTabla() {
                     margin-bottom: 6px;
                     line-height: 1.3;
                     letter-spacing: 1px;
+
+                    text-shadow: 
+                        1px 0 black,
+                        -1px 0 black,
+                        0 0.5px black;
                 }
 
                 .precio-normal-tercio {
-                    font-size: 23px;
+                    font-size: 20px;
                     font-weight: bold;
                     margin-bottom: 5px;
                     line-height: 1.3;
@@ -732,6 +742,10 @@ function imprimirTabla() {
                     white-space: nowrap;
                     padding-top: 1px;
                     letter-spacing: 1px;
+                    text-shadow: 
+                        0.4px 0 black,
+                        -0.4px 0 black;
+
                 }
                 .descripcion-quinto {
                     font-size: 13px;
@@ -751,12 +765,16 @@ function imprimirTabla() {
                     font-weight: normal;
                     margin-bottom: 3px;
                     line-height: 1;
+
+                    text-shadow: 
+                        0.4px 0 black,
+                        -0.4px 0 black;
                 }
 
                 .precio-normal-quinto {
                     font-size: 12px;
                     font-weight: bold;
-                    margin-bottom: 2px;
+                    margin-bottom: 10px;
                     line-height: 1.0;
                 }
 
