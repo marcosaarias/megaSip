@@ -264,6 +264,18 @@ function cantidadUnoTodas() {
     });
 }
 
+function formatearPrecio(valor) {
+    const numero = parseFloat(valor);
+
+    if (isNaN(numero)) return valor;
+
+    return numero.toLocaleString('es-AR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+
 function imprimirTabla() {
     if (!Array.isArray(datosCompletos) || datosCompletos.length === 0) {
         alert("No hay datos para imprimir.");
@@ -299,8 +311,8 @@ function imprimirTabla() {
         const codigo = row.Codigo ?? "";
         const ean = row.ean ?? "";
         const descripcion = row.descripcion ?? "";
-        const normal = row.Normal ?? "";
-        const oferta = row.Oferta ?? "";
+        const normal = formatearPrecio(row.Normal);
+        const oferta = formatearPrecio(row.Oferta);
         const cenefa = row.cenefa ?? "";
         const desde = row.desde ?? "";
         const hasta = row.hasta ?? "";
@@ -665,7 +677,7 @@ function imprimirTabla() {
                 }
 
                 .precio-oferta-tercio {
-                    font-size: 48px;
+                    font-size: 50px;
                     font-family: 'Anton', Arial, sans-serif;
                     font-weight: normal;
                     margin-bottom: 6px;
@@ -674,7 +686,7 @@ function imprimirTabla() {
                 }
 
                 .precio-normal-tercio {
-                    font-size: 25px;
+                    font-size: 23px;
                     font-weight: bold;
                     margin-bottom: 5px;
                     line-height: 1.3;
@@ -684,7 +696,7 @@ function imprimirTabla() {
                     font-size: 11px;
                     line-height: 1.3;
                     text-align: center;
-                    white-space: normal;
+                    white-space: nowrap;
                 }
 
                 .cenefa-quinto-hoja {
@@ -734,7 +746,7 @@ function imprimirTabla() {
                 }
 
                 .precio-oferta-quinto {
-                    font-size: 30px;
+                    font-size: 32px;
                     font-family: 'Anton', Arial, sans-serif;
                     font-weight: normal;
                     margin-bottom: 3px;
@@ -742,7 +754,7 @@ function imprimirTabla() {
                 }
 
                 .precio-normal-quinto {
-                    font-size: 14px;
+                    font-size: 12px;
                     font-weight: bold;
                     margin-bottom: 2px;
                     line-height: 1.0;
@@ -752,7 +764,7 @@ function imprimirTabla() {
                     font-size: 9px;
                     line-height: 1.0;
                     text-align: center;
-                    white-space: normal;
+                    white-space: nowrap;
                 }
             </style>
         </head>
