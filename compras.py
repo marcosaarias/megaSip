@@ -10,6 +10,7 @@ import uuid
 import traceback
 import sqlite3
 
+#version nueva
 CACHE_TEMP = {}
 
 def guardar_temporal(lote_id, df):
