@@ -9,15 +9,32 @@ from datetime import datetime
 import uuid
 import traceback
 import sqlite3
+import redis
+import json
 
-#version nueva
-CACHE_TEMP = {}
+# ---------------- REDIS ----------------
+
+redis_client = redis.Redis(
+    host=os.getenv("REDIS_HOST", "localhost"),
+    port=6379,
+    db=0,
+    decode_responses=True
+)
 
 def guardar_temporal(lote_id, df):
-    CACHE_TEMP[lote_id] = df
+    redis_client.setex(
+        lote_id,
+        3600,  # expira en 1 hora
+        df.to_json(orient="records")
+    )
 
 def recuperar_temporal(lote_id):
-    return CACHE_TEMP.get(lote_id)
+    data = redis_client.get(lote_id)
+    if data:
+        return pd.read_json(data, orient="records")
+    return None
+
+
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
@@ -613,17 +630,12 @@ def transmitir_ofertas():
         return "No hay datos para transmitir.", 400
 
     try:
-        #df = pd.read_json(data_json)
-        #guardar_cenefas_en_db(df, modo)
-        
-        df = recuperar_temporal(lote_id)
-
-        if df is None:
-            return "Los datos ya no están disponibles. Volvé a cargar el archivo.", 400
+        #if df is None:
+        #    return "Los datos ya no están disponibles. Volvé a cargar el archivo.", 400
 
         usuario = session.get("usuario_nombre", "desconocido")
         lote_carga, fecha_carga = guardar_cenefas_en_db(df, modo, usuario=usuario)
-        
+        redis_client.delete(lote_id) 
         guardar_log_compras(
             usuario=usuario,
             nivel="INFO",
