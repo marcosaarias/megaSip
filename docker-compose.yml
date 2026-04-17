@@ -10,3 +10,12 @@ services:
       - /mnt/base_ventas:/mnt/excel
     environment:
       - FLASK_ENV=production
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7
+    container_name: redis_server
+    ports:
+      - "6379:6379"
