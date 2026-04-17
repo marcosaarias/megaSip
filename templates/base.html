@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}Panel de Sistemas - Alberdi SA{% endblock %}</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
-    <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
+  <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block extra_css %}{% endblock %}
@@ -17,135 +18,203 @@
   <div>
     <h2>Alberdi SA</h2>
 
-    <div class="menu">
+<div class="menu">
 
-      <!-- GESTION DE USUARIOS SOLO SISTEMAS -->
-      {% if session.get("usuario_rol") == "sistemas" %}
-      <a href="{{ url_for('usuarios.index') }}" class="btn btn-primary">Gestión de Usuarios</a>
-      <a href="{{ url_for('vencimientos.index') }}" class="btn btn-primary">Vencimientos</a>
-      
-      <div class="menu-section">
-        <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-          Logs <i class="bi bi-chevron-down arrow"></i>
-        </a>
+  <!-- ================= SISTEMAS ================= -->
+  {% if session.get("usuario_rol") == "sistemas" %}
+  
+  <a href="{{ url_for('usuarios.index') }}" class="btn btn-primary">Gestión de Usuarios</a>
+  <a href="{{ url_for('vencimientos.index') }}" class="btn btn-primary">Vencimientos</a>
 
-        <div class="submenu" id="submenu-logs">
-          <a href="{{ url_for('logs.logs_compras') }}" class="submenu-item">
-            Logs Compras
-          </a>
+  <div class="menu-section 
+    {% if 'logs_compras' in request.path or 'logs_farmacia' in request.path %}active{% endif %}">
+    
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Logs <i class="bi bi-chevron-down arrow"></i>
+    </a>
 
-          <a href="{{ url_for('logs.logs_farmacia') }}" class="submenu-item">
-            Logs Farmacia
-          </a>
-        </div>
-      </div>
-      {% endif %}
+    <div class="submenu" id="submenu-logs">
+      <a href="{{ url_for('logs.logs_compras') }}"
+         class="submenu-item {% if 'logs_compras' in request.path %}active-link{% endif %}">
+        Logs Compras
+      </a>
 
-      <!-- FARMACIA -->
-      {% if session.get("usuario_rol") == "farmacia" %}
-      <a href="{{ url_for('compras.farmacia_folder') }}" class="submenu-item">Folder Farmacia</a>
-      <a href="{{ url_for('farmacia.index') }}">Variación de Farmacia</a>
-      {% endif %}
-      
-      <!-- COMPRAS -->
-      {% if session.get("usuario_rol") == "compras" %}
-      <div class="menu-section">
-        <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-          Cenefas <i class="bi bi-chevron-down arrow"></i>
-        </a>
+      <a href="{{ url_for('logs.logs_farmacia') }}"
+         class="submenu-item {% if 'logs_farmacia' in request.path %}active-link{% endif %}">
+        Logs Farmacia
+      </a>
+    </div>
+  </div>
 
-        <div class="submenu" id="submenu-compras">
-          <a href="{{ url_for('compras.folder') }}" class="submenu-item">
-            Cargar Folder
-          </a>
-
-          <a href="{{ url_for('compras.ofertas', modo='competencia') }}" class="submenu-item">
-            Oferta por Competencia
-          </a>
-
-          <a href="{{ url_for('compras.ofertas', modo='interna') }}" class="submenu-item">
-            Oferta Interna
-          </a>
-
-          <a href="{{ url_for('compras.ofertas', modo='vencimientos') }}" class="submenu-item">
-            Oferta por Vencimientos
-          </a>
-        </div>
-      </div>
-
-      <div class="menu-section">
-        <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-          Promociones <i class="bi bi-chevron-down arrow"></i>
-        </a>
-
-        <div class="submenu" id="submenu-promociones">
-          <a href="{{ url_for('promociones.index') }}" class="submenu-item">
-            Promociones Activas
-          </a>
-        </div>
-      </div>
-      {% endif %}
-
-      <!-- SUCURSAL -->
-      {% if session.get("usuario_rol") == "sucursal" %}
-      <div class="menu-section">
-        <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-          Cenefas <i class="bi bi-chevron-down arrow"></i>
-        </a>
-
-        <div class="submenu" id="submenu-sucursal">
-          <a href="{{ url_for('compras.sucursal') }}" class="submenu-item">
-            Folder
-          </a>
-
-          <a href="{{ url_for('compras.sucursal', tipo='competencia') }}" class="submenu-item">
-            Cenefa por Competencia
-          </a>
-
-          <a href="{{ url_for('compras.sucursal', tipo='interna') }}" class="submenu-item">
-            Cenefa por Oferta Interna
-          </a>
-
-          <a href="{{ url_for('compras.sucursal', tipo='vencimientos') }}" class="submenu-item">
-            Cenefa por Vencimientos
-          </a>
-        </div>
-      </div>
+  {% endif %}
 
 
-      
-       <!-- Historial cenefas -->
+  <!-- ================= FARMACIA ================= -->
+  {% if session.get("usuario_rol") == "farmacia" %}
+  
+  <a href="{{ url_for('compras.farmacia_folder') }}"
+     class="submenu-item {% if 'farmacia_folder' in request.path %}active-link{% endif %}">
+    Folder Farmacia
+  </a>
 
-          <div class="menu-section">
-              <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-                Historial <i class="bi bi-chevron-down arrow"></i>
-              </a>
+  <a href="{{ url_for('farmacia.index') }}"
+     class="{% if request.path == url_for('farmacia.index') %}active-link{% endif %}">
+    Variación de Farmacia
+  </a>
 
-              <div class="submenu" id="submenu-sucursal">
-                <a href="{{ url_for('compras.historico_cenefas') }}" class="submenu-item">
-                  Historial de Cenefas
-                </a>
-              </div>
-          </div>
+  {% endif %}
 
-      {% endif %}
+
+  <!-- ================= COMPRAS ================= -->
+  {% if session.get("usuario_rol") == "compras" %}
+
+  <div class="menu-section 
+    {% if request.path == url_for('compras.folder')
+    or 'competencia' in request.path
+    or 'interna' in request.path
+    or 'vencimientos' in request.path %}active{% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Cenefas <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu" id="submenu-compras">
+
+      <a href="{{ url_for('compras.folder') }}"
+         class="submenu-item {% if request.path == url_for('compras.folder') %}active-link{% endif %}">
+        Cargar Folder
+      </a>
+
+      <a href="{{ url_for('compras.ofertas', modo='competencia') }}"
+         class="submenu-item {% if 'competencia' in request.path %}active-link{% endif %}">
+        Oferta por Competencia
+      </a>
+
+      <a href="{{ url_for('compras.ofertas', modo='interna') }}"
+         class="submenu-item {% if 'interna' in request.path %}active-link{% endif %}">
+        Oferta Interna
+      </a>
+
+      <a href="{{ url_for('compras.ofertas', modo='vencimientos') }}"
+         class="submenu-item {% if 'vencimientos' in request.path %}active-link{% endif %}">
+        Oferta por Vencimientos
+      </a>
 
     </div>
   </div>
 
+
+  <!-- PROMOCIONES -->
+  <div class="menu-section 
+    {% if 'promociones' in request.path %}active{% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Promociones <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu" id="submenu-promociones">
+      <a href="{{ url_for('promociones.index') }}"
+         class="submenu-item {% if 'promociones' in request.path %}active-link{% endif %}">
+        Promociones Activas
+      </a>
+    </div>
+  </div>
+
+  {% endif %}
+
+
+  <!-- ================= SUCURSAL ================= -->
+  {% if session.get("usuario_rol") == "sucursal" %}
+
+  <!-- CENEFAS -->
+   
+  <div class="menu-section {% if request.args.get('tipo') in ['folder', 'competencia', 'interna', 'vencimientos'] %}active{% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Cenefas <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu" id="submenu-sucursal-main">
+
+      <a href="{{ url_for('compras.sucursal', tipo='folder') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'folder' %}active-link{% endif %}">
+        Folder
+      </a>
+
+      <a href="{{ url_for('compras.sucursal', tipo='competencia') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'competencia' %}active-link{% endif %}">
+        Oferta por Competencia
+      </a>
+
+      <a href="{{ url_for('compras.sucursal', tipo='interna') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'interna' %}active-link{% endif %}">
+        Oferta Interna
+      </a>
+
+      <a href="{{ url_for('compras.sucursal', tipo='vencimientos') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'vencimientos' %}active-link{% endif %}">
+        Oferta por Vencimientos
+      </a>
+
+    </div>
+  </div>
+
+
+  <!-- OTRAS CENEFAS -->
+   
+    <div class="menu-section 
+      {% if request.args.get('tipo') in ['diarios', 'saltarefrescos'] %}active{% endif %}">
+
+      <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+        Otras Cenefas <i class="bi bi-chevron-down arrow"></i>
+      </a>
+
+      <div class="submenu" id="submenu-otras">
+
+        <a href="{{ url_for('compras.sucursal', tipo='diarios') }}"
+          class="submenu-item {% if request.args.get('tipo') == 'diarios' %}active-link{% endif %}">
+          Diarios
+        </a>
+
+        <a href="{{ url_for('compras.sucursal', tipo='saltarefrescos') }}"
+          class="submenu-item {% if request.args.get('tipo') == 'saltarefrescos' %}active-link{% endif %}">
+          Salta Refrescos
+        </a>
+
+      </div>
+    </div>
+
+
+  <!-- HISTORIAL -->
+  <div class="menu-section 
+    {% if request.path == url_for('compras.historico_cenefas') %}active{% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Historial <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu" id="submenu-historial">
+      <a href="{{ url_for('compras.historico_cenefas') }}"
+         class="submenu-item {% if request.path == url_for('compras.historico_cenefas') %}active-link{% endif %}">
+        Historial de Cenefas
+      </a>
+    </div>
+  </div>
+
+  {% endif %}
+
+</div>
+
+  </div>
+
+  <!-- ================= LOGOUT ================= -->
+
   <div class="logout">
     {% if session.get('usuario_nombre') %}
-      <p style="margin-bottom:8px;">
-        👤 {{ session.get('usuario_nombre') }}
-      </p>
-
-      <a href="{{ url_for('sistemas.logout') }}">
-        Cerrar Sesión
-      </a>
+      <p style="margin-bottom:8px;">👤 {{ session.get('usuario_nombre') }}</p>
+      <a href="{{ url_for('sistemas.logout') }}">Cerrar Sesión</a>
     {% else %}
-      <a href="{{ url_for('sistemas.login') }}">
-        Login
-      </a>
+      <a href="{{ url_for('sistemas.login') }}">Login</a>
     {% endif %}
   </div>
 </div>
@@ -154,16 +223,20 @@
   {% block content %}{% endblock %}
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-{% block scripts %}{% endblock %}
-
 <script>
+
 function toggleMenu(event) {
   event.preventDefault();
-  const section = event.target.closest(".menu-section");
-  section.classList.toggle("active");
+
+  const currentSection = event.target.closest(".menu-section");
+  document.querySelectorAll(".menu-section").forEach(section => {
+    if (section !== currentSection) {
+      section.classList.remove("active");
+    }
+  });
+  currentSection.classList.toggle("active");
 }
+
 </script>
 
 </body>
