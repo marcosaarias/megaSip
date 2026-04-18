@@ -939,7 +939,6 @@ def historico_cenefas():
         filtro_lote=filtro_lote
     )
 
-
 #====================================
 # DIARIOS
 #====================================
@@ -949,9 +948,7 @@ def formatear_moneda(valor):
     try:
         if valor == "" or pd.isna(valor):
             return ""
-        # Convertir a float y dar formato base
         num_formateado = "{:,.2f}".format(float(valor))
-        # Swap de caracteres para formato regional
         return num_formateado.replace(",", "X").replace(".", ",").replace("X", ".")
     except (ValueError, TypeError):
         return valor
@@ -969,34 +966,19 @@ def detectar_sucursales(nombre_hoja):
     hoja = normalizar_texto(nombre_hoja)
 
     if "jujuy" in hoja:
-        partes = [
-            SUCURSAL_MAP_DIARIO["jujuy_minorista"]
-        ]
-    elif "Jujuy Mayorista" in hoja:
-        partes = [
-            SUCURSAL_MAP_DIARIO["jujuy_mayorista"]
-        ]
-
+        partes = [SUCURSAL_MAP_DIARIO["jujuy_minorista"]]
+    elif "jujuy mayorista" in hoja:
+        partes = [SUCURSAL_MAP_DIARIO["jujuy_mayorista"]]
+    elif "salta mayorista" in hoja:
+        partes = [SUCURSAL_MAP_DIARIO["salta_mayorista"]]
     elif "salta" in hoja:
-        partes = [
-            SUCURSAL_MAP_DIARIO["salta"]
-        ]
-    
-    elif "Salta Mayorista" in hoja:
-        partes = [
-            SUCURSAL_MAP_DIARIO["salta_mayorista"]
-        ]
-
+        partes = [SUCURSAL_MAP_DIARIO["salta"]]
     elif "tucuman" in hoja:
-        partes = [
-            SUCURSAL_MAP_DIARIO["tucuman"]
-        ]
-
+        partes = [SUCURSAL_MAP_DIARIO["tucuman"]]
     else:
         return ""
 
-    partes = [p for p in partes if p]
-    return ",".join(partes)
+    return ",".join([p for p in partes if p])
 
 
 @compras_bp.route("/diario", methods=["GET", "POST"])
@@ -1027,6 +1009,11 @@ def diario():
 
                 for nombre_hoja, df in xls.items():
 
+                    # 🚨 FILTRO REAL DE HOJAS FANTASMA
+                    df_check = df.replace(r'^\s*$', pd.NA, regex=True)
+                    if df_check.dropna(how="all").empty:
+                        continue
+
                     df.columns = [normalizar_texto(col).strip() for col in df.columns]
 
                     column_mapping = {}
@@ -1041,16 +1028,20 @@ def diario():
                                 column_mapping[col] = header
                                 break
 
+                    if not column_mapping:
+                        continue
+
                     df = df.rename(columns=column_mapping)
 
                     if "CODIGO" in df.columns:
-                            df["CODIGO"] = (
-                                df["CODIGO"]
-                                .astype(str)
-                                .str.strip()
-                                .str.replace(".0", "", regex=False)
-                                .str.lstrip("0")
-                            )
+                        df["CODIGO"] = (
+                            df["CODIGO"]
+                            .astype(str)
+                            .str.strip()
+                            .str.replace(".0", "", regex=False)
+                            .str.lstrip("0")
+                        )
+
                     df = completar_ean(df)
 
                     df["desde"] = f_desde
@@ -1067,12 +1058,13 @@ def diario():
                             .fillna(sucursales_auto)
                         )
 
-                    columnas_validas = [
-                        col for col in HEADERS_DIARIO if col in df.columns
-                    ]
+                    columnas_validas = [col for col in HEADERS_DIARIO if col in df.columns]
                     df = df[columnas_validas]
 
                     df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
+
+                    if df.empty:
+                        continue
 
                     if "CODIGO" in df.columns:
                         df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
@@ -1085,6 +1077,9 @@ def diario():
                         if col in df.columns:
                             df[col] = df[col].apply(formatear_moneda)
 
+                    if df.empty:
+                        continue
+
                     preview[nombre_hoja] = df.to_html(
                         classes="table table-sm table-striped",
                         index=False
@@ -1092,7 +1087,7 @@ def diario():
 
                     total_registros[nombre_hoja] = len(df)
 
-                hojas_orden = list(xls.keys())
+                hojas_orden = list(preview.keys())
 
             except Exception as e:
                 print(f"Error procesando diario: {e}")
