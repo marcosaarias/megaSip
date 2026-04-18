@@ -268,3 +268,55 @@ button:hover, .btn:hover {
     width: 100%;
   }
 }
+
+/* =========================
+   BOTONES SISTEMAS (INTEGRADOS AL MENU)
+========================= */
+/* =========================
+   BOTONES SISTEMAS (FIX REAL)
+========================= */
+
+.menu a.btn-sys {
+  display: block;
+  width: 100%;
+  text-align: left;
+
+  background: var(--amarillo-base) !important;
+  color: var(--texto-oscuro) !important;
+
+  border-radius: 10px;
+  padding: 12px 15px;
+  font-weight: 700;
+  text-decoration: none;
+
+  transition: all 0.2s ease;
+}
+
+/* Hover */
+.menu a.btn-sys:hover {
+  background: var(--amarillo-hover) !important;
+  color: var(--texto-oscuro) !important;
+}
+
+/* Click */
+.menu a.btn-sys:active {
+  background: var(--amarillo-active) !important;
+  transform: scale(0.98);
+}
+
+/* Focus */
+.menu a.btn-sys:focus,
+.menu a.btn-sys:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Activo */
+.menu a.btn-sys.active {
+  background: var(--amarillo-active) !important;
+}
+
+/* Espaciado */
+.menu .btn-sys {
+  margin-bottom: 6px;
+}

@@ -106,30 +106,57 @@ def cargar_material_map():
 
 MATERIAL_MAP = cargar_material_map()
 
+#def completar_ean(df):
+#    if "CODIGO" not in df.columns:
+#        return df
+#    codigos_str = (
+#        pd.to_numeric(df["CODIGO"], errors="coerce")
+#        .fillna(0)
+#        .astype(int)
+#        .astype(str)
+#    )
+#    material_map_normalized = {
+#        str(int(float(k))) if str(k).replace(".", "", 1).isdigit()
+#        else str(k).strip(): v
+#        for k, v in MATERIAL_MAP.items()
+#    }
+#    mapped = codigos_str.map(material_map_normalized).fillna("")
+#    if "ean" not in df.columns:
+#        df.insert(1, "ean", mapped)
+#    else:
+#        df["ean"] = df["ean"].replace(["nan", "NaN", "None"], "")
+#        df["ean"] = df["ean"].fillna(mapped)
+#    return df
+
+
 def completar_ean(df):
     if "CODIGO" not in df.columns:
         return df
 
     codigos_str = (
-        pd.to_numeric(df["CODIGO"], errors="coerce")
-        .fillna(0)
-        .astype(int)
+        df["CODIGO"]
         .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+        .str.lstrip("0")
     )
 
-    material_map_normalized = {
-        str(int(float(k))) if str(k).replace(".", "", 1).isdigit()
-        else str(k).strip(): v
-        for k, v in MATERIAL_MAP.items()
-    }
+    material_map_normalized = {}
+
+    for k, v in MATERIAL_MAP.items():
+        try:
+            key = str(int(float(str(k).strip())))
+        except:
+            key = str(k).strip()
+
+        material_map_normalized[key.lstrip("0")] = v
 
     mapped = codigos_str.map(material_map_normalized).fillna("")
 
-    if "ean" not in df.columns:
-        df.insert(1, "ean", mapped)
+    if "EAN" in df.columns:
+        df["EAN"] = df["EAN"].replace("", mapped).fillna(mapped)
     else:
-        df["ean"] = df["ean"].replace(["nan", "NaN", "None"], "")
-        df["ean"] = df["ean"].fillna(mapped)
+        df.insert(df.columns.get_loc("CODIGO") + 1, "EAN", mapped)
 
     return df
 
@@ -569,14 +596,6 @@ def ofertas(modo):
             fecha_hasta=fecha_hasta
         )
 
-#modificar ---
-        #if df is not None:
-        #    session["ofertas_preview_data"] = df.to_json(orient="records")
-        #    session["ofertas_preview_modo"] = modo
-        #    session["ofertas_preview_tipo"] = tipo
-        #    session["ofertas_preview_fecha_desde"] = fecha_desde
-        #    session["ofertas_preview_fecha_hasta"] = fecha_hasta
-        
         if df is not None:
                 lote_id = str(uuid.uuid4())
 
@@ -918,4 +937,169 @@ def historico_cenefas():
         filtro_codigo=filtro_codigo,
         filtro_tipo=filtro_tipo,
         filtro_lote=filtro_lote
+    )
+
+
+#====================================
+# DIARIOS
+#====================================
+
+def formatear_moneda(valor):
+    """Convierte 17999.0 a 17.999,00"""
+    try:
+        if valor == "" or pd.isna(valor):
+            return ""
+        # Convertir a float y dar formato base
+        num_formateado = "{:,.2f}".format(float(valor))
+        # Swap de caracteres para formato regional
+        return num_formateado.replace(",", "X").replace(".", ",").replace("X", ".")
+    except (ValueError, TypeError):
+        return valor
+
+
+SUCURSAL_MAP_DIARIO = {
+    "jujuy_minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
+    "jujuy_mayorista": "CO05,CO12,CO15,MA02",
+    "salta": "CO18,CO23",
+    "salta_mayorista": "CO09,CO29,CO21",
+    "tucuman": "CO24,CO25,CO26,CO27"
+}
+
+def detectar_sucursales(nombre_hoja):
+    hoja = normalizar_texto(nombre_hoja)
+
+    if "jujuy" in hoja:
+        partes = [
+            SUCURSAL_MAP_DIARIO["jujuy_minorista"]
+        ]
+    elif "Jujuy Mayorista" in hoja:
+        partes = [
+            SUCURSAL_MAP_DIARIO["jujuy_mayorista"]
+        ]
+
+    elif "salta" in hoja:
+        partes = [
+            SUCURSAL_MAP_DIARIO["salta"]
+        ]
+    
+    elif "Salta Mayorista" in hoja:
+        partes = [
+            SUCURSAL_MAP_DIARIO["salta_mayorista"]
+        ]
+
+    elif "tucuman" in hoja:
+        partes = [
+            SUCURSAL_MAP_DIARIO["tucuman"]
+        ]
+
+    else:
+        return ""
+
+    partes = [p for p in partes if p]
+    return ",".join(partes)
+
+
+@compras_bp.route("/diario", methods=["GET", "POST"])
+def diario():
+    preview = {}
+    total_registros = {}
+    hojas_orden = []
+
+    HEADERS_DIARIO = [
+        "CODIGO", "DESCRIPCION", "EAN",
+        "Normal", "Oferta",
+        "desde", "hasta",
+        "sucursales"
+    ]
+
+    if request.method == "POST":
+        archivo = request.files.get("archivo")
+
+        fecha_desde_raw = request.form.get("fecha_desde")
+        fecha_hasta_raw = request.form.get("fecha_hasta")
+
+        if archivo:
+            try:
+                f_desde = pd.to_datetime(fecha_desde_raw).strftime('%d/%m/%Y') if fecha_desde_raw else ""
+                f_hasta = pd.to_datetime(fecha_hasta_raw).strftime('%d/%m/%Y') if fecha_hasta_raw else ""
+
+                xls = pd.read_excel(archivo, sheet_name=None)
+
+                for nombre_hoja, df in xls.items():
+
+                    df.columns = [normalizar_texto(col).strip() for col in df.columns]
+
+                    column_mapping = {}
+
+                    for header in HEADERS_DIARIO:
+                        header_norm = normalizar_texto(header)
+                        posibles = ALIAS.get(header, [])
+                        posibles_norm = [normalizar_texto(p) for p in posibles]
+
+                        for col in df.columns:
+                            if col == header_norm or col in posibles_norm:
+                                column_mapping[col] = header
+                                break
+
+                    df = df.rename(columns=column_mapping)
+
+                    if "CODIGO" in df.columns:
+                            df["CODIGO"] = (
+                                df["CODIGO"]
+                                .astype(str)
+                                .str.strip()
+                                .str.replace(".0", "", regex=False)
+                                .str.lstrip("0")
+                            )
+                    df = completar_ean(df)
+
+                    df["desde"] = f_desde
+                    df["hasta"] = f_hasta
+
+                    sucursales_auto = detectar_sucursales(nombre_hoja)
+
+                    if "sucursales" not in df.columns:
+                        df["sucursales"] = sucursales_auto
+                    else:
+                        df["sucursales"] = (
+                            df["sucursales"]
+                            .replace("", sucursales_auto)
+                            .fillna(sucursales_auto)
+                        )
+
+                    columnas_validas = [
+                        col for col in HEADERS_DIARIO if col in df.columns
+                    ]
+                    df = df[columnas_validas]
+
+                    df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
+
+                    if "CODIGO" in df.columns:
+                        df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
+                        df = df.dropna(subset=["CODIGO"])
+                        df["CODIGO"] = df["CODIGO"].astype(int)
+
+                    df = df.fillna("")
+
+                    for col in ["Normal", "Oferta"]:
+                        if col in df.columns:
+                            df[col] = df[col].apply(formatear_moneda)
+
+                    preview[nombre_hoja] = df.to_html(
+                        classes="table table-sm table-striped",
+                        index=False
+                    )
+
+                    total_registros[nombre_hoja] = len(df)
+
+                hojas_orden = list(xls.keys())
+
+            except Exception as e:
+                print(f"Error procesando diario: {e}")
+
+    return render_template(
+        "diario.html",
+        preview=preview,
+        total_registros=total_registros,
+        hojas_orden=hojas_orden
     )

@@ -23,8 +23,13 @@
   <!-- ================= SISTEMAS ================= -->
   {% if session.get("usuario_rol") == "sistemas" %}
   
-  <a href="{{ url_for('usuarios.index') }}" class="btn btn-primary ">Gestión de Usuarios</a>
-  <a href="{{ url_for('vencimientos.index') }}" class="btn btn-primary ">Vencimientos</a>
+  <a href="{{ url_for('usuarios.index') }}" class="menu-toggle">
+    Gestión de Usuarios
+  </a>
+
+  <a href="{{ url_for('vencimientos.index') }}" class="menu-toggle">
+    Vencimientos
+  </a>
 
   <div class="menu-section 
     {% if 'logs_compras' in request.path or 'logs_farmacia' in request.path %}active{% endif %}">
@@ -105,27 +110,27 @@
 
     <!-- OTRAS CENEFAS -->
    
-    <div class="menu-section 
-      {% if request.args.get('tipo') in ['diarios', 'saltarefrescos'] %}active{% endif %}">
+  <div class="menu-section 
+    {% if 'diario' in request.path or 'saltarefrescos' in request.path %}active{% endif %}">
 
-      <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-        Otras Cenefas <i class="bi bi-chevron-down arrow"></i>
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Otras Cenefas <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu">
+
+      <a href="{{ url_for('compras.diario') }}"
+        class="submenu-item {% if 'diario' in request.path %}active-link{% endif %}">
+        Diarios
       </a>
 
-      <div class="submenu" id="submenu-otras">
+      <a href="{{ url_for('compras.sucursal', tipo='saltarefrescos') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'saltarefrescos' %}active-link{% endif %}">
+        Salta Refrescos
+      </a>
 
-        <a href="{{ url_for('compras.sucursal', tipo='diarios') }}"
-          class="submenu-item {% if request.args.get('tipo') == 'diarios' %}active-link{% endif %}">
-          Diarios
-        </a>
-
-        <a href="{{ url_for('compras.sucursal', tipo='saltarefrescos') }}"
-          class="submenu-item {% if request.args.get('tipo') == 'saltarefrescos' %}active-link{% endif %}">
-          Salta Refrescos
-        </a>
-
-      </div>
     </div>
+  </div>
 
     
   <!-- PROMOCIONES -->
