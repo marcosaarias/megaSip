@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from sistemas import login_requerido
 from logs import guardar_log_compras
 from datetime import datetime
+from datetime import timedelta
 import uuid
 import traceback
 import sqlite3
@@ -740,7 +741,8 @@ def sucursal():
 
     sucursal_codigo = session.get("usuario_nombre", "").strip().upper()
     tipo = request.args.get("tipo", "folder")
-    hoy = datetime.now().date()
+    #hoy = datetime.now().date()
+    hoy = datetime.now().date() + timedelta(days=2)
 
     print("DEBUG sucursal usuario:", sucursal_codigo)
     print("DEBUG fecha hoy:", hoy)
@@ -1098,3 +1100,52 @@ def diario():
         total_registros=total_registros,
         hojas_orden=hojas_orden
     )
+
+@compras_bp.route("/diario/descargar/<hoja>")
+def descargar_diario(hoja):
+    from flask import session, send_file
+    import pandas as pd
+    import io
+
+    data = session.get("diario_data", {}).get(hoja)
+
+    if not data:
+        return "No hay datos", 404
+
+    df = pd.read_json(data, orient="records")
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False)
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name=f"{hoja}.xlsx",
+        as_attachment=True
+    )
+
+
+    #=========================================
+    # Transmision no esta activa todavia
+    #=========================================
+
+@compras_bp.route("/diario/transmitir/<hoja>", methods=["POST"])
+def transmitir_diario(hoja):
+    from flask import session, redirect, url_for, flash
+    import pandas as pd
+
+    data = session.get("diario_data", {}).get(hoja)
+
+    if not data:
+        flash("No hay datos para transmitir", "danger")
+        return redirect(url_for("compras.diario"))
+
+    df = pd.read_json(data, orient="records")
+
+    # 👉 TU lógica real acá
+    print(f"Transmitiendo {hoja} ({len(df)} registros)")
+
+    flash(f"{hoja} transmitido correctamente", "success")
+    return redirect(url_for("compras.diario"))
