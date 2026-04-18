@@ -82,7 +82,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for item in datos[:100] %}
+                        {% for item in datos %}
                         <tr class="{% if item.es_nueva %}table-warning{% endif %}" data-index="{{ loop.index0 }}">
                             <td class="text-center">
                                 <input
@@ -163,7 +163,7 @@ input.chk-imprimir.form-check-input:checked::after {
 </style>
 
 <script>
-    const datosCompletos = {{ datos[:100]|tojson }};
+    const datosCompletos = {{ datos|tojson }};
 
     datosCompletos.forEach(row => {
         row.seleccionado = row.es_nueva === true;
