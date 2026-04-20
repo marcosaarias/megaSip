@@ -1201,20 +1201,41 @@ def normalizar_texto(texto):
     if not texto:
         return ""
 
-    texto = str(texto).lower().strip()
+    texto = str(texto)
 
-    # Quitar acentos
+    # 🔥 limpiar NBSP
+    texto = texto.replace("\xa0", " ")
+
+    texto = texto.lower().strip()
+
+    # quitar acentos
     texto = unicodedata.normalize("NFKD", texto)
     texto = texto.encode("ascii", "ignore").decode("utf-8")
 
-    # Reemplazar separadores comunes por espacio
+    # separadores → espacio
     texto = re.sub(r"[-_/|,]+", " ", texto)
 
-    # Limpiar espacios múltiples
-    texto = re.sub(r"\s+", " ", texto)
+    # espacios múltiples
+    texto = " ".join(texto.split())
 
     return texto
 
+
+def limpiar_sucursales(valor):
+    if pd.isna(valor):
+        return pd.NA
+
+    texto = normalizar_texto(valor)
+
+    # 🔥 eliminar headers basura SIEMPRE
+    if "sucursales" in texto:
+        return pd.NA
+
+    # 🎯 SOLO permitir este caso
+    if all(x in texto for x in ["jujuy", "salta", "tucuman"]):
+        return texto
+
+    return pd.NA
 
 def mapear_sucursales_a_codigos(valor):
     if not valor or str(valor).strip() == "":
@@ -1222,29 +1243,11 @@ def mapear_sucursales_a_codigos(valor):
 
     texto = normalizar_texto(valor)
 
-    # DEBUG
-    # print("Procesando:", texto)
-
-    # 🎯 CASO PRINCIPAL (más flexible)
     if all(x in texto for x in ["jujuy", "salta", "tucuman"]):
         return SUCURSAL_MAP.get("Total Empresa", "")
 
-    if "jujuy" in texto and "salta" in texto:
-        return SUCURSAL_MAP.get("Jujuy, Salta - Minoritas y Mayoristas", "")
-
-    if "jujuy" in texto:
-        return SUCURSAL_MAP.get("Jujuy - Minorista Y Mayorista", "")
-
-    if "salta" in texto:
-        return SUCURSAL_MAP.get("Salta - Mayorista", "")
-
-    if "tucuman" in texto:
-        return SUCURSAL_MAP.get("Tucuman - Minoristas", "")
-
-    # 🔴 CLAVE: ver qué está fallando
-    print("NO MATCH:", texto)
-
     return ""
+
 
 @compras_bp.route("/refrescos", methods=["GET", "POST"])
 def refrescos():
@@ -1316,22 +1319,32 @@ def refrescos():
                 df_final["desde"] = f_desde
                 df_final["hasta"] = f_hasta
 
-                # ⚠️ ACA ESTA EL SOSPECHOSO
-                df_final["Sucursales"] = df_data.iloc[:, 7].replace(
-                    ["nan", "None", "", "NaN"], pd.NA
-                )
+               # 🔥 columna base
+                df_final["Sucursales"] = df_data.iloc[:, 7]
 
                 # =========================
-                # 🔥 DEBUG SUCURSALES RAW
+                # 🔥 DEBUG RAW
                 # =========================
                 print("\n===== DEBUG SUCURSALES RAW =====")
                 print(df_final["Sucursales"].dropna().unique()[:10])
                 print("================================\n")
 
-                # Autocompletar
+                # 🔥 LIMPIEZA REAL (clave)
+                df_final["Sucursales"] = df_final["Sucursales"].apply(limpiar_sucursales)
+
+                # 🔥 ffill correcto
                 cols_to_fill = ["Oferta", "Cenefa", "Sucursales"]
                 df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
 
+                # =========================
+                # 🔥 DEBUG POST-FFILL
+                # =========================
+                print("\n===== DEBUG SUCURSALES FFILL =====")
+                print(df_final["Sucursales"].dropna().unique()[:10])
+                print("==================================\n")
+
+                # 🔥 MAPEO FINAL
+                df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales_a_codigos)
                 # =========================
                 # 🔥 DEBUG POST-FFILL
                 # =========================
