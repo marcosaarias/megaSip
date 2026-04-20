@@ -385,10 +385,6 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                     SUCURSAL_MAP[tipo].get(clave_total, "")
                 )
 
-            print("====== DEBUG SUCURSALES ======")
-            print(df_final["Sucursales"].dropna().unique()[:20]) 
-
-            df["sucursales"] = df["sucursales"].apply(generar_codigos)
 
         columnas_validas = [col for col in df.columns if col in HEADERS]
         df = df[columnas_validas]
@@ -1266,13 +1262,14 @@ def refrescos():
                 import uuid
                 cache_id = str(uuid.uuid4())
 
-                # Formatear fechas para el reporte
                 f_desde = pd.to_datetime(f_desde_raw).strftime("%d/%m/%Y") if f_desde_raw else ""
                 f_hasta = pd.to_datetime(f_hasta_raw).strftime("%d/%m/%Y") if f_hasta_raw else ""
 
                 df_raw = pd.read_excel(archivo, header=None)
 
-                # Localizar la cabecera "Cód."
+                # =========================
+                # DETECTAR CABECERA
+                # =========================
                 mask = df_raw.astype(str).apply(
                     lambda x: x.str.contains(r"Cód\.", case=False, na=False)
                 ).any(axis=1)
@@ -1283,10 +1280,18 @@ def refrescos():
                 header_idx = df_raw[mask].index[0]
                 df_data = df_raw.iloc[header_idx + 1:].copy()
 
+                # =========================
+                # 🔥 DEBUG COLUMNAS
+                # =========================
+                print("\n================ DEBUG COLUMNAS =================")
+                for i in range(df_data.shape[1]):
+                    print(f"\n👉 Columna {i}:")
+                    print(df_data.iloc[:, i].dropna().head(5))
+                print("=================================================\n")
+
                 df_final = pd.DataFrame()
 
-                # --- PROCESAMIENTO DE CÓDIGO ---
-                # completar_ean() espera la columna CODIGO
+                # --- CODIGO ---
                 df_final["CODIGO"] = (
                     df_data.iloc[:, 0]
                     .astype(str)
@@ -1295,15 +1300,12 @@ def refrescos():
                     .str.lstrip("0")
                 )
 
-                # --- AUTOCOMPLETAR EAN ---
-                # completar_ean() crea o completa la columna EAN
                 df_final = completar_ean(df_final)
 
-                # --- RESTO DEL MAPEO ---
+                # --- RESTO ---
                 df_final["descripcion"] = df_data.iloc[:, 1].astype(str).str.strip()
                 df_final["Normal"] = df_data.iloc[:, 2]
 
-                # Oferta (Etiquetas) y Cenefa / Sucursales
                 df_final["Oferta"] = df_data.iloc[:, 5].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
@@ -1313,30 +1315,49 @@ def refrescos():
 
                 df_final["desde"] = f_desde
                 df_final["hasta"] = f_hasta
+
+                # ⚠️ ACA ESTA EL SOSPECHOSO
                 df_final["Sucursales"] = df_data.iloc[:, 7].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
 
-                # Autocompletar hacia abajo por celdas combinadas
+                # =========================
+                # 🔥 DEBUG SUCURSALES RAW
+                # =========================
+                print("\n===== DEBUG SUCURSALES RAW =====")
+                print(df_final["Sucursales"].dropna().unique()[:10])
+                print("================================\n")
+
+                # Autocompletar
                 cols_to_fill = ["Oferta", "Cenefa", "Sucursales"]
                 df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
+
+                # =========================
+                # 🔥 DEBUG POST-FFILL
+                # =========================
+                print("\n===== DEBUG SUCURSALES FFILL =====")
+                print(df_final["Sucursales"].dropna().unique()[:10])
+                print("==================================\n")
+
+                # Mapear
                 df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales_a_codigos)
-                # --- LIMPIEZA FINAL ---
-                # Convertimos CODIGO a numérico para eliminar filas basura
+
+                # =========================
+                # 🔥 DEBUG FINAL
+                # =========================
+                print("\n===== DEBUG SUCURSALES FINAL =====")
+                print(df_final["Sucursales"].dropna().unique()[:10])
+                print("==================================\n")
+
+                # --- LIMPIEZA ---
                 df_final["CODIGO"] = pd.to_numeric(df_final["CODIGO"], errors="coerce")
                 df_final = df_final.dropna(subset=["CODIGO"])
                 df_final["CODIGO"] = df_final["CODIGO"].astype(int)
 
-                # Eliminar filas sin descripción real si hiciera falta
                 df_final["descripcion"] = df_final["descripcion"].replace(
                     ["nan", "None", "NaN"], ""
                 ).fillna("")
 
-                # Formatear moneda para la vista
-                #if "Normal" in df_final.columns:
-                #    df_final["Normal"] = df_final["Normal"].apply(formatear_moneda)
-
-                # Formatear moneda para la vista
                 for col in ["Normal", "Oferta"]:
                     if col in df_final.columns:
                         df_final[col] = df_final[col].apply(formatear_moneda)
@@ -1346,14 +1367,12 @@ def refrescos():
                 if not df_final.empty:
                     total_registros = len(df_final)
 
-                    # Guardar en Redis para la descarga posterior
                     redis_client.set(
                         f"refrescos:{cache_id}",
                         df_final.to_json(orient="records"),
                         ex=3600
                     )
 
-                    # Generar HTML para la vista
                     preview = df_final.to_html(
                         classes="table table-sm table-hover table-bordered text-center",
                         index=False,
@@ -1371,7 +1390,7 @@ def refrescos():
         total_registros=total_registros,
         cache_id=cache_id
     )
-
+    
 @compras_bp.route("/refrescos/descargar")
 def descargar_refrescos():
     from flask import request, send_file
