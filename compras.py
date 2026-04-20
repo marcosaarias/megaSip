@@ -1188,61 +1188,56 @@ def refrescos():
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
-
         if archivo:
             try:
                 import uuid
                 cache_id = str(uuid.uuid4())
 
-                # 1. Leer el archivo sin procesar encabezados (header=None)
-                # Esto nos permite buscar dónde empieza realmente la tabla
+                # 1. Leer todo el Excel sin encabezados
                 df_raw = pd.read_excel(archivo, header=None)
 
-                # 2. Eliminar filas que estén completamente vacías al principio
-                df_raw = df_raw.dropna(how='all').reset_index(drop=True)
-
-                # 3. PROMOCIONAR LA PRIMERA FILA REAL COMO HEADER
-                # Asumimos que después de quitar las vacías, la primera fila con datos son los títulos
-                nuevos_encabezados = df_raw.iloc[0].astype(str).str.strip().tolist()
-                df = df_raw[1:].copy()
-                df.columns = nuevos_encabezados
-
-                # 4. LIMPIEZA FINAL
-                # Eliminar columnas sin nombre o todas vacías (típico de archivos con formato)
-                df = df.loc[:, df.columns.notna()]
-                df = df.dropna(axis=1, how='all')
+                # 2. Buscar la fila que contiene "Cód." para usarla como header
+                # Esto ignora el título amarillo de arriba
+                header_idx = df_raw[df_raw.astype(str).apply(lambda x: x.str.contains('Cód.', case=False)).any(axis=1)].index[0]
                 
-                # Eliminar filas que sean basura o estén vacías al final
-                df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
+                # Extraemos los nombres de columnas y el resto de los datos
+                column_names = df_raw.iloc[header_idx].astype(str).str.strip().tolist()
+                df = df_raw.iloc[header_idx + 1:].copy()
+                
+                # 3. Manejar duplicados y celdas combinadas (Unnamed)
+                final_cols = []
+                for i, name in enumerate(column_names):
+                    if name == "nan" or name == "":
+                        final_cols.append(f"Col_{i}")
+                    elif name in final_cols:
+                        final_cols.append(f"{name}_{i}")
+                    else:
+                        final_cols.append(name)
+                
+                df.columns = final_cols
+
+                # 4. FILTRADO CRÍTICO: 
+                # El Excel repite los encabezados cada 2 filas. 
+                # Borramos cualquier fila que vuelva a decir "Cód." o esté vacía.
+                df = df[df[df.columns[0]].astype(str).str.contains(r'\d+')] # Solo filas con números en la primera columna
+                df = df.dropna(how='all').reset_index(drop=True)
 
                 if df.empty:
-                    preview = "<div class='alert alert-warning'>El archivo no tiene datos válidos después de la limpieza.</div>"
+                    preview = "<div class='alert alert-warning'>No se encontraron registros de productos.</div>"
                 else:
                     total_registros = len(df)
+                    redis_client.set(f"refrescos:{cache_id}", df.to_json(orient="records"), ex=3600)
 
-                    # 🔥 Guardar en Redis (el DataFrame ya limpio)
-                    redis_client.set(
-                        f"refrescos:{cache_id}",
-                        df.to_json(orient="records"),
-                        ex=3600
-                    )
-
-                    # 🔥 Preview mejorada para el HTML
                     preview = df.to_html(
-                        classes="table table-sm table-hover table-bordered table-striped",
+                        classes="table table-sm table-hover table-bordered text-center",
                         index=False,
-                        na_rep="" # Que no muestre 'NaN' en la tabla
+                        na_rep=""
                     )
 
             except Exception as e:
-                preview = f"<div class='alert alert-danger'>Error procesando el archivo: {e}</div>"
+                preview = f"<div class='alert alert-danger'>Error: {e}</div>"
 
-    return render_template(
-        "saltarefrescos.html",
-        preview=preview,
-        total_registros=total_registros,
-        cache_id=cache_id
-    )
+    return render_template("saltarefrescos.html", preview=preview, total_registros=total_registros, cache_id=cache_id)
 
 @compras_bp.route("/refrescos/descargar")
 def descargar_refrescos():
