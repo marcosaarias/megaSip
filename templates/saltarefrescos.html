@@ -3,77 +3,61 @@
 
 {% block content %}
 <div class="container-fluid">
-
     <h2 class="mb-4">Salta Refrescos</h2>
 
-    <!-- 🔹 FORM -->
     <div class="card p-4 shadow-sm mb-4">
         <form method="POST" enctype="multipart/form-data">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label class="form-label font-weight-bold">Archivo Excel:</label>
+                    <input type="file" name="archivo" class="form-control" required>
+                </div>
+            </div>
 
-            <input type="file" name="archivo" class="form-control mb-3" required>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold">Vigencia Desde:</label>
+                    <input type="date" name="fecha_desde" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold">Vigencia Hasta:</label>
+                    <input type="date" name="fecha_hasta" class="form-control" required>
+                </div>
+            </div>
 
-            <button type="submit" class="btn-sys w-100">
-                Cargar Archivo
+            <button type="submit" class="btn btn-primary btn-sys w-100">
+                <i class="fas fa-upload"></i> Cargar y Procesar
             </button>
-
         </form>
     </div>
 
-    <!-- 🔹 PREVIEW -->
     {% if preview %}
     <div class="card shadow-sm">
-
-        <div class="card-header bg-dark text-white d-flex justify-content-between">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Previsualización</h5>
-
             {% if cache_id %}
-            <a href="{{ url_for('compras.descargar_refrescos', cache_id=cache_id) }}"
-               class="btn btn-success btn-sm">
-                Descargar archivo
+            <a href="{{ url_for('compras.descargar_refrescos', cache_id=cache_id) }}" class="btn btn-success btn-sm">
+                <i class="fas fa-file-excel"></i> Descargar archivo
             </a>
             {% endif %}
         </div>
-
         <div class="card-body">
-
             <div class="mb-2 text-end">
                 <strong>Total registros:</strong> {{ total_registros }}
             </div>
-
             <div class="tabla-scroll">
                 {{ preview | safe }}
             </div>
-
         </div>
     </div>
     {% endif %}
-
 </div>
 
 <style>
-.tabla-scroll {
-    max-height: 400px;
-    overflow: auto;
-}
-
-.tabla-scroll table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-}
-
-.tabla-scroll thead th {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: #212529;
-    color: white;
-}
-
-.tabla-scroll td,
-.tabla-scroll th {
-    padding: 0.4rem;
-}
+    /* Estilos de la tabla para mantener encabezados fijos */
+    .tabla-scroll { max-height: 500px; overflow: auto; border: 1px solid #ddd; }
+    .tabla-scroll table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .tabla-scroll thead th { position: sticky; top: 0; z-index: 20; background: #212529; color: white; padding: 0.6rem; }
+    .tabla-scroll td { padding: 0.5rem; vertical-align: middle; }
 </style>
-
 {% endblock %}
