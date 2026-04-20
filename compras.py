@@ -1197,51 +1197,53 @@ def transmitir_diario(hoja):
 # SALTA REFRESCOS
 #==========================================================
 
+# =========================
+# MAPA
+# =========================
+SUCURSAL_MAP = {
+    "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02"
+}
+
+# =========================
+# NORMALIZAR TEXTO
+# =========================
 def normalizar_texto(texto):
     if not texto:
         return ""
 
-    texto = str(texto)
-
-    # 🔥 limpiar NBSP
-    texto = texto.replace("\xa0", " ")
-
+    texto = str(texto).replace("\xa0", " ")
     texto = texto.lower().strip()
 
-    # quitar acentos
     texto = unicodedata.normalize("NFKD", texto)
     texto = texto.encode("ascii", "ignore").decode("utf-8")
 
-    # separadores → espacio
     texto = re.sub(r"[-_/|,]+", " ", texto)
-
-    # espacios múltiples
     texto = " ".join(texto.split())
 
     return texto
 
 
-def limpiar_sucursales(valor):
-    if pd.isna(valor):
-        return pd.NA
+# =========================
+# DETECTAR COLUMNA
+# =========================
+def detectar_columna_sucursales(df):
+    for i in range(df.shape[1]):
+        valores = df.iloc[:, i].astype(str).str.lower()
 
-    texto = normalizar_texto(valor)
+        if valores.str.contains("jujuy|salta|tucuman", na=False).any():
+            print(f"✅ Columna de sucursales detectada: {i}")
+            return i
 
-    # 🔥 eliminar headers basura SIEMPRE
-    if "sucursales" in texto:
-        return pd.NA
+    print("❌ No se encontró columna de sucursales")
+    return None
 
-    # 🎯 SOLO permitir este caso
-    if all(x in texto for x in ["jujuy", "salta", "tucuman"]):
-        return texto
 
-    return pd.NA
-
-def mapear_sucursales_a_codigos(valor):
-    if not valor or str(valor).strip() == "":
+# =========================
+# MAPEO FINAL
+# =========================
+def mapear_sucursales(texto):
+    if not texto:
         return ""
-
-    texto = normalizar_texto(valor)
 
     if all(x in texto for x in ["jujuy", "salta", "tucuman"]):
         return SUCURSAL_MAP.get("Total Empresa", "")
@@ -1249,6 +1251,9 @@ def mapear_sucursales_a_codigos(valor):
     return ""
 
 
+# =========================
+# RUTA PRINCIPAL
+# =========================
 @compras_bp.route("/refrescos", methods=["GET", "POST"])
 def refrescos():
     preview = None
@@ -1284,17 +1289,19 @@ def refrescos():
                 df_data = df_raw.iloc[header_idx + 1:].copy()
 
                 # =========================
-                # 🔥 DEBUG COLUMNAS
+                # DEBUG COLUMNAS
                 # =========================
-                print("\n================ DEBUG COLUMNAS =================")
+                print("\n===== DEBUG COLUMNAS =====")
                 for i in range(df_data.shape[1]):
-                    print(f"\n👉 Columna {i}:")
-                    print(df_data.iloc[:, i].dropna().head(5))
-                print("=================================================\n")
+                    print(f"\nCol {i}:")
+                    print(df_data.iloc[:, i].dropna().head(3))
+                print("==========================\n")
 
                 df_final = pd.DataFrame()
 
-                # --- CODIGO ---
+                # =========================
+                # CODIGO
+                # =========================
                 df_final["CODIGO"] = (
                     df_data.iloc[:, 0]
                     .astype(str)
@@ -1305,13 +1312,16 @@ def refrescos():
 
                 df_final = completar_ean(df_final)
 
-                # --- RESTO ---
+                # =========================
+                # RESTO
+                # =========================
                 df_final["descripcion"] = df_data.iloc[:, 1].astype(str).str.strip()
                 df_final["Normal"] = df_data.iloc[:, 2]
 
                 df_final["Oferta"] = df_data.iloc[:, 5].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
+
                 df_final["Cenefa"] = df_data.iloc[:, 6].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
@@ -1319,50 +1329,38 @@ def refrescos():
                 df_final["desde"] = f_desde
                 df_final["hasta"] = f_hasta
 
-               # 🔥 columna base
-                df_final["Sucursales"] = df_data.iloc[:, 7]
+                # =========================
+                # 🔥 DETECTAR SUCURSALES
+                # =========================
+                col_suc = detectar_columna_sucursales(df_data)
+
+                if col_suc is None:
+                    raise ValueError("No se pudo detectar la columna de sucursales")
+
+                df_final["Sucursales"] = df_data.iloc[:, col_suc]
 
                 # =========================
-                # 🔥 DEBUG RAW
+                # LIMPIEZA
                 # =========================
-                print("\n===== DEBUG SUCURSALES RAW =====")
-                print(df_final["Sucursales"].dropna().unique()[:10])
-                print("================================\n")
+                df_final["Sucursales"] = df_final["Sucursales"].astype(str)
+                df_final["Sucursales"] = df_final["Sucursales"].apply(normalizar_texto)
 
-                # 🔥 LIMPIEZA REAL (clave)
-                df_final["Sucursales"] = df_final["Sucursales"].apply(limpiar_sucursales)
+                df_final["Sucursales"] = df_final["Sucursales"].apply(
+                    lambda x: x if ("jujuy" in x or "salta" in x or "tucuman" in x) else pd.NA
+                )
 
-                # 🔥 ffill correcto
+                # 🔥 FFILL
                 cols_to_fill = ["Oferta", "Cenefa", "Sucursales"]
                 df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
 
                 # =========================
-                # 🔥 DEBUG POST-FFILL
+                # MAPEO
                 # =========================
-                print("\n===== DEBUG SUCURSALES FFILL =====")
-                print(df_final["Sucursales"].dropna().unique()[:10])
-                print("==================================\n")
-
-                # 🔥 MAPEO FINAL
-                df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales_a_codigos)
-                # =========================
-                # 🔥 DEBUG POST-FFILL
-                # =========================
-                print("\n===== DEBUG SUCURSALES FFILL =====")
-                print(df_final["Sucursales"].dropna().unique()[:10])
-                print("==================================\n")
-
-                # Mapear
-                df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales_a_codigos)
+                df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales)
 
                 # =========================
-                # 🔥 DEBUG FINAL
+                # LIMPIEZA FINAL
                 # =========================
-                print("\n===== DEBUG SUCURSALES FINAL =====")
-                print(df_final["Sucursales"].dropna().unique()[:10])
-                print("==================================\n")
-
-                # --- LIMPIEZA ---
                 df_final["CODIGO"] = pd.to_numeric(df_final["CODIGO"], errors="coerce")
                 df_final = df_final.dropna(subset=["CODIGO"])
                 df_final["CODIGO"] = df_final["CODIGO"].astype(int)
@@ -1377,6 +1375,9 @@ def refrescos():
 
                 df_final = df_final.fillna("")
 
+                # =========================
+                # OUTPUT
+                # =========================
                 if not df_final.empty:
                     total_registros = len(df_final)
 
@@ -1402,34 +1403,4 @@ def refrescos():
         preview=preview,
         total_registros=total_registros,
         cache_id=cache_id
-    )
-    
-@compras_bp.route("/refrescos/descargar")
-def descargar_refrescos():
-    from flask import request, send_file
-    from io import StringIO
-    import io
-
-    cache_id = request.args.get("cache_id")
-
-    if not cache_id:
-        return "Cache inválido", 400
-
-    data = redis_client.get(f"refrescos:{cache_id}")
-
-    if not data:
-        return "No hay datos", 404
-
-    df = pd.read_json(StringIO(data), orient="records")
-
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False)
-
-    output.seek(0)
-
-    return send_file(
-        output,
-        download_name="refrescos.xlsx",
-        as_attachment=True
     )
