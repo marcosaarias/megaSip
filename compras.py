@@ -1329,7 +1329,7 @@ def refrescos():
 
                 df_final["desde"] = f_desde
                 df_final["hasta"] = f_hasta
-                df_final["Sucursales"] = df_data.iloc[:, 6].replace(
+                df_final["Sucursales"] = df_data.iloc[:, 7].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
 
@@ -1337,6 +1337,7 @@ def refrescos():
                 cols_to_fill = ["Oferta", "Cenefa", "Sucursales"]
                 df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
                 df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales)
+                df_final["Sucursales"] = df_final["Sucursales"].map(SUCURSAL_MAP).fillna("")
 
                 # --- LIMPIEZA FINAL ---
                 # Convertimos CODIGO a numérico para eliminar filas basura
