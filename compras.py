@@ -1181,7 +1181,6 @@ def transmitir_diario(hoja):
 #==========================================================
 
 @compras_bp.route("/refrescos", methods=["GET", "POST"])
-#@login_requerido("compras") 
 def refrescos():
     preview = None
     total_registros = 0
@@ -1195,33 +1194,48 @@ def refrescos():
                 import uuid
                 cache_id = str(uuid.uuid4())
 
-                # 🔥 leer SOLO la primera hoja
-                df = pd.read_excel(archivo)
+                # 1. Leer el archivo sin procesar encabezados (header=None)
+                # Esto nos permite buscar dónde empieza realmente la tabla
+                df_raw = pd.read_excel(archivo, header=None)
 
-                # 🔹 limpieza básica
-                df.columns = [str(col).strip() for col in df.columns]
+                # 2. Eliminar filas que estén completamente vacías al principio
+                df_raw = df_raw.dropna(how='all').reset_index(drop=True)
+
+                # 3. PROMOCIONAR LA PRIMERA FILA REAL COMO HEADER
+                # Asumimos que después de quitar las vacías, la primera fila con datos son los títulos
+                nuevos_encabezados = df_raw.iloc[0].astype(str).str.strip().tolist()
+                df = df_raw[1:].copy()
+                df.columns = nuevos_encabezados
+
+                # 4. LIMPIEZA FINAL
+                # Eliminar columnas sin nombre o todas vacías (típico de archivos con formato)
+                df = df.loc[:, df.columns.notna()]
+                df = df.dropna(axis=1, how='all')
+                
+                # Eliminar filas que sean basura o estén vacías al final
                 df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
 
                 if df.empty:
-                    preview = "<div class='alert alert-warning'>El archivo no tiene datos válidos</div>"
+                    preview = "<div class='alert alert-warning'>El archivo no tiene datos válidos después de la limpieza.</div>"
                 else:
                     total_registros = len(df)
 
-                    # 🔥 guardar en redis
+                    # 🔥 Guardar en Redis (el DataFrame ya limpio)
                     redis_client.set(
                         f"refrescos:{cache_id}",
                         df.to_json(orient="records"),
                         ex=3600
                     )
 
-                    # 🔥 preview
+                    # 🔥 Preview mejorada para el HTML
                     preview = df.to_html(
-                        classes="table table-sm table-striped",
-                        index=False
+                        classes="table table-sm table-hover table-bordered table-striped",
+                        index=False,
+                        na_rep="" # Que no muestre 'NaN' en la tabla
                     )
 
             except Exception as e:
-                preview = f"<div class='alert alert-danger'>Error: {e}</div>"
+                preview = f"<div class='alert alert-danger'>Error procesando el archivo: {e}</div>"
 
     return render_template(
         "saltarefrescos.html",
@@ -1229,7 +1243,6 @@ def refrescos():
         total_registros=total_registros,
         cache_id=cache_id
     )
-
 
 @compras_bp.route("/refrescos/descargar")
 def descargar_refrescos():
