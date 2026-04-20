@@ -1404,3 +1404,34 @@ def refrescos():
         total_registros=total_registros,
         cache_id=cache_id
     )
+
+
+@compras_bp.route("/refrescos/descargar")
+def descargar_refrescos():
+    from flask import request, send_file
+    from io import StringIO
+    import io
+
+    cache_id = request.args.get("cache_id")
+
+    if not cache_id:
+        return "Cache inválido", 400
+
+    data = redis_client.get(f"refrescos:{cache_id}")
+
+    if not data:
+        return "No hay datos", 404
+
+    df = pd.read_json(StringIO(data), orient="records")
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False)
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="refrescos.xlsx",
+        as_attachment=True
+    )
