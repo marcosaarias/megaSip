@@ -1217,54 +1217,31 @@ def normalizar_texto(texto):
     return texto
 
 
-def mapear_sucursales(valor):
+def mapear_sucursales_a_codigos(valor):
     if not valor or str(valor).strip() == "":
         return ""
 
     texto = normalizar_texto(valor)
 
-    tiene_jujuy = "jujuy" in texto
-    tiene_salta = "salta" in texto
-    tiene_tucuman = "tucuman" in texto
-    tiene_oran = "oran" in texto
-    tiene_mayorista = "mayorista" in texto
-    tiene_minorista = "minorista" in texto or "minoristas" in texto
+    # 🎯 CASO PRINCIPAL (el que vos usás siempre)
+    if "jujuy" in texto and "salta" in texto and "tucuman" in texto:
+        return SUCURSAL_MAP["Total Empresa"]
 
-    # 🔴 PRIORIDAD: combinaciones completas
-    if tiene_jujuy and tiene_salta and tiene_tucuman:
-        return "Total Empresa"
+    # Otros casos (por si aparecen)
+    if "jujuy" in texto and "salta" in texto:
+        return SUCURSAL_MAP["Jujuy, Salta - Minoritas y Mayoristas"]
 
-    if tiene_jujuy and tiene_salta:
-        if tiene_mayorista and tiene_minorista:
-            return "Jujuy, Salta - Minoritas y Mayoristas"
-        return "Jujuy, Salta - Minoritas"
+    if "jujuy" in texto:
+        return SUCURSAL_MAP["Jujuy - Minorista Y Mayorista"]
 
-    # 🔵 Casos individuales con tipo
-    if tiene_jujuy:
-        if tiene_mayorista and tiene_minorista:
-            return "Jujuy - Minorista Y Mayorista"
-        if tiene_mayorista:
-            return "Jujuy - Mayorista"
-        if tiene_minorista:
-            return "Jujuy - Minoristas"
-        return "Jujuy - Minorista Y Mayorista"
+    if "salta" in texto:
+        return SUCURSAL_MAP["Salta - Mayorista"]
 
-    if tiene_salta:
-        if tiene_mayorista:
-            return "Salta - Mayorista"
-        if tiene_minorista:
-            return "Salta - Minoristas"
-        return "Salta - Mayorista"
+    if "tucuman" in texto:
+        return SUCURSAL_MAP["Tucuman - Minoristas"]
 
-    if tiene_tucuman:
-        return "Tucuman - Minoristas"
-
-    if tiene_oran:
-        return "Oran - Mayorista"
-
-    # ⚠️ fallback: devuelve el valor original
-    return valor
-
+    # ⚠️ Si no reconoce nada
+    return ""
 
 @compras_bp.route("/refrescos", methods=["GET", "POST"])
 def refrescos():
@@ -1336,9 +1313,7 @@ def refrescos():
                 # Autocompletar hacia abajo por celdas combinadas
                 cols_to_fill = ["Oferta", "Cenefa", "Sucursales"]
                 df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
-                df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales)
-                df_final["Sucursales"] = df_final["Sucursales"].map(SUCURSAL_MAP).fillna("")
-
+                df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales_a_codigos)
                 # --- LIMPIEZA FINAL ---
                 # Convertimos CODIGO a numérico para eliminar filas basura
                 df_final["CODIGO"] = pd.to_numeric(df_final["CODIGO"], errors="coerce")
