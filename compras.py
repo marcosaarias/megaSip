@@ -1248,7 +1248,6 @@ def refrescos():
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
-        # Capturamos las fechas del formulario
         f_desde_raw = request.form.get("fecha_desde")
         f_hasta_raw = request.form.get("fecha_hasta")
 
@@ -1257,52 +1256,80 @@ def refrescos():
                 import uuid
                 cache_id = str(uuid.uuid4())
 
-                # Convertir fechas a formato DD/MM/YYYY si existen
+                # Formatear fechas para el reporte
                 f_desde = pd.to_datetime(f_desde_raw).strftime('%d/%m/%Y') if f_desde_raw else ""
                 f_hasta = pd.to_datetime(f_hasta_raw).strftime('%d/%m/%Y') if f_hasta_raw else ""
 
                 df_raw = pd.read_excel(archivo, header=None)
                 
-                # Localizar Cód.
+                # Localizar la cabecera "Cód."
                 mask = df_raw.astype(str).apply(lambda x: x.str.contains('Cód.', case=False)).any(axis=1)
                 header_idx = df_raw[mask].index[0]
                 df_data = df_raw.iloc[header_idx + 1:].copy()
 
                 df_final = pd.DataFrame()
-                df_final['codigo']      = pd.to_numeric(df_data.iloc[:, 0], errors='coerce')
-                df_final['ean']         = "" 
+                
+                # --- PROCESAMIENTO DE CÓDIGO ---
+                # Limpiamos el código para que completar_ean funcione correctamente
+                df_final['codigo'] = (
+                    df_data.iloc[:, 0]
+                    .astype(str)
+                    .str.strip()
+                    .str.replace(".0", "", regex=False)
+                    .str.lstrip("0")
+                )
+                
+                # 🔥 AUTOCOMPLETAR EAN
+                # La función busca en la DB el EAN correspondiente al código limpio
+                df_final['ean'] = "" 
+                df_final = completar_ean(df_final) 
+
+                # --- RESTO DEL MAPEO ---
                 df_final['descripcion'] = df_data.iloc[:, 1].astype(str).str.strip()
                 df_final['Normal']      = df_data.iloc[:, 2]
                 
-                # Mapeo corregido: Oferta (Etiquetas) y Cenefa (Sucursales)
+                # Mapeo: Oferta (Etiquetas) y Cenefa (Sucursales a Activar)
                 df_final['Oferta']      = df_data.iloc[:, 5].replace(['nan', 'None', '', 'NaN'], pd.NA)
                 df_final['Cenefa']      = df_data.iloc[:, 6].replace(['nan', 'None', '', 'NaN'], pd.NA)
                 
-                # INYECTAR LAS FECHAS DEL DATE PICKER
                 df_final['desde']       = f_desde
                 df_final['hasta']       = f_hasta
-                
                 df_final['Sucursales']  = df_data.iloc[:, 6].replace(['nan', 'None', '', 'NaN'], pd.NA)
 
-                # Autocompletar hacia abajo
+                # Autocompletar hacia abajo (ffill) para celdas combinadas
                 cols_to_fill = ['Oferta', 'Cenefa', 'Sucursales']
                 df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
 
-                # Limpieza de filas sin código
+                # --- LIMPIEZA FINAL ---
+                # Convertimos 'codigo' a numérico para eliminar filas de basura (como nuevos encabezados)
+                df_final['codigo'] = pd.to_numeric(df_final['codigo'], errors='coerce')
                 df_final = df_final.dropna(subset=['codigo'])
                 df_final['codigo'] = df_final['codigo'].astype(int)
+                
+                # Formatear moneda para la vista
+                for col in ["Normal"]:
+                    if col in df_final.columns:
+                        df_final[col] = df_final[col].apply(formatear_moneda)
+
                 df_final = df_final.fillna("")
 
                 if not df_final.empty:
                     total_registros = len(df_final)
+                    
+                    # Guardar en Redis para la descarga posterior
                     redis_client.set(f"refrescos:{cache_id}", df_final.to_json(orient="records"), ex=3600)
-                    preview = df_final.to_html(classes="table table-sm table-hover table-bordered text-center", index=False, na_rep="")
+                    
+                    # Generar HTML para la vista
+                    preview = df_final.to_html(
+                        classes="table table-sm table-hover table-bordered text-center", 
+                        index=False, 
+                        na_rep=""
+                    )
 
             except Exception as e:
-                preview = f"<div class='alert alert-danger'>Error: {e}</div>"
+                preview = f"<div class='alert alert-danger'>Error procesando Refrescos: {e}</div>"
 
     return render_template("saltarefrescos.html", preview=preview, total_registros=total_registros, cache_id=cache_id)
-
 
 
 @compras_bp.route("/refrescos/descargar")
