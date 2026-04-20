@@ -1180,6 +1180,66 @@ def transmitir_diario(hoja):
 # SALTA REFRESCOS
 #==========================================================
 
+#@compras_bp.route("/refrescos", methods=["GET", "POST"])
+#def refrescos():
+#    preview = None
+#    total_registros = 0
+#    cache_id = None
+
+#    if request.method == "POST":
+#        archivo = request.files.get("archivo")
+#        if archivo:
+#            try:
+#                import uuid
+#                cache_id = str(uuid.uuid4())
+
+                # 1. Leer todo el Excel sin encabezados
+#                df_raw = pd.read_excel(archivo, header=None)
+
+                # 2. Buscar la fila que contiene "Cód." para usarla como header
+                # Esto ignora el título amarillo de arriba
+#                header_idx = df_raw[df_raw.astype(str).apply(lambda x: x.str.contains('Cód.', case=False)).any(axis=1)].index[0]
+                
+                # Extraemos los nombres de columnas y el resto de los datos
+#                column_names = df_raw.iloc[header_idx].astype(str).str.strip().tolist()
+#                df = df_raw.iloc[header_idx + 1:].copy()
+                
+                # 3. Manejar duplicados y celdas combinadas (Unnamed)
+#                final_cols = []
+#                for i, name in enumerate(column_names):
+#                    if name == "nan" or name == "":
+#                        final_cols.append(f"Col_{i}")
+#                    elif name in final_cols:
+#                        final_cols.append(f"{name}_{i}")
+#                    else:
+#                        final_cols.append(name)
+                
+#                df.columns = final_cols
+
+                # 4. FILTRADO CRÍTICO: 
+                # El Excel repite los encabezados cada 2 filas. 
+                # Borramos cualquier fila que vuelva a decir "Cód." o esté vacía.
+#                df = df[df[df.columns[0]].astype(str).str.contains(r'\d+')] # Solo filas con números en la primera columna
+#                df = df.dropna(how='all').reset_index(drop=True)
+
+#                if df.empty:
+#                    preview = "<div class='alert alert-warning'>No se encontraron registros de productos.</div>"
+#                else:
+#                    total_registros = len(df)
+#                    redis_client.set(f"refrescos:{cache_id}", df.to_json(orient="records"), ex=3600)
+
+#                    preview = df.to_html(
+#                        classes="table table-sm table-hover table-bordered text-center",
+#                        index=False,
+#                        na_rep=""
+#                    )
+
+#            except Exception as e:
+#                preview = f"<div class='alert alert-danger'>Error: {e}</div>"
+
+#    return render_template("saltarefrescos.html", preview=preview, total_registros=total_registros, cache_id=cache_id)
+
+
 @compras_bp.route("/refrescos", methods=["GET", "POST"])
 def refrescos():
     preview = None
@@ -1193,42 +1253,61 @@ def refrescos():
                 import uuid
                 cache_id = str(uuid.uuid4())
 
-                # 1. Leer todo el Excel sin encabezados
+                # 1. Leer Excel (sin encabezados para buscar la fila "Cód.")
                 df_raw = pd.read_excel(archivo, header=None)
 
-                # 2. Buscar la fila que contiene "Cód." para usarla como header
-                # Esto ignora el título amarillo de arriba
-                header_idx = df_raw[df_raw.astype(str).apply(lambda x: x.str.contains('Cód.', case=False)).any(axis=1)].index[0]
+                # 2. Localizar la fila de encabezados
+                mask = df_raw.astype(str).apply(lambda x: x.str.contains('Cód.', case=False)).any(axis=1)
+                header_idx = df_raw[mask].index[0]
                 
-                # Extraemos los nombres de columnas y el resto de los datos
-                column_names = df_raw.iloc[header_idx].astype(str).str.strip().tolist()
+                # 3. Extraer nombres originales y datos
+                original_headers = df_raw.iloc[header_idx].astype(str).str.strip().tolist()
                 df = df_raw.iloc[header_idx + 1:].copy()
-                
-                # 3. Manejar duplicados y celdas combinadas (Unnamed)
-                final_cols = []
-                for i, name in enumerate(column_names):
-                    if name == "nan" or name == "":
-                        final_cols.append(f"Col_{i}")
-                    elif name in final_cols:
-                        final_cols.append(f"{name}_{i}")
-                    else:
-                        final_cols.append(name)
-                
-                df.columns = final_cols
+                df.columns = original_headers
 
-                # 4. FILTRADO CRÍTICO: 
-                # El Excel repite los encabezados cada 2 filas. 
-                # Borramos cualquier fila que vuelva a decir "Cód." o esté vacía.
-                df = df[df[df.columns[0]].astype(str).str.contains(r'\d+')] # Solo filas con números en la primera columna
-                df = df.dropna(how='all').reset_index(drop=True)
+                # 4. DEFINIR EL MAPEO (Origen -> Destino)
+                # Esto hace que el código sea fácil de mantener
+                mapeo = {
+                    "Cód.": "codigo",
+                    "Descrip": "descripcion",
+                    "Precio": "Normal",
+                    "Etiquetas": "Oferta",
+                    "Col_6": "Cenefa" # Ajusta este nombre si cambia en el Excel
+                }
 
-                if df.empty:
-                    preview = "<div class='alert alert-warning'>No se encontraron registros de productos.</div>"
+                # 5. CONSTRUIR EL DATAFRAME FINAL
+                df_final = pd.DataFrame()
+                
+                # Aplicamos el mapeo dinámicamente
+                df_final['codigo']      = pd.to_numeric(df.iloc[:, 0], errors='coerce')
+                df_final['ean']         = "" # Inyectamos columna EAN vacía
+                df_final['descripcion'] = df.iloc[:, 1].astype(str).str.strip()
+                df_final['Normal']      = df.iloc[:, 2] # Mapeo de Precio
+                df_final['Oferta']      = df.iloc[:, 5] # Mapeo de Etiquetas (Col 5)
+                df_final['Cenefa']      = df.iloc[:, 5] # En tu caso, etiquetas va a dos lados o usas la col 6
+                
+                # Columnas estándar que siempre deben estar
+                df_final['desde']       = ""
+                df_final['hasta']       = ""
+                df_final['Sucursales']  = df.iloc[:, 6].astype(str).str.strip()
+
+                # 6. LIMPIEZA DE FILAS (Solo nos quedamos con códigos numéricos)
+                df_final = df_final.dropna(subset=['codigo'])
+                df_final['codigo'] = df_final['codigo'].astype(int)
+
+                # 7. BORRAR DUPLICADOS DE FILAS (Por si el Excel tiene basura)
+                df_final = df_final.drop_duplicates().reset_index(drop=True)
+
+                if df_final.empty:
+                    preview = "<div class='alert alert-warning'>No se detectaron productos.</div>"
                 else:
-                    total_registros = len(df)
-                    redis_client.set(f"refrescos:{cache_id}", df.to_json(orient="records"), ex=3600)
+                    total_registros = len(df_final)
+                    
+                    # Guardar en Redis
+                    redis_client.set(f"refrescos:{cache_id}", df_final.to_json(orient="records"), ex=3600)
 
-                    preview = df.to_html(
+                    # Generar HTML con los nuevos nombres
+                    preview = df_final.to_html(
                         classes="table table-sm table-hover table-bordered text-center",
                         index=False,
                         na_rep=""
@@ -1238,6 +1317,11 @@ def refrescos():
                 preview = f"<div class='alert alert-danger'>Error: {e}</div>"
 
     return render_template("saltarefrescos.html", preview=preview, total_registros=total_registros, cache_id=cache_id)
+
+
+
+
+
 
 @compras_bp.route("/refrescos/descargar")
 def descargar_refrescos():
