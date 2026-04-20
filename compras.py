@@ -969,18 +969,22 @@ SUCURSAL_MAP_DIARIO = {
 def detectar_sucursales(nombre_hoja):
     hoja = normalizar_texto(nombre_hoja)
 
-    if "jujuy" in hoja:
-        partes = [SUCURSAL_MAP_DIARIO["jujuy_minorista"]]
-    elif "jujuy mayorista" in hoja:
-        partes = [SUCURSAL_MAP_DIARIO["jujuy_mayorista"]]
+    if "jujuy mayorista" in hoja:
+        return SUCURSAL_MAP_DIARIO["jujuy_mayorista"]
+
+    elif "jujuy" in hoja:
+        return SUCURSAL_MAP_DIARIO["jujuy_minorista"]
+
     elif "salta mayorista" in hoja:
-        partes = [SUCURSAL_MAP_DIARIO["salta_mayorista"]]
+        return SUCURSAL_MAP_DIARIO["salta_mayorista"]
+
     elif "salta" in hoja:
-        partes = [SUCURSAL_MAP_DIARIO["salta"]]
+        return SUCURSAL_MAP_DIARIO["salta"]
+
     elif "tucuman" in hoja:
-        partes = [SUCURSAL_MAP_DIARIO["tucuman"]]
-    else:
-        return ""
+        return SUCURSAL_MAP_DIARIO["tucuman"]
+
+    return ""
 
     return ",".join([p for p in partes if p])
 
