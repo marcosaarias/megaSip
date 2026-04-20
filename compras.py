@@ -385,6 +385,9 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                     SUCURSAL_MAP[tipo].get(clave_total, "")
                 )
 
+            print("====== DEBUG SUCURSALES ======")
+            print(df_final["Sucursales"].dropna().unique()[:20]) 
+
             df["sucursales"] = df["sucursales"].apply(generar_codigos)
 
         columnas_validas = [col for col in df.columns if col in HEADERS]
@@ -1223,11 +1226,13 @@ def mapear_sucursales_a_codigos(valor):
 
     texto = normalizar_texto(valor)
 
-    # 🎯 CASO PRINCIPAL
-    if "jujuy" in texto and "salta" in texto and "tucuman" in texto:
+    # DEBUG
+    # print("Procesando:", texto)
+
+    # 🎯 CASO PRINCIPAL (más flexible)
+    if all(x in texto for x in ["jujuy", "salta", "tucuman"]):
         return SUCURSAL_MAP.get("Total Empresa", "")
 
-    # Otros casos
     if "jujuy" in texto and "salta" in texto:
         return SUCURSAL_MAP.get("Jujuy, Salta - Minoritas y Mayoristas", "")
 
@@ -1239,6 +1244,9 @@ def mapear_sucursales_a_codigos(valor):
 
     if "tucuman" in texto:
         return SUCURSAL_MAP.get("Tucuman - Minoristas", "")
+
+    # 🔴 CLAVE: ver qué está fallando
+    print("NO MATCH:", texto)
 
     return ""
 
