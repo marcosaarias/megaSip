@@ -55,10 +55,10 @@
                     <div class="d-flex gap-2">
 
                         <!-- 📥 Descargar -->
-                        <a href="{{ url_for('compras.descargar_diario', hoja=hoja) }}"
-                           class="btn btn-success btn-sm">
+                      <a href="{{ url_for('compras.descargar_diario', hoja=hoja, cache_id=cache_id) }}"
+                        class="btn btn-success btn-sm">
                             Descargar archivo
-                        </a>
+                      </a>
 
                         <!-- 🚀 Transmitir -->
                         <form method="POST"
