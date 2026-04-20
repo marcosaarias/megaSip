@@ -12,6 +12,8 @@ import traceback
 import sqlite3
 import redis
 import json
+from io import StringIO
+
 
 # ---------------- REDIS ----------------
 
@@ -985,6 +987,8 @@ def detectar_sucursales(nombre_hoja):
 
 @compras_bp.route("/diario", methods=["GET", "POST"])
 def diario():
+    global DIARIO_CACHE
+
     preview = {}
     total_registros = {}
     hojas_orden = []
@@ -1009,9 +1013,11 @@ def diario():
 
                 xls = pd.read_excel(archivo, sheet_name=None)
 
+                # 🔥 LIMPIAR CACHE EN CADA CARGA
+                DIARIO_CACHE = {}
+
                 for nombre_hoja, df in xls.items():
 
-                    # 🚨 FILTRO REAL DE HOJAS FANTASMA
                     df_check = df.replace(r'^\s*$', pd.NA, regex=True)
                     if df_check.dropna(how="all").empty:
                         continue
@@ -1082,6 +1088,9 @@ def diario():
                     if df.empty:
                         continue
 
+                    # 🔥 GUARDAR EN CACHE (NO SESSION)
+                    DIARIO_CACHE[nombre_hoja] = df.to_json(orient="records")
+
                     preview[nombre_hoja] = df.to_html(
                         classes="table table-sm table-striped",
                         index=False
@@ -1103,16 +1112,19 @@ def diario():
 
 @compras_bp.route("/diario/descargar/<hoja>")
 def descargar_diario(hoja):
-    from flask import session, send_file
     import pandas as pd
     import io
+    from flask import send_file
+    from io import StringIO
 
-    data = session.get("diario_data", {}).get(hoja)
+    global DIARIO_CACHE
+
+    data = DIARIO_CACHE.get(hoja)
 
     if not data:
         return "No hay datos", 404
 
-    df = pd.read_json(data, orient="records")
+    df = pd.read_json(StringIO(data), orient="records")
 
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:

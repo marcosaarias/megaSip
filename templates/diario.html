@@ -9,9 +9,7 @@
     <!-- 🔹 Carga archivo -->
     <div class="card p-4 shadow-sm mb-4">
         <form method="POST" enctype="multipart/form-data">
-            
-            <div class="card p-4 shadow-sm mb-4">
-            <form method="POST" enctype="multipart/form-data">
+
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">Vigencia Desde:</label>
@@ -44,14 +42,37 @@
             {% for hoja in hojas_orden %}
             <div class="mb-5">
 
-                <h5 class="mb-2">
-                    {{ hoja | capitalize }}
-                    {% if total_registros[hoja] %}
-                        | Registros: {{ total_registros[hoja] }}
-                    {% endif %}
-                </h5>
+                <!-- 🔹 HEADER + BOTONES -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
 
-                <div style="max-height:400px; overflow:auto;">
+                    <h5 class="mb-0">
+                        {{ hoja | capitalize }}
+                        {% if total_registros[hoja] %}
+                            | Registros: {{ total_registros[hoja] }}
+                        {% endif %}
+                    </h5>
+
+                    <div class="d-flex gap-2">
+
+                        <!-- 📥 Descargar -->
+                        <a href="{{ url_for('compras.descargar_diario', hoja=hoja) }}"
+                           class="btn btn-success btn-sm">
+                            Descargar archivo
+                        </a>
+
+                        <!-- 🚀 Transmitir -->
+                        <form method="POST"
+                              action="{{ url_for('compras.transmitir_diario', hoja=hoja) }}">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                Transmitir
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+
+                <!-- 🔹 TABLA -->
+                <div class="tabla-scroll">
                     {{ preview[hoja] | safe }}
                 </div>
 
@@ -66,6 +87,56 @@
         </div>
     </div>
     {% endif %}
+ 
+
+   <style>
+
+/* CONTENEDOR SCROLL */
+.tabla-scroll {
+    max-height: 400px;
+    overflow: auto;
+    position: relative;
+}
+
+/* TABLA GENERADA POR PANDAS */
+.tabla-scroll table {
+    width: 100%;
+    border-collapse: separate; /* CLAVE */
+    border-spacing: 0;
+}
+
+/* HEADER FIJO (caso normal) */
+.tabla-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 20; /* subo prioridad */
+
+    background: #212529;
+    color: white;
+
+    box-shadow: 0 2px 2px rgba(0,0,0,0.2); /* evita glitch visual */
+}
+
+/* HEADER FIJO (caso pandas sin thead) */
+.tabla-scroll table tr:first-child th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+
+    background: #212529;
+    color: white;
+
+    box-shadow: 0 2px 2px rgba(0,0,0,0.2);
+}
+
+/* OPCIONAL: mejora visual tipo bootstrap */
+.tabla-scroll td,
+.tabla-scroll th {
+    padding: 0.4rem;
+}
+
+</style>
+
 
 </div>
 {% endblock %}
