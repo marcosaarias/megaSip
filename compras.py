@@ -15,6 +15,23 @@ import json
 from io import StringIO
 
 
+SUCURSAL_MAP = {
+    "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02",
+    "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO29,MA02",
+    "Jujuy - Mayorista": "CO05,CO12,CO15,MA02",
+    "Salta - Mayorista": "CO09,CO29,CO21",
+    "Oran - Mayorista": "CO21",
+    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO24,CO25,CO26,CO27,CO28",
+    "Jujuy - Minoristas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
+    "Salta - Minoristas": "CO18,CO23",
+    "Jujuy, Salta - Minoritas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO28",
+    "Jujuy, Salta - Minoritas y Mayoristas": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO28,CO29,MA02",
+    "Jujuy - Minorista Y Mayorista": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO19,CO20,CO22,CO28,MA02",
+    "Tucuman - Minoristas": "CO24,CO25,CO26,CO27",
+    "Jujuy Capital": "CO01,CO02,CO05,CO07,CO11,CO16,CO19,CO20,CO22"
+}
+
+
 # ---------------- REDIS ----------------
 
 redis_client = redis.Redis(
@@ -1180,64 +1197,72 @@ def transmitir_diario(hoja):
 # SALTA REFRESCOS
 #==========================================================
 
-#@compras_bp.route("/refrescos", methods=["GET", "POST"])
-#def refrescos():
-#    preview = None
-#    total_registros = 0
-#    cache_id = None
+def normalizar_texto(texto):
+    if not texto:
+        return ""
 
-#    if request.method == "POST":
-#        archivo = request.files.get("archivo")
-#        if archivo:
-#            try:
-#                import uuid
-#                cache_id = str(uuid.uuid4())
+    texto = str(texto).lower().strip()
 
-                # 1. Leer todo el Excel sin encabezados
-#                df_raw = pd.read_excel(archivo, header=None)
+    # Quitar acentos
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = texto.encode("ascii", "ignore").decode("utf-8")
 
-                # 2. Buscar la fila que contiene "Cód." para usarla como header
-                # Esto ignora el título amarillo de arriba
-#                header_idx = df_raw[df_raw.astype(str).apply(lambda x: x.str.contains('Cód.', case=False)).any(axis=1)].index[0]
-                
-                # Extraemos los nombres de columnas y el resto de los datos
-#                column_names = df_raw.iloc[header_idx].astype(str).str.strip().tolist()
-#                df = df_raw.iloc[header_idx + 1:].copy()
-                
-                # 3. Manejar duplicados y celdas combinadas (Unnamed)
-#                final_cols = []
-#                for i, name in enumerate(column_names):
-#                    if name == "nan" or name == "":
-#                        final_cols.append(f"Col_{i}")
-#                    elif name in final_cols:
-#                        final_cols.append(f"{name}_{i}")
-#                    else:
-#                        final_cols.append(name)
-                
-#                df.columns = final_cols
+    # Reemplazar separadores comunes por espacio
+    texto = re.sub(r"[-_/|,]+", " ", texto)
 
-                # 4. FILTRADO CRÍTICO: 
-                # El Excel repite los encabezados cada 2 filas. 
-                # Borramos cualquier fila que vuelva a decir "Cód." o esté vacía.
-#                df = df[df[df.columns[0]].astype(str).str.contains(r'\d+')] # Solo filas con números en la primera columna
-#                df = df.dropna(how='all').reset_index(drop=True)
+    # Limpiar espacios múltiples
+    texto = re.sub(r"\s+", " ", texto)
 
-#                if df.empty:
-#                    preview = "<div class='alert alert-warning'>No se encontraron registros de productos.</div>"
-#                else:
-#                    total_registros = len(df)
-#                    redis_client.set(f"refrescos:{cache_id}", df.to_json(orient="records"), ex=3600)
+    return texto
 
-#                    preview = df.to_html(
-#                        classes="table table-sm table-hover table-bordered text-center",
-#                        index=False,
-#                        na_rep=""
-#                    )
 
-#            except Exception as e:
-#                preview = f"<div class='alert alert-danger'>Error: {e}</div>"
+def mapear_sucursales(valor):
+    if not valor or str(valor).strip() == "":
+        return ""
 
-#    return render_template("saltarefrescos.html", preview=preview, total_registros=total_registros, cache_id=cache_id)
+    texto = normalizar_texto(valor)
+
+    tiene_jujuy = "jujuy" in texto
+    tiene_salta = "salta" in texto
+    tiene_tucuman = "tucuman" in texto
+    tiene_oran = "oran" in texto
+    tiene_mayorista = "mayorista" in texto
+    tiene_minorista = "minorista" in texto or "minoristas" in texto
+
+    # 🔴 PRIORIDAD: combinaciones completas
+    if tiene_jujuy and tiene_salta and tiene_tucuman:
+        return "Total Empresa"
+
+    if tiene_jujuy and tiene_salta:
+        if tiene_mayorista and tiene_minorista:
+            return "Jujuy, Salta - Minoritas y Mayoristas"
+        return "Jujuy, Salta - Minoritas"
+
+    # 🔵 Casos individuales con tipo
+    if tiene_jujuy:
+        if tiene_mayorista and tiene_minorista:
+            return "Jujuy - Minorista Y Mayorista"
+        if tiene_mayorista:
+            return "Jujuy - Mayorista"
+        if tiene_minorista:
+            return "Jujuy - Minoristas"
+        return "Jujuy - Minorista Y Mayorista"
+
+    if tiene_salta:
+        if tiene_mayorista:
+            return "Salta - Mayorista"
+        if tiene_minorista:
+            return "Salta - Minoristas"
+        return "Salta - Mayorista"
+
+    if tiene_tucuman:
+        return "Tucuman - Minoristas"
+
+    if tiene_oran:
+        return "Oran - Mayorista"
+
+    # ⚠️ fallback: devuelve el valor original
+    return valor
 
 
 @compras_bp.route("/refrescos", methods=["GET", "POST"])
@@ -1310,6 +1335,7 @@ def refrescos():
                 # Autocompletar hacia abajo por celdas combinadas
                 cols_to_fill = ["Oferta", "Cenefa", "Sucursales"]
                 df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
+                df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales)
 
                 # --- LIMPIEZA FINAL ---
                 # Convertimos CODIGO a numérico para eliminar filas basura
