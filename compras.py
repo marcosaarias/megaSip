@@ -1323,8 +1323,13 @@ def refrescos():
                 ).fillna("")
 
                 # Formatear moneda para la vista
-                if "Normal" in df_final.columns:
-                    df_final["Normal"] = df_final["Normal"].apply(formatear_moneda)
+                #if "Normal" in df_final.columns:
+                #    df_final["Normal"] = df_final["Normal"].apply(formatear_moneda)
+
+                # Formatear moneda para la vista
+                for col in ["Normal", "Oferta"]:
+                    if col in df_final.columns:
+                        df_final[col] = df_final[col].apply(formatear_moneda)
 
                 df_final = df_final.fillna("")
 
