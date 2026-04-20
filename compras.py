@@ -1223,24 +1223,23 @@ def mapear_sucursales_a_codigos(valor):
 
     texto = normalizar_texto(valor)
 
-    # 🎯 CASO PRINCIPAL (el que vos usás siempre)
+    # 🎯 CASO PRINCIPAL
     if "jujuy" in texto and "salta" in texto and "tucuman" in texto:
-        return SUCURSAL_MAP["Total Empresa"]
+        return SUCURSAL_MAP.get("Total Empresa", "")
 
-    # Otros casos (por si aparecen)
+    # Otros casos
     if "jujuy" in texto and "salta" in texto:
-        return SUCURSAL_MAP["Jujuy, Salta - Minoritas y Mayoristas"]
+        return SUCURSAL_MAP.get("Jujuy, Salta - Minoritas y Mayoristas", "")
 
     if "jujuy" in texto:
-        return SUCURSAL_MAP["Jujuy - Minorista Y Mayorista"]
+        return SUCURSAL_MAP.get("Jujuy - Minorista Y Mayorista", "")
 
     if "salta" in texto:
-        return SUCURSAL_MAP["Salta - Mayorista"]
+        return SUCURSAL_MAP.get("Salta - Mayorista", "")
 
     if "tucuman" in texto:
-        return SUCURSAL_MAP["Tucuman - Minoristas"]
+        return SUCURSAL_MAP.get("Tucuman - Minoristas", "")
 
-    # ⚠️ Si no reconoce nada
     return ""
 
 @compras_bp.route("/refrescos", methods=["GET", "POST"])
