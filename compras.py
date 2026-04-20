@@ -987,11 +987,12 @@ def detectar_sucursales(nombre_hoja):
 
 @compras_bp.route("/diario", methods=["GET", "POST"])
 def diario():
-    global DIARIO_CACHE
+    import uuid
 
     preview = {}
     total_registros = {}
     hojas_orden = []
+    cache_id = None  # 🔥 importante
 
     HEADERS_DIARIO = [
         "CODIGO", "DESCRIPCION", "EAN",
@@ -1008,13 +1009,13 @@ def diario():
 
         if archivo:
             try:
+                # 🔥 generar ID único por carga
+                cache_id = str(uuid.uuid4())
+
                 f_desde = pd.to_datetime(fecha_desde_raw).strftime('%d/%m/%Y') if fecha_desde_raw else ""
                 f_hasta = pd.to_datetime(fecha_hasta_raw).strftime('%d/%m/%Y') if fecha_hasta_raw else ""
 
                 xls = pd.read_excel(archivo, sheet_name=None)
-
-                # 🔥 LIMPIAR CACHE EN CADA CARGA
-                DIARIO_CACHE = {}
 
                 for nombre_hoja, df in xls.items():
 
@@ -1088,8 +1089,12 @@ def diario():
                     if df.empty:
                         continue
 
-                    # 🔥 GUARDAR EN CACHE (NO SESSION)
-                    DIARIO_CACHE[nombre_hoja] = df.to_json(orient="records")
+                    # 🔥 GUARDAR EN REDIS
+                    redis_client.set(
+                        f"diario:{cache_id}:{nombre_hoja}",
+                        df.to_json(orient="records"),
+                        ex=3600  # 1 hora
+                    )
 
                     preview[nombre_hoja] = df.to_html(
                         classes="table table-sm table-striped",
@@ -1107,19 +1112,23 @@ def diario():
         "diario.html",
         preview=preview,
         total_registros=total_registros,
-        hojas_orden=hojas_orden
-    )
+        hojas_orden=hojas_orden,
+        cache_id=cache_id
+    ) 
 
 @compras_bp.route("/diario/descargar/<hoja>")
 def descargar_diario(hoja):
+    from flask import request, send_file
     import pandas as pd
     import io
-    from flask import send_file
     from io import StringIO
 
-    global DIARIO_CACHE
+    cache_id = request.args.get("cache_id")
 
-    data = DIARIO_CACHE.get(hoja)
+    if not cache_id:
+        return "Cache inválido", 400
+
+    data = redis_client.get(f"diario:{cache_id}:{hoja}")
 
     if not data:
         return "No hay datos", 404
