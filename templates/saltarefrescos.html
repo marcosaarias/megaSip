@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Salta Refrescos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <h2 class="mb-4">Salta Refrescos</h2>
+
+    <!-- 🔹 FORM -->
+    <div class="card p-4 shadow-sm mb-4">
+        <form method="POST" enctype="multipart/form-data">
+
+            <input type="file" name="archivo" class="form-control mb-3" required>
+
+            <button type="submit" class="btn-sys w-100">
+                Cargar Archivo
+            </button>
+
+        </form>
+    </div>
+
+    <!-- 🔹 PREVIEW -->
+    {% if preview %}
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-dark text-white d-flex justify-content-between">
+            <h5 class="mb-0">Previsualización</h5>
+
+            {% if cache_id %}
+            <a href="{{ url_for('compras.descargar_refrescos', cache_id=cache_id) }}"
+               class="btn btn-success btn-sm">
+                Descargar archivo
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="card-body">
+
+            <div class="mb-2 text-end">
+                <strong>Total registros:</strong> {{ total_registros }}
+            </div>
+
+            <div class="tabla-scroll">
+                {{ preview | safe }}
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+.tabla-scroll {
+    max-height: 400px;
+    overflow: auto;
+}
+
+.tabla-scroll table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.tabla-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #212529;
+    color: white;
+}
+
+.tabla-scroll td,
+.tabla-scroll th {
+    padding: 0.4rem;
+}
+</style>
+
+{% endblock %}

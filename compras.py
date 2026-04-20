@@ -1169,8 +1169,94 @@ def transmitir_diario(hoja):
 
     df = pd.read_json(data, orient="records")
 
-    # 👉 TU lógica real acá
     print(f"Transmitiendo {hoja} ({len(df)} registros)")
 
     flash(f"{hoja} transmitido correctamente", "success")
     return redirect(url_for("compras.diario"))
+
+
+
+#==========================================================
+# SALTA REFRESCOS
+#==========================================================
+
+@compras_bp.route("/refrescos", methods=["GET", "POST"])
+#@login_requerido("compras") 
+def refrescos():
+    preview = None
+    total_registros = 0
+    cache_id = None
+
+    if request.method == "POST":
+        archivo = request.files.get("archivo")
+
+        if archivo:
+            try:
+                import uuid
+                cache_id = str(uuid.uuid4())
+
+                # 🔥 leer SOLO la primera hoja
+                df = pd.read_excel(archivo)
+
+                # 🔹 limpieza básica
+                df.columns = [str(col).strip() for col in df.columns]
+                df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
+
+                if df.empty:
+                    preview = "<div class='alert alert-warning'>El archivo no tiene datos válidos</div>"
+                else:
+                    total_registros = len(df)
+
+                    # 🔥 guardar en redis
+                    redis_client.set(
+                        f"refrescos:{cache_id}",
+                        df.to_json(orient="records"),
+                        ex=3600
+                    )
+
+                    # 🔥 preview
+                    preview = df.to_html(
+                        classes="table table-sm table-striped",
+                        index=False
+                    )
+
+            except Exception as e:
+                preview = f"<div class='alert alert-danger'>Error: {e}</div>"
+
+    return render_template(
+        "saltarefrescos.html",
+        preview=preview,
+        total_registros=total_registros,
+        cache_id=cache_id
+    )
+
+
+@compras_bp.route("/refrescos/descargar")
+def descargar_refrescos():
+    from flask import request, send_file
+    from io import StringIO
+    import io
+
+    cache_id = request.args.get("cache_id")
+
+    if not cache_id:
+        return "Cache inválido", 400
+
+    data = redis_client.get(f"refrescos:{cache_id}")
+
+    if not data:
+        return "No hay datos", 404
+
+    df = pd.read_json(StringIO(data), orient="records")
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False)
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="refrescos.xlsx",
+        as_attachment=True
+    )
