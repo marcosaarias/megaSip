@@ -1253,60 +1253,60 @@ def refrescos():
                 import uuid
                 cache_id = str(uuid.uuid4())
 
-                # 1. Leer Excel (sin encabezados para buscar la fila "Cód.")
+                # 1. Leer Excel sin procesar headers
                 df_raw = pd.read_excel(archivo, header=None)
 
-                # 2. Localizar la fila de encabezados
+                # 2. Localizar la fila de encabezados (buscando "Cód.")
                 mask = df_raw.astype(str).apply(lambda x: x.str.contains('Cód.', case=False)).any(axis=1)
                 header_idx = df_raw[mask].index[0]
                 
-                # 3. Extraer nombres originales y datos
-                original_headers = df_raw.iloc[header_idx].astype(str).str.strip().tolist()
-                df = df_raw.iloc[header_idx + 1:].copy()
-                df.columns = original_headers
+                # 3. Extraer datos brutos desde esa fila
+                df_data = df_raw.iloc[header_idx + 1:].copy()
 
-                # 4. DEFINIR EL MAPEO (Origen -> Destino)
-                # Esto hace que el código sea fácil de mantener
-                mapeo = {
-                    "Cód.": "codigo",
-                    "Descrip": "descripcion",
-                    "Precio": "Normal",
-                    "Etiquetas": "Oferta",
-                    "Col_6": "Cenefa" # Ajusta este nombre si cambia en el Excel
-                }
-
-                # 5. CONSTRUIR EL DATAFRAME FINAL
+                # 4. CONSTRUIR EL DATAFRAME FINAL CON EL MAPEO CORREGIDO
                 df_final = pd.DataFrame()
                 
-                # Aplicamos el mapeo dinámicamente
-                df_final['codigo']      = pd.to_numeric(df.iloc[:, 0], errors='coerce')
-                df_final['ean']         = "" # Inyectamos columna EAN vacía
-                df_final['descripcion'] = df.iloc[:, 1].astype(str).str.strip()
-                df_final['Normal']      = df.iloc[:, 2] # Mapeo de Precio
-                df_final['Oferta']      = df.iloc[:, 5] # Mapeo de Etiquetas (Col 5)
-                df_final['Cenefa']      = df.iloc[:, 5] # En tu caso, etiquetas va a dos lados o usas la col 6
+                # Mapeo según tus instrucciones:
+                df_final['codigo']      = pd.to_numeric(df_data.iloc[:, 0], errors='coerce')
+                df_final['ean']         = "" 
+                df_final['descripcion'] = df_data.iloc[:, 1].astype(str).str.strip()
+                df_final['Normal']      = df_data.iloc[:, 2] # Precio original
                 
-                # Columnas estándar que siempre deben estar
+                # --- CORRECCIÓN DE COLUMNAS ---
+                # Oferta <- Viene de la columna 'Etiquetas' (Columna 5)
+                df_final['Oferta']      = df_data.iloc[:, 5].replace(['nan', 'None', '', 'NaN'], pd.NA)
+                
+                # Cenefa <- Viene de la columna 'Sucursales a Activar' (Columna 6)
+                df_final['Cenefa']      = df_data.iloc[:, 6].replace(['nan', 'None', '', 'NaN'], pd.NA)
+                
                 df_final['desde']       = ""
                 df_final['hasta']       = ""
-                df_final['Sucursales']  = df.iloc[:, 6].astype(str).str.strip()
+                
+                # Sucursales (si necesitas guardarlas también en su propia columna)
+                df_final['Sucursales']  = df_data.iloc[:, 6].replace(['nan', 'None', '', 'NaN'], pd.NA)
 
-                # 6. LIMPIEZA DE FILAS (Solo nos quedamos con códigos numéricos)
+                # 5. AUTOCOMPLETAR (ffill)
+                # Arrastramos los valores hacia abajo antes de limpiar los códigos vacíos
+                cols_to_fill = ['Oferta', 'Cenefa', 'Sucursales']
+                df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
+
+                # 6. LIMPIEZA FINAL
+                # Eliminamos las filas que no tienen código numérico (esto quita los títulos repetidos)
                 df_final = df_final.dropna(subset=['codigo'])
                 df_final['codigo'] = df_final['codigo'].astype(int)
-
-                # 7. BORRAR DUPLICADOS DE FILAS (Por si el Excel tiene basura)
-                df_final = df_final.drop_duplicates().reset_index(drop=True)
+                
+                # Reemplazar lo que haya quedado como NaN por vacío para el JSON y Preview
+                df_final = df_final.fillna("")
 
                 if df_final.empty:
-                    preview = "<div class='alert alert-warning'>No se detectaron productos.</div>"
+                    preview = "<div class='alert alert-warning'>No hay datos válidos.</div>"
                 else:
                     total_registros = len(df_final)
                     
                     # Guardar en Redis
                     redis_client.set(f"refrescos:{cache_id}", df_final.to_json(orient="records"), ex=3600)
 
-                    # Generar HTML con los nuevos nombres
+                    # Generar Preview HTML
                     preview = df_final.to_html(
                         classes="table table-sm table-hover table-bordered text-center",
                         index=False,
@@ -1317,8 +1317,6 @@ def refrescos():
                 preview = f"<div class='alert alert-danger'>Error: {e}</div>"
 
     return render_template("saltarefrescos.html", preview=preview, total_registros=total_registros, cache_id=cache_id)
-
-
 
 
 
