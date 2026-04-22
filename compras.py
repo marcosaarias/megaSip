@@ -1002,9 +1002,15 @@ def normalizar_sucursales(valor, nombre_hoja):
 
     resultado = []
 
+    if set(regiones) == {"jujuy", "salta"} and not es_mayorista and not es_minorista:
+        return "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO28,CO29,MA02"
+
+    if set(regiones) == {"jujuy", "salta", "tucuman"}:
+        return "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02"
+
     for region in regiones:
 
-        # 🔹 TUCUMAN → siempre minorista
+            # 🔹 TUCUMAN → siempre minorista
         if region == "tucuman":
             resultado.append("CO24,CO25,CO26,CO27")
             continue
