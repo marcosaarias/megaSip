@@ -16,77 +16,102 @@ def index():
             try:
                 df = pd.read_excel(archivo)
 
-                # =========================
-                # 🔍 DEBUG COLUMNAS ORIGINALES
-                # =========================
-                print("\n========= COLUMNAS ORIGINALES =========")
-                for col in df.columns:
-                    print(f"👉 '{col}'")
-                print("=======================================\n")
-
                 # 🔍 Normalizar nombres
                 df.columns = [str(col).strip() for col in df.columns]
 
-                # =========================
-                # 🔍 DEBUG COLUMNAS NORMALIZADAS
-                # =========================
-                print("\n========= COLUMNAS NORMALIZADAS =========")
+                print("\n===== DEBUG COLUMNAS =====")
                 for col in df.columns:
                     print(f"👉 '{col}'")
-                print("=========================================\n")
+                print("===========================\n")
 
-                # 🔎 Buscar columnas clave
-                col_precio = None
+                # 🔎 Detectar columnas
+                col_precio_mi = None
                 col_codigo = None
+                col_costo = None
+                col_precio = None
+                col_costo_neto = None
 
                 for col in df.columns:
                     col_lower = col.lower()
 
-                    print(f"Analizando: {col_lower}")  # 👈 DEBUG
-
-                    if "precio" in col_lower and "mi" in col_lower:
-                        col_precio = col
-                        print(f"✅ MATCH PRECIO: {col}")
+                    if "precio mi" in col_lower:
+                        col_precio_mi = col
 
                     if "cod" in col_lower and "product" in col_lower:
                         col_codigo = col
-                        print(f"✅ MATCH CODIGO: {col}")
 
-                # =========================
-                # 🔍 RESULTADO MATCH
-                # =========================
-                print("\n========= RESULTADO MATCH =========")
-                print(f"Precio detectado: {col_precio}")
-                print(f"Codigo detectado: {col_codigo}")
-                print("==================================\n")
+                    if col_lower == "costo":
+                        col_costo = col
 
-                # =========================
-                # 🧩 INSERTAR COLUMNAS
-                # =========================
-                if col_precio and col_codigo:
+                    if col_lower == "precio":
+                        col_precio = col
 
-                    idx_precio = df.columns.get_loc(col_precio)
+                    if "costo neto" in col_lower:
+                        col_costo_neto = col
+
+                print("MATCH:")
+                print("Precio MI:", col_precio_mi)
+                print("Código:", col_codigo)
+                print("Costo:", col_costo)
+                print("Precio:", col_precio)
+                print("Costo Neto:", col_costo_neto)
+
+                # ✅ VALIDACIÓN
+                if col_precio_mi and col_codigo:
                     idx_codigo = df.columns.get_loc(col_codigo)
 
-                    print(f"Posición Precio: {idx_precio}")
-                    print(f"Posición Codigo: {idx_codigo}")
-
-                    # 🔥 Insertar justo ANTES de Cod.Product
-                    insert_pos = min(idx_precio, idx_codigo) + 1
-
-                    nuevas_cols = ["Col1", "Col2", "Col3", "Col4", "Col5"]
+                    # 🔥 Insertar columnas nuevas antes de Cod.Producto
+                    nuevas_cols = ["Costo_tmp", "Precio_tmp", "Col3", "Col4", "Col5"]
 
                     for i, nueva in enumerate(nuevas_cols):
-                        df.insert(insert_pos + i, nueva, "")
+                        df.insert(idx_codigo + i, nueva, "")
 
-                    print("✅ Columnas insertadas correctamente")
+                    # 🔥 Convertir a numérico (clave para cálculos)
+                    if col_costo:
+                        df[col_costo] = pd.to_numeric(df[col_costo], errors="coerce")
+
+                    if col_precio:
+                        df[col_precio] = pd.to_numeric(df[col_precio], errors="coerce")
+
+                    if col_costo_neto:
+                        df[col_costo_neto] = pd.to_numeric(df[col_costo_neto], errors="coerce")
+
+                    if col_precio_mi:
+                        df[col_precio_mi] = pd.to_numeric(df[col_precio_mi], errors="coerce")
+
+                    # 🔥 MOVER datos
+                    if col_costo:
+                        df["Costo_tmp"] = df[col_costo]
+
+                    if col_precio:
+                        df["Precio_tmp"] = df[col_precio]
+
+                    # 🔥 CALCULOS
+                    if col_costo_neto and col_costo:
+                        df["Col3"] = df[col_costo_neto] - df[col_costo]
+
+                    if col_precio_mi and col_precio:
+                        df["Col4"] = df[col_precio_mi] - df[col_precio]
+
+                    # 🔥 BORRAR columnas originales
+                    cols_a_borrar = []
+                    if col_costo:
+                        cols_a_borrar.append(col_costo)
+                    if col_precio:
+                        cols_a_borrar.append(col_precio)
+
+                    df.drop(columns=cols_a_borrar, inplace=True)
+
+                    # 🔥 RENOMBRAR columnas nuevas
+                    df.rename(columns={
+                        "Costo_tmp": "Costo",
+                        "Precio_tmp": "Precio"
+                    }, inplace=True)
 
                 else:
-                    print("❌ No se encontraron las columnas esperadas")
+                    print("⚠️ No se encontraron columnas clave")
 
-                # =========================
-                # 👀 PREVIEW
-                # =========================
+                # Preview
                 df_preview = df.head(50)
 
                 preview = df_preview.to_html(
