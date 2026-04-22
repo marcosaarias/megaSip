@@ -1168,9 +1168,16 @@ def diario():
                     if "sucursales" not in df.columns:
                         df["sucursales"] = detectar_sucursales(nombre_hoja)
                     else:
+                        df["sucursales"] = (
+                                        df["sucursales"]
+                                        .replace(r'^\s*$', pd.NA, regex=True)
+                                        .replace("nan", pd.NA)  
+                                        .ffill()
+                                    )
+
                         df["sucursales"] = df["sucursales"].apply(
-                            lambda x: normalizar_sucursales(x, nombre_hoja)
-                        )
+                                lambda x: normalizar_sucursales(x, nombre_hoja)
+                            )
 
                     # 🔹 limpiar filas vacías
                     df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
