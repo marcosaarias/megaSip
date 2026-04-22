@@ -76,6 +76,18 @@ def index():
 
                 df.columns = [str(col).strip() for col in df.columns]
 
+                if "Troquel" in df.columns:
+                    idx_troquel = df.columns.get_loc("Troquel")
+
+                    nuevas_cols = ["F-Super", "A-Super", "F-Farmacia", "A-Farmacia"]
+
+                    for i, col_nueva in enumerate(nuevas_cols, start=1):
+                        if col_nueva not in df.columns:
+                            df.insert(idx_troquel + i, col_nueva, None)
+
+                if "Estado" in df.columns:
+                    df = df[df["Estado"].notna()]
+
                 print("\n========== COLUMNAS DEL EXCEL ==========")
                 for i, c in enumerate(df.columns):
                     print(f"{i}: '{c}'")
@@ -203,6 +215,14 @@ def index():
                         else:
                             col5.append(g3)
                     df["Col5"] = col5
+
+                    df.rename(columns={
+                        "Col3": "Dif Cost",
+                        "Col4": "dif Precio",
+                        "Col5": "diferencia"
+                    }, inplace=True)
+
+                    df = df[df["diferencia"].notna()]
 
                     print("\n========== MUESTRA FINAL ==========")
                     mostrar = [c for c in ["Costo Neto", "Costo", "Col3"] if c in df.columns]
