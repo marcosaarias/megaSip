@@ -28,7 +28,7 @@ SUCURSAL_MAP = {
     "Jujuy, Salta - Minoritas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO28",
     "Jujuy, Salta - Minoritas y Mayoristas": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO28,CO29,MA02",
     "Jujuy - Minorista Y Mayorista": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO19,CO20,CO22,CO28,MA02",
-    "Tucuman - Minoristas": "CO24,CO25,CO26,CO27",
+    "Tucuman": "CO24,CO25,CO26,CO27",
     "Jujuy Capital": "CO01,CO02,CO05,CO07,CO11,CO16,CO19,CO20,CO22"
 }
 
@@ -975,6 +975,77 @@ def formatear_moneda(valor):
         return valor
 
 
+def normalizar_sucursales(valor, nombre_hoja):
+    if not valor or str(valor).strip() == "":
+        return detectar_sucursales(nombre_hoja)
+
+    valor_str = str(valor).strip()
+
+    # 🔹 si ya son códigos → respetar
+    if re.search(r"\b(CO\d+|MA\d+)\b", valor_str):
+        return valor_str
+
+    texto = normalizar_texto(valor_str)
+
+    es_mayorista = "mayorista" in texto
+    es_minorista = "minorista" in texto
+
+    regiones = []
+    if "jujuy" in texto:
+        regiones.append("jujuy")
+    if "salta" in texto:
+        regiones.append("salta")
+    if "oran" in texto:
+        regiones.append("oran")
+    if "tucuman" in texto:
+        regiones.append("tucuman")
+
+    resultado = []
+
+    for region in regiones:
+
+        # 🔹 TUCUMAN → siempre minorista
+        if region == "tucuman":
+            resultado.append("CO24,CO25,CO26,CO27")
+            continue
+
+        # 🔹 ORAN → mayorista
+        if region == "oran":
+            resultado.append("CO21")
+            continue
+
+        # 🔹 MAYORISTA
+        if es_mayorista and not es_minorista:
+            if region == "jujuy":
+                resultado.append("CO05,CO12,CO15,MA02")
+            elif region == "salta":
+                resultado.append("CO09,CO29,CO21")
+
+        # 🔹 MINORISTA
+        elif es_minorista and not es_mayorista:
+            if region == "jujuy":
+                resultado.append("CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28")
+            elif region == "salta":
+                resultado.append("CO18,CO23")
+
+        # 🔥 SIN ESPECIFICAR → AMBOS (TU REGLA)
+        else:
+            if region == "jujuy":
+                resultado.append("CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO19,CO20,CO22,CO28,MA02")
+            elif region == "salta":
+                resultado.append("CO18,CO23,CO09,CO29,CO21")
+
+    # 🔥 combinar y limpiar duplicados
+    if resultado:
+        codigos = ",".join(resultado).split(",")
+        codigos_unicos = sorted(set(c.strip() for c in codigos if c.strip()))
+        return ",".join(codigos_unicos)
+
+    # 🔹 fallback
+    return detectar_sucursales(nombre_hoja)
+
+
+
 SUCURSAL_MAP_DIARIO = {
     "jujuy_minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
     "jujuy_mayorista": "CO05,CO12,CO15,MA02",
@@ -1082,26 +1153,21 @@ def diario():
                     df["hasta"] = f_hasta
 
                     # 🔹 sucursales
-                    sucursales_auto = detectar_sucursales(nombre_hoja)
-
                     if "sucursales" not in df.columns:
-                        df["sucursales"] = sucursales_auto
+                        df["sucursales"] = detectar_sucursales(nombre_hoja)
                     else:
-                        df["sucursales"] = (
-                            df["sucursales"]
-                            .replace("", sucursales_auto)
-                            .fillna(sucursales_auto)
+                        df["sucursales"] = df["sucursales"].apply(
+                            lambda x: normalizar_sucursales(x, nombre_hoja)
                         )
 
                     # 🔹 limpiar filas vacías
                     df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
 
-                    # 🔥 FILTRO CENEFA (ANTES de recortar columnas)
                     if "cenefa" in df.columns:
-                        df["cenefa"] = df["cenefa"].astype(str).str.strip()
-
+                        
+                        df = df[df["cenefa"].notna()]
+                        df["cenefa"] = df["cenefa"].str.strip()
                         df = df[
-                            df["cenefa"].notna() &
                             (df["cenefa"] != "") &
                             (~df["cenefa"].str.lower().str.contains("ya esta activo", na=False))
                         ]
