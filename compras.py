@@ -1013,13 +1013,13 @@ def diario():
     preview = {}
     total_registros = {}
     hojas_orden = []
-    cache_id = None  # 🔥 importante
+    cache_id = None
 
     HEADERS_DIARIO = [
         "CODIGO", "DESCRIPCION", "EAN",
         "Normal", "Oferta",
         "desde", "hasta",
-        "sucursales"
+        "sucursales", "cenefa"
     ]
 
     if request.method == "POST":
@@ -1030,7 +1030,6 @@ def diario():
 
         if archivo:
             try:
-                # 🔥 generar ID único por carga
                 cache_id = str(uuid.uuid4())
 
                 f_desde = pd.to_datetime(fecha_desde_raw).strftime('%d/%m/%Y') if fecha_desde_raw else ""
@@ -1040,12 +1039,15 @@ def diario():
 
                 for nombre_hoja, df in xls.items():
 
+                    # 🔹 descartar hojas vacías
                     df_check = df.replace(r'^\s*$', pd.NA, regex=True)
                     if df_check.dropna(how="all").empty:
                         continue
 
+                    # 🔹 normalizar columnas
                     df.columns = [normalizar_texto(col).strip() for col in df.columns]
 
+                    # 🔹 mapear columnas con ALIAS
                     column_mapping = {}
 
                     for header in HEADERS_DIARIO:
@@ -1063,6 +1065,7 @@ def diario():
 
                     df = df.rename(columns=column_mapping)
 
+                    # 🔹 limpiar CODIGO
                     if "CODIGO" in df.columns:
                         df["CODIGO"] = (
                             df["CODIGO"]
@@ -1074,9 +1077,11 @@ def diario():
 
                     df = completar_ean(df)
 
+                    # 🔹 fechas
                     df["desde"] = f_desde
                     df["hasta"] = f_hasta
 
+                    # 🔹 sucursales
                     sucursales_auto = detectar_sucursales(nombre_hoja)
 
                     if "sucursales" not in df.columns:
@@ -1088,14 +1093,27 @@ def diario():
                             .fillna(sucursales_auto)
                         )
 
-                    columnas_validas = [col for col in HEADERS_DIARIO if col in df.columns]
-                    df = df[columnas_validas]
-
+                    # 🔹 limpiar filas vacías
                     df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
+
+                    # 🔥 FILTRO CENEFA (ANTES de recortar columnas)
+                    if "cenefa" in df.columns:
+                        df["cenefa"] = df["cenefa"].astype(str).str.strip()
+
+                        df = df[
+                            df["cenefa"].notna() &
+                            (df["cenefa"] != "") &
+                            (~df["cenefa"].str.lower().str.contains("ya esta activo", na=False))
+                        ]
 
                     if df.empty:
                         continue
 
+                    # 🔹 recortar columnas (solo una vez)
+                    columnas_validas = [col for col in HEADERS_DIARIO if col in df.columns]
+                    df = df[columnas_validas]
+
+                    # 🔹 validar CODIGO numérico
                     if "CODIGO" in df.columns:
                         df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
                         df = df.dropna(subset=["CODIGO"])
@@ -1103,6 +1121,7 @@ def diario():
 
                     df = df.fillna("")
 
+                    # 🔹 formatear precios
                     for col in ["Normal", "Oferta"]:
                         if col in df.columns:
                             df[col] = df[col].apply(formatear_moneda)
@@ -1110,11 +1129,11 @@ def diario():
                     if df.empty:
                         continue
 
-                    # 🔥 GUARDAR EN REDIS
+                    # 🔥 guardar en Redis
                     redis_client.set(
                         f"diario:{cache_id}:{nombre_hoja}",
                         df.to_json(orient="records"),
-                        ex=3600  # 1 hora
+                        ex=3600
                     )
 
                     preview[nombre_hoja] = df.to_html(
@@ -1135,7 +1154,7 @@ def diario():
         total_registros=total_registros,
         hojas_orden=hojas_orden,
         cache_id=cache_id
-    ) 
+    )
 
 @compras_bp.route("/diario/descargar/<hoja>")
 def descargar_diario(hoja):
