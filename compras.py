@@ -1057,25 +1057,31 @@ SUCURSAL_MAP_DIARIO = {
 def detectar_sucursales(nombre_hoja):
     hoja = normalizar_texto(nombre_hoja)
 
-    if "jujuy mayorista" in hoja:
-        return SUCURSAL_MAP_DIARIO["jujuy_mayorista"]
+    # 🔥 Jujuy + Salta (combinado)
+    if ("jujuy" in hoja and "salta" in hoja):
+        return "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO28,CO29,MA02"
 
-    elif "jujuy" in hoja:
-        return SUCURSAL_MAP_DIARIO["jujuy_minorista"]
+    # 🔥 Jujuy
+    if "jujuy" in hoja:
+        if "mayorista" in hoja:
+            return "CO05,CO12,CO15,MA02"
+        else:
+            # completo (minorista + mayorista)
+            return "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO19,CO20,CO22,CO28,MA02"
 
-    elif "salta mayorista" in hoja:
-        return SUCURSAL_MAP_DIARIO["salta_mayorista"]
+    # 🔥 Salta
+    if "salta" in hoja:
+        if "mayorista" in hoja:
+            return "CO09,CO29,CO21"
+        else:
+            # completo (minorista + mayorista)
+            return "CO18,CO23,CO09,CO29,CO21"
 
-    elif "salta" in hoja:
-        return SUCURSAL_MAP_DIARIO["salta"]
-
-    elif "tucuman" in hoja:
-        return SUCURSAL_MAP_DIARIO["tucuman"]
+    # 🔥 Tucumán
+    if "tucuman" in hoja:
+        return "CO24,CO25,CO26,CO27"
 
     return ""
-
-    return ",".join([p for p in partes if p])
-
 
 @compras_bp.route("/diario", methods=["GET", "POST"])
 def diario():
@@ -1164,12 +1170,16 @@ def diario():
                     df = df.replace(r'^\s*$', pd.NA, regex=True).dropna(how="all")
 
                     if "cenefa" in df.columns:
-                        
-                        df = df[df["cenefa"].notna()]
-                        df["cenefa"] = df["cenefa"].str.strip()
+
+                        df["cenefa"] = (
+                            df["cenefa"]
+                            .replace(r'^\s*$', pd.NA, regex=True)
+                            .replace("nan", pd.NA)
+                        )
+
                         df = df[
-                            (df["cenefa"] != "") &
-                            (~df["cenefa"].str.lower().str.contains("ya esta activo", na=False))
+                            df["cenefa"].notna() &
+                            (~df["cenefa"].astype(str).str.lower().str.contains("ya esta activo", na=False))
                         ]
 
                     if df.empty:
