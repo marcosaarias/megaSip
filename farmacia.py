@@ -1,12 +1,14 @@
 import os
 import pandas as pd
 import numpy as np
+import sqlite3
 from flask import Blueprint, render_template, request, send_file
 
 farmacia_bp = Blueprint("farmacia", __name__)
 
-ARCHIVO_TEMP = "temp_procesado_farmacia.xlsx"
+DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
+ARCHIVO_TEMP = os.path.join(os.path.dirname(__file__), "temp_procesado_farmacia.xlsx")
 
 def limpiar_numero(serie):
     print(f"\nDEBUG LIMPIEZA - dtype inicial: {serie.dtype}")
@@ -62,6 +64,54 @@ def limpiar_numero(serie):
     return out
 
 
+def autocompletar_super_desde_cenefas(df):
+    if "Troquel" not in df.columns:
+        return df
+
+    conn = sqlite3.connect(DB_PATH)
+
+    try:
+        consulta = """
+            SELECT Codigo, descripcion, cenefa
+            FROM cenefas
+        """
+        cenefas_df = pd.read_sql_query(consulta, conn)
+    finally:
+        conn.close()
+
+    # Normalizar Codigo de BD
+    cenefas_df["Codigo_match"] = (
+        cenefas_df["Codigo"]
+        .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+        .str.lstrip("0")
+    )
+
+    # Evitar duplicados de código; si hay varios, toma el último
+    cenefas_df = cenefas_df.dropna(subset=["Codigo_match"])
+    cenefas_df = cenefas_df.drop_duplicates(subset=["Codigo_match"], keep="last")
+
+    mapa_descripcion = dict(zip(cenefas_df["Codigo_match"], cenefas_df["descripcion"]))
+    mapa_cenefa = dict(zip(cenefas_df["Codigo_match"], cenefas_df["cenefa"]))
+
+    # Normalizar Troquel del Excel
+    troquel_match = (
+        df["Troquel"]
+        .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+        .str.lstrip("0")
+        .replace({"": np.nan, "nan": np.nan, "None": np.nan})
+    )
+
+    df["F-Super"] = troquel_match.map(mapa_descripcion).fillna("#N/D")
+    df["A-Super"] = troquel_match.map(mapa_cenefa).fillna("#N/D")
+
+    return df
+
+
+
 @farmacia_bp.route("/", methods=["GET", "POST"])
 def index():
     preview = None
@@ -84,6 +134,7 @@ def index():
                     for i, col_nueva in enumerate(nuevas_cols, start=1):
                         if col_nueva not in df.columns:
                             df.insert(idx_troquel + i, col_nueva, None)
+                    df = autocompletar_super_desde_cenefas(df)
 
                 if "Estado" in df.columns:
                     df = df[df["Estado"].notna()]
