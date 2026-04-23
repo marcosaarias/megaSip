@@ -5,7 +5,7 @@
 <div class="container-fluid">
     <h2 class="mb-4">Gestión de Folder</h2>
 
-    <!-- 🔹 Selector global de fechas -->
+    <!-- Selector global de fechas -->
     <div class="card p-4 shadow-sm mb-4">
         <div class="row">
             <div class="col-md-3">
@@ -30,31 +30,15 @@
 
     <div class="row">
 
-        <!-- 🔹 Mayorista -->
-        <div class="col-md-6">
-            <div class="card p-4 shadow-sm">
-                <h4>Folder Mayorista</h4>
-
-                <form method="POST" enctype="multipart/form-data" class="folder-form">
-                    <input type="hidden" name="tipo" value="mayorista">
-                    <input type="hidden" name="fecha_desde">
-                    <input type="hidden" name="fecha_hasta">
-
-                    <input type="file" name="archivo" class="form-control mb-3" required>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Cargar Folder Mayorista
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- 🔹 Minorista -->
+        <!-- Minorista -->
         <div class="col-md-6">
             <div class="card p-4 shadow-sm">
                 <h4>Folder Minorista</h4>
 
-                <form method="POST" enctype="multipart/form-data" class="folder-form">
+                <form method="POST"
+                      action="{{ url_for('compras.folder_minorista') }}"
+                      enctype="multipart/form-data"
+                      class="folder-form">
                     <input type="hidden" name="tipo" value="minorista">
                     <input type="hidden" name="fecha_desde">
                     <input type="hidden" name="fecha_hasta">
@@ -70,7 +54,14 @@
 
     </div>
 
-    <!-- 🔹 Preview -->
+    <!-- Mensaje de error -->
+    {% if mensaje_error %}
+    <div class="alert alert-danger mt-4">
+        {{ mensaje_error }}
+    </div>
+    {% endif %}
+
+    <!-- Preview -->
     {% if preview %}
     <div class="mt-5">
         <div class="card shadow-sm">
@@ -90,10 +81,10 @@
                     {{ preview|safe }}
                 </div>
 
-                <!-- 🔥 BOTÓN TRANSMITIR -->
+                <!-- Botón transmitir -->
                 <div class="text-end mt-4">
                     <form method="POST"
-                          action="{{ url_for('compras.folder') }}"
+                          action="{{ url_for('compras.folder_minorista') }}"
                           onsubmit="return confirmarTransmision();">
 
                         <input type="hidden" name="tipo" value="{{ tipo }}">
@@ -113,11 +104,9 @@
 
 </div>
 
-<!-- 🔹 Script copiar fechas -->
 <script>
 document.querySelectorAll(".folder-form").forEach(form => {
     form.addEventListener("submit", function(event) {
-
         const desde = document.getElementById("fecha_desde").value;
         const hasta = document.getElementById("fecha_hasta").value;
 
@@ -127,20 +116,22 @@ document.querySelectorAll(".folder-form").forEach(form => {
             return;
         }
 
+        const archivoInput = form.querySelector("input[name='archivo']");
+        if (!archivoInput || !archivoInput.files || archivoInput.files.length === 0) {
+            alert("Debe seleccionar un archivo.");
+            event.preventDefault();
+            return;
+        }
+
         form.querySelector("input[name='fecha_desde']").value = desde;
         form.querySelector("input[name='fecha_hasta']").value = hasta;
-
     });
 });
 
-
-/* Confirmación de transmisión */
-
-function confirmarTransmision(){
-
+function confirmarTransmision() {
     let confirmar = confirm("¿Está seguro que desea transmitir el folder?");
 
-    if(confirmar){
+    if (confirmar) {
         alert("Transmitiendo información...");
         return true;
     }

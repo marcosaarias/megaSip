@@ -86,12 +86,12 @@ def login():
 
             elif rol_lower == "gerencia":
                 return redirect(url_for("compras.lista_pedidos"))
-
+                
             elif rol_lower == "sucursal":
-                return redirect(url_for("compras.sucursal"))
-            
+                return redirect(url_for("compras.sucursal", tipo="minorista"))
+                        
             elif rol_lower == "compras":
-                return redirect(url_for("compras.folder"))
+                return redirect(url_for("compras.folder_mayorista"))
 
             elif rol_lower == "farmacia":
                 return redirect(url_for("farmacia.index"))

@@ -74,10 +74,13 @@
   {% if session.get("usuario_rol") == "compras" %}
 
   <div class="menu-section 
-    {% if request.path == url_for('compras.folder')
-    or 'competencia' in request.path
-    or 'interna' in request.path
-    or 'vencimientos' in request.path %}active{% endif %}">
+    {% if request.path in [
+        url_for('compras.folder_mayorista'),
+        url_for('compras.folder_minorista')
+    ] %}
+      or 'competencia' in request.path
+        or 'interna' in request.path
+        or 'vencimientos' in request.path %}active{% endif %}">
 
     <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
       Cenefas <i class="bi bi-chevron-down arrow"></i>
@@ -85,9 +88,14 @@
 
     <div class="submenu" id="submenu-compras">
 
-      <a href="{{ url_for('compras.folder') }}"
-         class="submenu-item {% if request.path == url_for('compras.folder') %}active-link{% endif %}">
-        Cargar Folder
+      <a href="{{ url_for('compras.folder_mayorista') }}"
+        class="submenu-item {% if request.path == url_for('compras.folder_mayorista') %}active-link{% endif %}">
+        Folder Mayorista
+      </a>
+
+      <a href="{{ url_for('compras.folder_minorista') }}"
+        class="submenu-item {% if request.path == url_for('compras.folder_minorista') %}active-link{% endif %}">
+        Folder Minorista
       </a>
 
       <a href="{{ url_for('compras.ofertas', modo='competencia') }}"
@@ -152,12 +160,16 @@
   {% endif %}
 
 
-  <!-- ================= SUCURSAL ================= -->
-  {% if session.get("usuario_rol") == "sucursal" %}
+
+<!-- ================= SUCURSAL ================= -->
+<!-- ================= SUCURSAL ================= -->
+{% if session.get("usuario_rol") == "sucursal" %}
+
+  {% set suc = session.get("usuario_nombre", "").strip().upper() %}
+  {% set sucursales_mayoristas = ['CO05', 'CO09', 'CO12', 'CO15', 'CO21', 'CO29', 'MA02'] %}
 
   <!-- CENEFAS -->
-   
-  <div class="menu-section {% if request.args.get('tipo') in ['folder', 'competencia', 'interna', 'vencimientos'] %}active{% endif %}">
+  <div class="menu-section {% if request.args.get('tipo') in ['mayorista', 'minorista', 'competencia', 'interna', 'vencimientos'] %}active{% endif %}">
 
     <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
       Cenefas <i class="bi bi-chevron-down arrow"></i>
@@ -165,10 +177,19 @@
 
     <div class="submenu" id="submenu-sucursal-main">
 
-      <a href="{{ url_for('compras.sucursal', tipo='folder') }}"
-        class="submenu-item {% if request.args.get('tipo') == 'folder' %}active-link{% endif %}">
-        Folder
-      </a>
+      {% if suc in sucursales_mayoristas %}
+        <!-- SOLO MAYORISTA -->
+        <a href="{{ url_for('compras.sucursal', tipo='mayorista') }}"
+          class="submenu-item {% if request.args.get('tipo') == 'mayorista' %}active-link{% endif %}">
+          Folder Mayorista
+        </a>
+      {% else %}
+        <!-- SOLO MINORISTA -->
+        <a href="{{ url_for('compras.sucursal', tipo='minorista') }}"
+          class="submenu-item {% if request.args.get('tipo') == 'minorista' %}active-link{% endif %}">
+          Folder Minorista
+        </a>
+      {% endif %}
 
       <a href="{{ url_for('compras.sucursal', tipo='competencia') }}"
         class="submenu-item {% if request.args.get('tipo') == 'competencia' %}active-link{% endif %}">
@@ -188,35 +209,30 @@
     </div>
   </div>
 
-
   <!-- OTRAS CENEFAS -->
+  <div class="menu-section {% if request.args.get('tipo') in ['diarios', 'saltarefrescos'] %}active{% endif %}">
 
-    <div class="menu-section 
-      {% if request.args.get('tipo') in ['diarios', 'saltarefrescos'] %}active{% endif %}">
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Otras Cenefas <i class="bi bi-chevron-down arrow"></i>
+    </a>
 
-      <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-        Otras Cenefas <i class="bi bi-chevron-down arrow"></i>
+    <div class="submenu" id="submenu-otras">
+
+      <a href="{{ url_for('compras.sucursal', tipo='diarios') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'diarios' %}active-link{% endif %}">
+        Diarios
       </a>
 
-      <div class="submenu" id="submenu-otras">
+      <a href="{{ url_for('compras.sucursal', tipo='saltarefrescos') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'saltarefrescos' %}active-link{% endif %}">
+        Salta Refrescos
+      </a>
 
-        <a href="{{ url_for('compras.sucursal', tipo='diarios') }}"
-          class="submenu-item {% if request.args.get('tipo') == 'diarios' %}active-link{% endif %}">
-          Diarios
-        </a>
-
-        <a href="{{ url_for('compras.sucursal', tipo='saltarefrescos') }}"
-          class="submenu-item {% if request.args.get('tipo') == 'saltarefrescos' %}active-link{% endif %}">
-          Salta Refrescos
-        </a>
-
-      </div>
     </div>
-
+  </div>
 
   <!-- HISTORIAL -->
-  <div class="menu-section 
-    {% if request.path == url_for('compras.historico_cenefas') %}active{% endif %}">
+  <div class="menu-section {% if request.path == url_for('compras.historico_cenefas') %}active{% endif %}">
 
     <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
       Historial <i class="bi bi-chevron-down arrow"></i>
@@ -228,9 +244,10 @@
         Historial de Cenefas
       </a>
     </div>
+
   </div>
 
-  {% endif %}
+{% endif %}
 
 </div>
 

@@ -127,29 +127,6 @@ def cargar_material_map():
 
 MATERIAL_MAP = cargar_material_map()
 
-#def completar_ean(df):
-#    if "CODIGO" not in df.columns:
-#        return df
-#    codigos_str = (
-#        pd.to_numeric(df["CODIGO"], errors="coerce")
-#        .fillna(0)
-#        .astype(int)
-#        .astype(str)
-#    )
-#    material_map_normalized = {
-#        str(int(float(k))) if str(k).replace(".", "", 1).isdigit()
-#        else str(k).strip(): v
-#        for k, v in MATERIAL_MAP.items()
-#    }
-#    mapped = codigos_str.map(material_map_normalized).fillna("")
-#    if "ean" not in df.columns:
-#        df.insert(1, "ean", mapped)
-#    else:
-#        df["ean"] = df["ean"].replace(["nan", "NaN", "None"], "")
-#        df["ean"] = df["ean"].fillna(mapped)
-#    return df
-
-
 def completar_ean(df):
     if "CODIGO" not in df.columns:
         return df
@@ -192,122 +169,6 @@ def normalizar_texto(texto):
     return texto
 
 # ---------------- PROCESAMIENTO COMUN ----------------
-"""
-def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
-    preview = None
-    mensaje_error = None
-    total_registros = 0
-    df = None
-
-    if archivo and archivo.filename != "":
-
-        df_temp = pd.read_excel(archivo, header=None)
-
-        fila_header = None
-        for i, row in df_temp.iterrows():
-            valores = [normalizar_texto(x) for x in row.values]
-            if "codigo" in valores:
-                fila_header = i
-                break
-
-        if fila_header is None:
-            mensaje_error = "No se encontró la fila de encabezados (CODIGO)."
-            return None, None, mensaje_error, 0
-
-        archivo.seek(0)
-        df = pd.read_excel(archivo, header=fila_header)
-
-        df.columns = [normalizar_texto(col).strip() for col in df.columns]
-
-        column_mapping = {}
-
-        for header in HEADERS:
-            header_norm = normalizar_texto(header)
-            posibles = ALIAS.get(header, [])
-            posibles_norm = [normalizar_texto(p) for p in posibles]
-
-            for col in df.columns:
-                if col == header_norm or col in posibles_norm:
-                    column_mapping[col] = header
-                    break
-
-        if not column_mapping:
-            mensaje_error = "No se encontraron columnas válidas."
-            return None, None, mensaje_error, 0
-
-        df = df.rename(columns=column_mapping)
-
-        if tipo in SUCURSAL_MAP:
-            clave_total = (
-                "Total Empresa - Mayorista"
-                if tipo == "mayorista"
-                else "Total-empresa-minorista"
-            )
-
-            if "sucursales" not in df.columns:
-                df["sucursales"] = ""
-
-            def generar_codigos(valor):
-                if pd.isna(valor) or str(valor).strip() == "":
-                    return SUCURSAL_MAP[tipo].get(clave_total, "")
-
-                provincia = normalizar_texto(valor)
-
-                return SUCURSAL_MAP[tipo].get(
-                    provincia,
-                    SUCURSAL_MAP[tipo].get(clave_total, "")
-                )
-
-            df["sucursales"] = df["sucursales"].apply(generar_codigos)
-
-        columnas_validas = [col for col in df.columns if col in HEADERS]
-        df = df[columnas_validas]
-
-        df = df.replace(r'^\s*$', pd.NA, regex=True)
-        df = df.dropna(how="all")
-
-        if "CODIGO" in df.columns:
-            df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
-            df = df.dropna(subset=["CODIGO"])
-            df["CODIGO"] = df["CODIGO"].astype(int)
-
-        df = completar_ean(df)
-
-        if "ean" in df.columns:
-            df.rename(columns={"ean": "EAN"}, inplace=True)
-
-        columnas = list(df.columns)
-        if "CODIGO" in columnas and "EAN" in columnas:
-            columnas.remove("EAN")
-            index_codigo = columnas.index("CODIGO")
-            columnas.insert(index_codigo + 1, "EAN")
-            df = df[columnas]
-
-        if "Oferta" in df.columns:
-            df["Oferta"] = pd.to_numeric(df["Oferta"], errors="coerce")
-            df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
-
-        if "Normal" in df.columns:
-            df["Normal"] = pd.to_numeric(df["Normal"], errors="coerce")
-            df["Normal"] = np.floor(df["Normal"] * 100) / 100
-
-        if fecha_desde:
-            df["Desde"] = fecha_desde
-
-        if fecha_hasta:
-            df["Hasta"] = fecha_hasta
-
-        df = df.reset_index(drop=True)
-        total_registros = len(df)
-        df = df.fillna("")
-
-        preview = df.to_html(
-            classes="table table-striped table-bordered",
-            index=False
-        )
-
-    return df, preview, mensaje_error, total_registros
-"""
 
 def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
     preview = None
@@ -385,6 +246,7 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                     SUCURSAL_MAP[tipo].get(clave_total, "")
                 )
 
+            df["sucursales"] = df["sucursales"].apply(generar_codigos)
 
         columnas_validas = [col for col in df.columns if col in HEADERS]
         df = df[columnas_validas]
@@ -482,20 +344,16 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
 def dashboard():
     return render_template("compras.html")
 
-@compras_bp.route("/folder", methods=["GET", "POST"])
-def folder():
+def _folder_base(tipo, template_name):
     preview = None
-    tipo = None
     mensaje_error = None
     total_registros = 0
-    fecha_desde = None
-    fecha_hasta = None
+
+    fecha_desde = request.form.get("fecha_desde") or request.args.get("fecha_desde") or ""
+    fecha_hasta = request.form.get("fecha_hasta") or request.args.get("fecha_hasta") or ""
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
-        tipo = request.form.get("tipo")
-        fecha_desde = request.form.get("fecha_desde")
-        fecha_hasta = request.form.get("fecha_hasta")
         usuario = session.get("usuario_nombre", "desconocido")
 
         try:
@@ -507,18 +365,20 @@ def folder():
             )
 
             if df is not None:
-                #guardar_cenefas_en_db(df, "folder")
-                usuario = session.get("usuario_nombre", "desconocido")
-                lote_carga, fecha_carga = guardar_cenefas_en_db(df, "folder", usuario=usuario)
+                lote_carga, fecha_carga = guardar_cenefas_en_db(
+                    df,
+                    tipo,
+                    usuario=usuario
+                )
 
                 guardar_log_compras(
                     usuario=usuario,
                     nivel="INFO",
                     origen="backend",
                     modulo="folder",
-                    accion="Carga de folder",
+                    accion=f"Carga de folder {tipo}",
                     archivo=archivo.filename if archivo else None,
-                    detalle="Archivo procesado y guardado correctamente",
+                    detalle=f"Archivo procesado y guardado correctamente ({tipo})",
                     estado="exitoso",
                     total_registros=total_registros
                 )
@@ -528,7 +388,7 @@ def folder():
                     nivel="ERROR",
                     origen="validacion",
                     modulo="folder",
-                    accion="Error carga folder",
+                    accion=f"Error carga folder {tipo}",
                     archivo=archivo.filename if archivo else None,
                     detalle=mensaje_error or "No se pudo procesar el archivo",
                     estado="fallido",
@@ -543,7 +403,7 @@ def folder():
                 nivel="CRITICAL",
                 origen="base_datos",
                 modulo="folder",
-                accion="Error guardando folder",
+                accion=f"Error guardando folder {tipo}",
                 archivo=archivo.filename if archivo else None,
                 detalle=str(e),
                 estado="fallido",
@@ -559,7 +419,7 @@ def folder():
                 nivel="ERROR",
                 origen="backend",
                 modulo="folder",
-                accion="Excepción en folder",
+                accion=f"Excepción en folder {tipo}",
                 archivo=archivo.filename if archivo else None,
                 detalle=str(e),
                 estado="fallido",
@@ -568,7 +428,7 @@ def folder():
             )
 
     return render_template(
-        "folder.html",
+        template_name,
         preview=preview,
         tipo=tipo,
         mensaje_error=mensaje_error,
@@ -577,9 +437,22 @@ def folder():
         fecha_hasta=fecha_hasta
     )
 
+
+@compras_bp.route("/folder/mayorista", methods=["GET", "POST"])
+@login_requerido("compras")
+def folder_mayorista():
+    return _folder_base("mayorista", "folder-mayorista.html")
+
+
+@compras_bp.route("/folder/minorista", methods=["GET", "POST"])
+@login_requerido("compras")
+def folder_minorista():
+    return _folder_base("minorista", "folder-minorista.html")
+
 @compras_bp.route("/cenefas", methods=["GET", "POST"])
 def cenefas():
-    tipo = request.args.get("tipo", "folder")
+    #tipo = request.args.get("tipo", "folder")
+    tipo = request.args.get("tipo") or "minorista"
     return render_template(
         "cenefas.html",
         tipo=tipo
@@ -759,9 +632,8 @@ def sucursal():
         return fecha.strftime("%d/%m/%Y")
 
     sucursal_codigo = session.get("usuario_nombre", "").strip().upper()
-    tipo = request.args.get("tipo", "folder")
-    #hoy = datetime.now().date()
-    hoy = datetime.now().date() + timedelta(days=2)
+    tipo = request.args.get("tipo", "minorista")
+    hoy = datetime.now().date() + timedelta(days=1)
 
     print("DEBUG sucursal usuario:", sucursal_codigo)
     print("DEBUG fecha hoy:", hoy)
@@ -807,8 +679,6 @@ def sucursal():
                 "Normal": r[3],
                 "Oferta": r[4],
                 "cenefa": r[5],
-                #"desde": r[6],
-                #"hasta": r[7],
                 "desde": formatear_fecha(r[6]),
                 "hasta": formatear_fecha(r[7]),
                 "sucursales": r[8],
@@ -1308,7 +1178,7 @@ def transmitir_diario(hoja):
 # =========================
 # MAPA
 # =========================
-SUCURSAL_MAP = {
+SUCURSAL_MAP_REFRESCOS = {
     "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02"
 }
 
@@ -1354,7 +1224,7 @@ def mapear_sucursales(texto):
         return ""
 
     if all(x in texto for x in ["jujuy", "salta", "tucuman"]):
-        return SUCURSAL_MAP.get("Total Empresa", "")
+        return SUCURSAL_MAP_REFRESCOS.get("Total Empresa", "")
 
     return ""
 
