@@ -29,11 +29,65 @@
 
     {% if preview %}
         <h4>Vista previa</h4>
-        <div class="table-responsive">
+        <div class="table-responsive tabla-preview">
             {{ preview | safe }}
         </div>
     {% endif %}
 
 </div>
+<style>
+.tabla-preview {
+    border-radius: 12px;
+    overflow: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    background: white;
+}
+
+.tabla-preview table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+}
+
+.tabla-preview table th {
+    background: linear-gradient(135deg, #1f2937, #111827);
+    color: #ffffff;
+    text-align: center;
+    padding: 14px 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 3px solid #f59e0b;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.tabla-preview table td {
+    padding: 12px 10px;
+    text-align: center;
+    color: #111827;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.tabla-preview table tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.tabla-preview table tbody tr:hover {
+    background-color: #fff3cd;
+    transform: scale(1.005);
+    transition: all 0.15s ease-in-out;
+}
+
+.tabla-preview table th:first-child,
+.tabla-preview table td:first-child {
+    text-align: left;
+}
+
+</style>
+
 
 {% endblock %}
