@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Pedido Ya - Alberdi SA{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <div class="card p-4">
+
+        <h1 class="text-center mb-4">ALBERDI SA</h1>
+        <h4 class="text-center mb-4">Pedido Ya</h4>
+
+        <form action="{{ url_for('pedidoya.preview') }}" method="post" enctype="multipart/form-data" class="mb-4">
+            <div class="input-group">
+                <input type="file" name="file" class="form-control" required>
+                <button type="submit" class="btn btn-primary">
+                    Procesar
+                </button>
+            </div>
+        </form>
+
+        {% if preview %}
+            <h2 class="text-center mb-3">Previsualización de Datos</h2>
+
+            <div class="row g-3 align-items-end mb-3">
+                <div class="col-md-6">
+                    <label for="fecha-desde" class="form-label">Fecha Desde:</label>
+                    <input type="date" id="fecha-desde" class="form-control form-control-sm" onchange="updateTableDates()">
+                </div>
+
+                <div class="col-md-6">
+                    <label for="fecha-hasta" class="form-label">Fecha Hasta:</label>
+                    <input type="date" id="fecha-hasta" class="form-control form-control-sm" onchange="updateTableDates()">
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            {% for col in columns %}
+                                <th>{{ col }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                {% for col in columns %}
+                                    <td>{{ row[col] }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-center mt-4">
+                <form id="download_form" action="{{ url_for('pedidoya.descargar') }}" method="post">
+                    <input type="hidden" id="table_data" name="table_data" value='{{ table_data|safe }}'>
+                    <button type="submit" class="btn btn-success">
+                        Descargar Archivo
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const hoy = new Date().toISOString().split("T")[0];
+
+    const desde = document.getElementById("fecha-desde");
+    const hasta = document.getElementById("fecha-hasta");
+
+    if (desde) desde.setAttribute("min", hoy);
+    if (hasta) hasta.setAttribute("min", hoy);
+});
+
+function updateTableDates() {
+    const desde = document.getElementById("fecha-desde").value;
+    const hasta = document.getElementById("fecha-hasta").value;
+
+    if (!desde || !hasta) return;
+
+    const table = document.querySelector(".table");
+    if (!table) return;
+
+    const headers = Array.from(table.querySelectorAll("th"))
+        .map(th => th.innerText.trim().toLowerCase());
+
+    const desdeIndex = headers.findIndex(h => h.includes("desde"));
+    const hastaIndex = headers.findIndex(h => h.includes("hasta"));
+
+    const rows = table.querySelectorAll("tbody tr");
+
+    rows.forEach(tr => {
+        const cells = tr.querySelectorAll("td");
+
+        if (desdeIndex >= 0 && cells[desdeIndex]) {
+            cells[desdeIndex].innerText = desde;
+        }
+
+        if (hastaIndex >= 0 && cells[hastaIndex]) {
+            cells[hastaIndex].innerText = hasta;
+        }
+    });
+
+    const hidden = document.getElementById("table_data");
+
+    if (hidden && hidden.value) {
+        let data = [];
+
+        try {
+            data = JSON.parse(hidden.value);
+        } catch (e) {
+            console.error("Error al parsear JSON oculto:", e);
+            return;
+        }
+
+        data = data.map(row => ({
+            ...row,
+            desde: desde,
+            hasta: hasta
+        }));
+
+        hidden.value = JSON.stringify(data);
+    }
+}
+</script>
+
+{% endblock %}
