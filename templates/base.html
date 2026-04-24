@@ -55,17 +55,30 @@
 
 
   <!-- ================= FARMACIA ================= -->
-  {% if session.get("usuario_rol") == "farmacia" %}
-  
-  <a href="{{ url_for('compras.farmacia_folder') }}"
-     class="submenu-item {% if 'farmacia_folder' in request.path %}active-link{% endif %}">
-    Folder Farmacia
-  </a>
 
-  <a href="{{ url_for('farmacia.index') }}"
-     class="{% if request.path == url_for('farmacia.index') %}active-link{% endif %}">
-    Variación de Farmacia
-  </a>
+    {% if session.get("usuario_rol") == "farmacia" %}
+
+  <div class="menu-section 
+      {% if 'farmacia_folder' in request.path or 'farmacia' in request.path %}active{% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Farmacia <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu">
+
+      <a href="{{ url_for('compras.farmacia_folder') }}"
+        class="submenu-item {% if 'farmacia_folder' in request.path %}active-link{% endif %}">
+        Folder Farmacia
+      </a>
+
+      <a href="{{ url_for('farmacia.index') }}"
+        class="submenu-item {% if request.path == url_for('farmacia.index') %}active-link{% endif %}">
+        Variación de Farmacia
+      </a>
+
+    </div>
+  </div>
 
   {% endif %}
 
