@@ -135,6 +135,7 @@ def index():
                         if col_nueva not in df.columns:
                             df.insert(idx_troquel + i, col_nueva, None)
                     df = autocompletar_super_desde_cenefas(df)
+                df = autocompletar_farmacia_desde_folder(df)
 
                 if "Estado" in df.columns:
                     df = df[df["Estado"].notna()]
@@ -308,6 +309,172 @@ def index():
         error=error
     )
 
+
+def autocompletar_farmacia_desde_folder(df):
+    col_troquel = None
+
+    for col in df.columns:
+        col_lower = str(col).strip().lower()
+
+        if col_lower in ["troquel", "troq", "nro troquel", "n° troquel", "numero troquel", "número troquel"]:
+            col_troquel = col
+            break
+
+        if "troquel" in col_lower:
+            col_troquel = col
+            break
+
+    if col_troquel is None:
+        print("No se encontró columna Troquel en el Excel", flush=True)
+        df["F-Farmacia"] = "#N/D"
+        df["A-Farmacia"] = "#N/D"
+        return df
+
+    print("Columna troquel usada para farmacia:", col_troquel, flush=True)
+
+    print("\n========== DEBUG TROQUEL EXCEL ==========", flush=True)
+    print("Nombre exacto columna:", repr(col_troquel), flush=True)
+    print("Tipo columna:", df[col_troquel].dtype, flush=True)
+    print("Cantidad filas:", len(df), flush=True)
+    print("Nulos:", df[col_troquel].isna().sum(), flush=True)
+
+    print("\nPrimeros 20 valores CRUDOS:", flush=True)
+    print(df[col_troquel].head(20).apply(repr).to_string(), flush=True)
+
+    debug_troquel_excel = (
+        df[col_troquel]
+        .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+        .str.lstrip("0")
+        .replace({"": np.nan, "nan": np.nan, "None": np.nan})
+    )
+
+    print("\nPrimeros 20 valores NORMALIZADOS:", flush=True)
+    print(debug_troquel_excel.head(20).apply(repr).to_string(), flush=True)
+
+    print("\nValores únicos normalizados, primeros 30:", flush=True)
+    print(debug_troquel_excel.dropna().unique()[:30], flush=True)
+    print("=========================================\n", flush=True)
+
+    conn = sqlite3.connect(DB_PATH)
+
+    try:
+        consulta = """
+            SELECT troquel, descripcion, promo
+            FROM farmacia_folder
+        """
+        folder_df = pd.read_sql_query(consulta, conn)
+    finally:
+        conn.close()
+
+    print("\n========== DEBUG BD ORIGINAL ==========", flush=True)
+    print("Filas traídas de farmacia_folder:", len(folder_df), flush=True)
+    print("Columnas BD:", folder_df.columns.tolist(), flush=True)
+    print("Tipos BD:", flush=True)
+    print(folder_df.dtypes, flush=True)
+
+    print("\nPrimeras 20 filas BD:", flush=True)
+    print(folder_df.head(20).to_string(), flush=True)
+    print("=======================================\n", flush=True)
+
+    folder_df["troquel_match"] = (
+        folder_df["troquel"]
+        .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+        .str.lstrip("0")
+        .replace({"": np.nan, "nan": np.nan, "None": np.nan})
+    )
+
+    print("\n========== DEBUG TROQUEL BD ==========", flush=True)
+    print("Tipo troquel BD:", folder_df["troquel"].dtype, flush=True)
+
+    print("\nPrimeros 20 troqueles BD CRUDOS:", flush=True)
+    print(folder_df["troquel"].head(20).apply(repr).to_string(), flush=True)
+
+    print("\nPrimeros 20 troqueles BD NORMALIZADOS:", flush=True)
+    print(folder_df["troquel_match"].head(20).apply(repr).to_string(), flush=True)
+
+    print("\nValores únicos BD normalizados, primeros 30:", flush=True)
+    print(folder_df["troquel_match"].dropna().unique()[:30], flush=True)
+    print("======================================\n", flush=True)
+
+    folder_df["descripcion"] = folder_df["descripcion"].replace(
+        {"": np.nan, "nan": np.nan, "None": np.nan}
+    )
+
+    folder_df["promo"] = folder_df["promo"].replace(
+        {"": np.nan, "nan": np.nan, "None": np.nan}
+    )
+
+    folder_df = folder_df.dropna(subset=["troquel_match"])
+    folder_df = folder_df.drop_duplicates(subset=["troquel_match"], keep="last")
+
+    mapa_descripcion = dict(zip(folder_df["troquel_match"], folder_df["descripcion"]))
+    mapa_promo = dict(zip(folder_df["troquel_match"], folder_df["promo"]))
+
+    troquel_match = (
+        df[col_troquel]
+        .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+        .str.lstrip("0")
+        .replace({"": np.nan, "nan": np.nan, "None": np.nan})
+    )
+
+    troqueles_excel = set(troquel_match.dropna().unique())
+    troqueles_bd = set(folder_df["troquel_match"].dropna().unique())
+
+    interseccion = troqueles_excel.intersection(troqueles_bd)
+
+    print("\n========== DEBUG MATCH TROQUEL ==========", flush=True)
+    print("Total troqueles Excel:", len(troqueles_excel), flush=True)
+    print("Total troqueles BD:", len(troqueles_bd), flush=True)
+    print("Coincidencias:", len(interseccion), flush=True)
+
+    print("\nEjemplos Excel:", flush=True)
+    print(list(troqueles_excel)[:20], flush=True)
+
+    print("\nEjemplos BD:", flush=True)
+    print(list(troqueles_bd)[:20], flush=True)
+
+    print("\nEjemplos coincidencias:", flush=True)
+    print(list(interseccion)[:20], flush=True)
+    print("=========================================\n", flush=True)
+
+    df["F-Farmacia"] = troquel_match.map(mapa_descripcion)
+    df["A-Farmacia"] = troquel_match.map(mapa_promo)
+
+    print("\n========== DEBUG RESULTADO MAP ==========", flush=True)
+    print("F-Farmacia encontrados antes fillna:", df["F-Farmacia"].notna().sum(), flush=True)
+    print("A-Farmacia encontrados antes fillna:", df["A-Farmacia"].notna().sum(), flush=True)
+
+    print("\nMuestra resultado antes fillna:", flush=True)
+    print(df[[col_troquel, "F-Farmacia", "A-Farmacia"]].head(30).to_string(), flush=True)
+    print("========================================\n", flush=True)
+
+    df["F-Farmacia"] = df["F-Farmacia"].replace(
+        {"": np.nan, "nan": np.nan, "None": np.nan}
+    ).fillna("#N/D")
+
+    df["A-Farmacia"] = df["A-Farmacia"].replace(
+        {"": np.nan, "nan": np.nan, "None": np.nan}
+    ).fillna("#N/D")
+
+    print("\n========== DEBUG RESULTADO FINAL ==========", flush=True)
+    print("F-Farmacia distintos de #N/D:", (df["F-Farmacia"] != "#N/D").sum(), flush=True)
+    print("A-Farmacia distintos de #N/D:", (df["A-Farmacia"] != "#N/D").sum(), flush=True)
+
+    print("\nMuestra resultado final:", flush=True)
+    print(df[[col_troquel, "F-Farmacia", "A-Farmacia"]].head(30).to_string(), flush=True)
+    print("==========================================\n", flush=True)
+
+    return df
+
+#================================================
+# descarga de archivo
+#================================================
 
 @farmacia_bp.route("/descargar", methods=["GET"])
 def descargar():

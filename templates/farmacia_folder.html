@@ -37,8 +37,7 @@
         <div class="col-md-6">
             <div class="card p-4 shadow-sm">
                 <h4>Cargar Folder Farmacia</h4>
-
-                <form method="POST" enctype="multipart/form-data" class="farmacia-form">
+                <form method="POST" enctype="multipart/form-data" class="farmacia-form" action="{{ url_for('farmacia_folder.index') }}">
                     <input type="hidden" name="fecha_desde">
                     <input type="hidden" name="fecha_hasta">
 
