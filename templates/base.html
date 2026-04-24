@@ -30,6 +30,10 @@
   <a href="{{ url_for('vencimientos.index') }}" class="menu-toggle">
     Vencimientos
   </a>
+  
+  <a href="{{ url_for('vencimientos.index') }}" class="menu-toggle">
+    Pedido Ya
+  </a>
 
   <div class="menu-section 
     {% if 'logs_compras' in request.path or 'logs_farmacia' in request.path %}active{% endif %}">
@@ -172,9 +176,6 @@
 
   {% endif %}
 
-
-
-<!-- ================= SUCURSAL ================= -->
 <!-- ================= SUCURSAL ================= -->
 {% if session.get("usuario_rol") == "sucursal" %}
 
