@@ -114,6 +114,7 @@ def autocompletar_super_desde_cenefas(df):
 
 @farmacia_bp.route("/", methods=["GET", "POST"])
 def index():
+    vigencia_farmacia_desde, vigencia_farmacia_hasta = obtener_vigencia_farmacia()
     preview = None
     error = None
 
@@ -292,7 +293,6 @@ def index():
                 else:
                     print("No se encontraron columnas clave")
 
-                # Guardar archivo procesado para descarga
                 df.to_excel(ARCHIVO_TEMP, index=False)
 
                 preview = df.to_html(
@@ -306,7 +306,9 @@ def index():
     return render_template(
         "farmacia.html",
         preview=preview,
-        error=error
+        error=error,
+        vigencia_farmacia_desde=vigencia_farmacia_desde,
+        vigencia_farmacia_hasta=vigencia_farmacia_hasta
     )
 
 
@@ -471,6 +473,33 @@ def autocompletar_farmacia_desde_folder(df):
     print("==========================================\n", flush=True)
 
     return df
+
+
+
+#===============================================
+# Obtener vigencias de folder farmacias
+#===============================================
+
+def obtener_vigencia_farmacia():
+    conn = sqlite3.connect(DB_PATH)
+
+    try:
+        consulta = """
+            SELECT fecha_desde, fecha_hasta
+            FROM farmacia_folder
+        """
+        folder_df = pd.read_sql_query(consulta, conn)
+    finally:
+        conn.close()
+
+    desde = folder_df["fecha_desde"].dropna().min()
+    hasta = folder_df["fecha_hasta"].dropna().max()
+
+    desde = pd.to_datetime(desde).strftime("%d/%m/%Y") if pd.notna(desde) else "-"
+    hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y") if pd.notna(hasta) else "-"
+
+    return desde, hasta
+
 
 #================================================
 # descarga de archivo
