@@ -27,18 +27,32 @@
     Gestión de Usuarios
   </a>
 
-  <a href="{{ url_for('vencimientos.index') }}" class="menu-toggle">
-    Ecommers
-  </a>
+  <div class="menu-section 
+    {% if 'vencimientos' in request.path or 'pedidoya' in request.path %}active{% endif %}">
 
-  <a href="{{ url_for('vencimientos.index') }}" class="menu-toggle">
-    Vencimientos
-  </a>
-  
-  <a href="{{ url_for('pedidoya.index') }}" class="menu-toggle">
-    Pedido Ya
-  </a>
+      <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+        Diarias <i class="bi bi-chevron-down arrow"></i>
+      </a>
 
+        <div class="submenu">
+
+          <a href="{{ url_for('vencimientos.index') }}"
+            class="submenu-item {% if 'ecommers' in request.path %}active-link{% endif %}">
+            Ecommers
+          </a>
+
+          <a href="{{ url_for('vencimientos.index') }}"
+            class="submenu-item {% if 'vencimientos' in request.path %}active-link{% endif %}">
+            Vencimientos
+          </a>
+
+          <a href="{{ url_for('pedidoya.index') }}"
+            class="submenu-item {% if 'pedidoya' in request.path %}active-link{% endif %}">
+            Pedido Ya
+          </a>
+
+        </div>
+    </div>
   <div class="menu-section 
     {% if 'logs_compras' in request.path or 'logs_farmacia' in request.path %}active{% endif %}">
     
