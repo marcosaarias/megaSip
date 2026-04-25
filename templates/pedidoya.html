@@ -7,8 +7,7 @@
 <div class="container">
     <div class="card p-4">
 
-        <h1 class="text-center mb-4">ALBERDI SA</h1>
-        <h4 class="text-center mb-4">Pedido Ya</h4>
+        <h1 class="text-center mb-4">Pedido Ya</h1>
 
         <form action="{{ url_for('pedidoya.preview') }}" method="post" enctype="multipart/form-data" class="mb-4">
             <div class="input-group">
@@ -25,12 +24,12 @@
             <div class="row g-3 align-items-end mb-3">
                 <div class="col-md-6">
                     <label for="fecha-desde" class="form-label">Fecha Desde:</label>
-                    <input type="date" id="fecha-desde" class="form-control form-control-sm" onchange="updateTableDates()">
+                    <input type="date" id="fecha-desde" class="form-control form-control-sm" required>
                 </div>
 
                 <div class="col-md-6">
                     <label for="fecha-hasta" class="form-label">Fecha Hasta:</label>
-                    <input type="date" id="fecha-hasta" class="form-control form-control-sm" onchange="updateTableDates()">
+                    <input type="date" id="fecha-hasta" class="form-control form-control-sm" required>
                 </div>
             </div>
 
@@ -58,7 +57,10 @@
             <div class="d-flex justify-content-center mt-4">
                 <form id="download_form" action="{{ url_for('pedidoya.descargar') }}" method="post">
                     <input type="hidden" id="table_data" name="table_data" value='{{ table_data|safe }}'>
-                    <button type="submit" class="btn btn-success">
+                    <input type="hidden" id="fecha_desde_hidden" name="fecha_desde">
+                    <input type="hidden" id="fecha_hasta_hidden" name="fecha_hasta">
+
+                    <button type="submit" id="btn-descargar" class="btn btn-success" disabled>
                         Descargar Archivo
                     </button>
                 </form>
@@ -74,16 +76,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const desde = document.getElementById("fecha-desde");
     const hasta = document.getElementById("fecha-hasta");
+    const btnDescargar = document.getElementById("btn-descargar");
 
-    if (desde) desde.setAttribute("min", hoy);
-    if (hasta) hasta.setAttribute("min", hoy);
+    if (desde) {
+        desde.setAttribute("min", hoy);
+        desde.addEventListener("change", updateTableDates);
+    }
+
+    if (hasta) {
+        hasta.setAttribute("min", hoy);
+        hasta.addEventListener("change", updateTableDates);
+    }
+
+    if (btnDescargar) {
+        btnDescargar.disabled = true;
+    }
 });
 
+function validarFechas() {
+    const desde = document.getElementById("fecha-desde");
+    const hasta = document.getElementById("fecha-hasta");
+    const btnDescargar = document.getElementById("btn-descargar");
+
+    if (!desde || !hasta || !btnDescargar) return false;
+
+    const fechasCompletas = desde.value && hasta.value;
+    const rangoValido = fechasCompletas && desde.value <= hasta.value;
+
+    btnDescargar.disabled = !rangoValido;
+
+    return rangoValido;
+}
+
 function updateTableDates() {
-    const desde = document.getElementById("fecha-desde").value;
-    const hasta = document.getElementById("fecha-hasta").value;
+    const desdeInput = document.getElementById("fecha-desde");
+    const hastaInput = document.getElementById("fecha-hasta");
+
+    if (!desdeInput || !hastaInput) return;
+
+    const desde = desdeInput.value;
+    const hasta = hastaInput.value;
+
+    validarFechas();
 
     if (!desde || !hasta) return;
+
+    if (desde > hasta) {
+        alert("La fecha desde no puede ser mayor que la fecha hasta.");
+        return;
+    }
+
+    const desdeHidden = document.getElementById("fecha_desde_hidden");
+    const hastaHidden = document.getElementById("fecha_hasta_hidden");
+
+    if (desdeHidden) desdeHidden.value = desde;
+    if (hastaHidden) hastaHidden.value = hasta;
 
     const table = document.querySelector(".table");
     if (!table) return;
@@ -129,6 +176,15 @@ function updateTableDates() {
         hidden.value = JSON.stringify(data);
     }
 }
+
+document.addEventListener("submit", function (e) {
+    if (e.target && e.target.id === "download_form") {
+        if (!validarFechas()) {
+            e.preventDefault();
+            alert("Debe seleccionar Fecha Desde y Fecha Hasta antes de descargar.");
+        }
+    }
+});
 </script>
 
 {% endblock %}
