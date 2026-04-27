@@ -310,10 +310,8 @@ def descargar_diario(hoja):
 
     output = io.BytesIO()
 
-    nombre_hoja_excel = hoja.replace("Sheet", "Hoja")[:31]
-
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name=nombre_hoja_excel)
+        df.to_excel(writer, index=False, sheet_name="Hoja1")
 
     output.seek(0)
 
@@ -322,6 +320,7 @@ def descargar_diario(hoja):
         download_name=f"{hoja}.xlsx",
         as_attachment=True
     )
+
 
 @diarios_bp.route("/transmitir/<hoja>", methods=["POST"])
 def transmitir_diario(hoja):
