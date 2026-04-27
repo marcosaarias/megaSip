@@ -105,7 +105,7 @@ def autocompletar_super_desde_cenefas(df):
         .replace({"": np.nan, "nan": np.nan, "None": np.nan})
     )
 
-    df["F-Super"] = troquel_match.map(mapa_descripcion).fillna("#N/D")
+    df["F-Super"] = troquel_match.map(mapa_descripcion).fillna("")
     df["A-Super"] = troquel_match.map(mapa_cenefa).fillna("#N/D")
 
     return df
@@ -115,6 +115,7 @@ def autocompletar_super_desde_cenefas(df):
 @farmacia_bp.route("/", methods=["GET", "POST"])
 def index():
     vigencia_farmacia_desde, vigencia_farmacia_hasta = obtener_vigencia_farmacia()
+    vigencia_super_desde, vigencia_super_hasta = obtener_vigencia_super()
     preview = None
     error = None
 
@@ -240,7 +241,6 @@ def index():
                     if col_precio:
                         df["Precio_tmp"] = df[col_precio]
 
-                    # Col3
                     if col_costo_neto and col_costo:
                         df["Col3"] = np.where(
                             df[col_costo_neto].notna() & df[col_costo].notna(),
@@ -249,8 +249,6 @@ def index():
                         )
                     else:
                         df["Col3"] = np.nan
-
-                    # Col4
                     if col_precio_mi and col_precio:
                         df["Col4"] = np.where(
                             df[col_precio_mi].notna() & df[col_precio].notna(),
@@ -293,6 +291,19 @@ def index():
                 else:
                     print("No se encontraron columnas clave")
 
+                df = df.dropna(axis=1, how="all")
+
+                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+
+                columnas_a_eliminar = [
+                    "diferencia", "codebar", "Droga", "Precio Pami", "Cantidad", "Unidades",
+                    "Activo", "Visible", "Tipo Bonif.", "Bonif.", "Tipo Bonif. Dif",
+                    "Bonif Diferencial", "e-commerce", "Delivery", "Cod. en Proveedor",
+                    "ABC", "Estacional", "Margen", "Etiqueta Electronica"
+                ]
+
+                df = df.drop(columns=columnas_a_eliminar, errors="ignore")
+
                 df.to_excel(ARCHIVO_TEMP, index=False)
 
                 preview = df.to_html(
@@ -308,7 +319,9 @@ def index():
         preview=preview,
         error=error,
         vigencia_farmacia_desde=vigencia_farmacia_desde,
-        vigencia_farmacia_hasta=vigencia_farmacia_hasta
+        vigencia_farmacia_hasta=vigencia_farmacia_hasta,
+        vigencia_super_desde=vigencia_super_desde,
+        vigencia_super_hasta=vigencia_super_hasta
     )
 
 
@@ -328,7 +341,7 @@ def autocompletar_farmacia_desde_folder(df):
 
     if col_troquel is None:
         print("No se encontró columna Troquel en el Excel", flush=True)
-        df["F-Farmacia"] = "#N/D"
+        df["F-Farmacia"] = ""
         df["A-Farmacia"] = "#N/D"
         return df
 
@@ -458,7 +471,7 @@ def autocompletar_farmacia_desde_folder(df):
 
     df["F-Farmacia"] = df["F-Farmacia"].replace(
         {"": np.nan, "nan": np.nan, "None": np.nan}
-    ).fillna("#N/D")
+    ).fillna("")
 
     df["A-Farmacia"] = df["A-Farmacia"].replace(
         {"": np.nan, "nan": np.nan, "None": np.nan}
@@ -499,6 +512,43 @@ def obtener_vigencia_farmacia():
     hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y") if pd.notna(hasta) else "-"
 
     return desde, hasta
+
+
+def obtener_vigencia_super():
+    conn = sqlite3.connect(DB_PATH)
+
+    try:
+        consulta = """
+            SELECT desde, hasta
+            FROM cenefas
+            WHERE tipo_cenefa IN ('mayorista', 'minorista')
+              AND desde IS NOT NULL
+              AND hasta IS NOT NULL
+            ORDER BY fecha_carga DESC
+            LIMIT 1
+        """
+        row = conn.execute(consulta).fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return "-", "-"
+
+    desde, hasta = row
+
+    try:
+        desde = pd.to_datetime(desde).strftime("%d/%m/%Y")
+    except:
+        desde = desde or "-"
+
+    try:
+        hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y")
+    except:
+        hasta = hasta or "-"
+
+    return desde, hasta
+
+
 
 
 #================================================

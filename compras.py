@@ -365,6 +365,8 @@ def _folder_base(tipo, template_name):
             )
 
             if df is not None:
+
+                print("DEBUG TIPO QUE SE VA A GUARDAR:", tipo)
                 lote_carga, fecha_carga = guardar_cenefas_en_db(
                     df,
                     tipo,
@@ -746,7 +748,6 @@ def farmacia_folder():
         )
 
         if df is not None:
-            # Farmacia no usa mayorista/minorista, así que no toca sucursales por mapa
             if "sucursales" not in df.columns:
                 df["sucursales"] = ""
 
