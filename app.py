@@ -11,12 +11,14 @@ from promociones import promociones_bp
 from logs import logs_bp
 from pedidoya import pedidoya_bp
 from diarios import diarios_bp
+from saltarefrescos import saltarefrescos_bp
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta_demo"
 
 # Registrar blueprints
 app.register_blueprint(diarios_bp)
+app.register_blueprint(saltarefrescos_bp)
 app.register_blueprint(sistemas_bp, url_prefix='/sistemas')
 app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
 app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
