@@ -17,11 +17,16 @@ def formatear_moneda(valor):
     try:
         if valor == "" or pd.isna(valor):
             return ""
-        num_formateado = "{:,.2f}".format(float(valor))
+            
+        valor_str = str(valor).replace(",", "").strip()
+
+        num = float(valor_str)
+
+        num_formateado = "{:,.2f}".format(num)
         return num_formateado.replace(",", "X").replace(".", ",").replace("X", ".")
+
     except (ValueError, TypeError):
         return valor
-
 
 def detectar_sucursales(nombre_hoja):
     hoja = normalizar_texto(nombre_hoja)
@@ -191,7 +196,7 @@ def diario():
                     if not column_mapping:
                         print("SIN MAPPING EN:", nombre_hoja, flush=True)
                         print("COLUMNAS:", df.columns.tolist(), flush=True)
-                        
+
                         df.columns = [col.upper() for col in df.columns]
                         column_mapping = {col: col for col in df.columns}
 
