@@ -36,7 +36,7 @@
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Previsualización</h5>
             {% if cache_id %}
-            <a href="{{ url_for('compras.descargar_refrescos', cache_id=cache_id) }}" class="btn btn-success btn-sm">
+            <a href="{{ url_for('saltarefrescos.descargar_refrescos', cache_id=cache_id) }}" class="btn btn-success btn-sm">
                 <i class="fas fa-file-excel"></i> Descargar archivo
             </a>
             {% endif %}
