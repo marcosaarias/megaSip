@@ -17,7 +17,7 @@ def formatear_moneda(valor):
     try:
         if valor == "" or pd.isna(valor):
             return ""
-            
+
         valor_str = str(valor).replace(",", "").strip()
 
         num = float(valor_str)
@@ -190,9 +190,6 @@ def diario():
                                 column_mapping[col] = header
                                 break
 
-                    #if not column_mapping:
-                    #    continue
-
                     if not column_mapping:
                         print("SIN MAPPING EN:", nombre_hoja, flush=True)
                         print("COLUMNAS:", df.columns.tolist(), flush=True)
@@ -317,9 +314,11 @@ def descargar_diario(hoja):
 
     output.seek(0)
 
+    nombre_descarga = hoja.replace("Sheet", "Hoja")
+
     return send_file(
         output,
-        download_name=f"{hoja}.xlsx",
+        download_name=f"{nombre_descarga}.xlsx",
         as_attachment=True
     )
 
