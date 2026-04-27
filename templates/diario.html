@@ -62,7 +62,7 @@
 
                         <!-- 🚀 Transmitir -->
                        <form method="POST"
-                            action="{{ url_for('compras.transmitir_diario', hoja=hoja) }}">
+                            action="{{ url_for('diarios.transmitir_diario', hoja=hoja) }}">
                             <input type="hidden" name="cache_id" value="{{ cache_id }}">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 Transmitir
