@@ -309,19 +309,19 @@ def descargar_diario(hoja):
     df = pd.read_json(StringIO(data), orient="records")
 
     output = io.BytesIO()
+
+    nombre_hoja_excel = hoja.replace("Sheet", "Hoja")[:31]
+
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False)
+        df.to_excel(writer, index=False, sheet_name=nombre_hoja_excel)
 
     output.seek(0)
 
-    nombre_descarga = hoja.replace("Sheet", "Hoja")
-
     return send_file(
         output,
-        download_name=f"{nombre_descarga}.xlsx",
+        download_name=f"{hoja}.xlsx",
         as_attachment=True
     )
-
 
 @diarios_bp.route("/transmitir/<hoja>", methods=["POST"])
 def transmitir_diario(hoja):
