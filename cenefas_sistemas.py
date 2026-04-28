@@ -30,35 +30,73 @@ def index():
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
+        lote_id = session.get("cenefas_sistemas_lote_id")
 
         try:
-            df, preview, mensaje_error, total_registros = procesar_archivo_cenefas(
-                archivo=archivo,
-                tipo="mayorista",
-                fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta
-            )
+            df = None
+
+            print("==== DEBUG CENEFAS SISTEMAS ====")
+            print("Grupo seleccionado:", grupo_sucursales)
+            print("Codigos del grupo:", SUCURSAL_MAP.get(grupo_sucursales, "NO ENCONTRADO"))
+            print("Lote actual:", lote_id)
+
+            if archivo and archivo.filename:
+                print("Archivo recibido:", archivo.filename)
+
+                df, preview, mensaje_error, total_registros = procesar_archivo_cenefas(
+                    archivo=archivo,
+                    tipo="mayorista",
+                    fecha_desde=fecha_desde,
+                    fecha_hasta=fecha_hasta
+                )
+
+                print("DF despues de procesar_archivo_cenefas:")
+                print("Columnas:", df.columns.tolist() if df is not None else None)
+
+                if df is not None:
+                    print("Primeras filas ANTES de aplicar grupo:")
+                    print(df.head().to_string())
+
+                    lote_id = str(uuid.uuid4())
+                    session["cenefas_sistemas_lote_id"] = lote_id
+
+            else:
+                print("No vino archivo. Recuperando temporal...")
+                df = recuperar_temporal(lote_id)
+
+                print("DF recuperado:")
+                print("Columnas:", df.columns.tolist() if df is not None else None)
+
+                if df is not None:
+                    print("Primeras filas recuperadas:")
+                    print(df.head().to_string())
 
             if df is not None and grupo_sucursales:
                 codigos = SUCURSAL_MAP.get(grupo_sucursales, "")
 
+                print("Aplicando grupo:", grupo_sucursales)
+                print("Codigos a aplicar:", codigos)
+
                 if codigos:
-                    df["Sucursales"] = codigos
-                    preview = df.to_html(
-                        classes="table table-striped table-bordered",
-                        index=False
-                    )
-                    total_registros = len(df)
+                    df["sucursales"] = codigos
+
+                    print("Primeras filas DESPUES de aplicar grupo:")
+                    print(df.head().to_string())
 
             if df is not None:
-                lote_id = str(uuid.uuid4())
+                preview = df.to_html(
+                    classes="table table-striped table-bordered",
+                    index=False
+                )
+                total_registros = len(df)
+
                 guardar_temporal(lote_id, df)
 
-                session["cenefas_sistemas_lote_id"] = lote_id
                 session["cenefas_sistemas_fecha_desde"] = fecha_desde
                 session["cenefas_sistemas_fecha_hasta"] = fecha_hasta
 
         except Exception as e:
+            print("ERROR DEBUG:", e)
             mensaje_error = f"Error de backend: {e}"
 
     return render_template(
@@ -71,7 +109,6 @@ def index():
         grupo_sucursales=grupo_sucursales,
         sucursal_map=SUCURSAL_MAP
     )
-
 
 @cenefas_sistemas_bp.route("/descargar", methods=["POST"])
 @login_requerido("sistemas")
