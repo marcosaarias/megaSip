@@ -1,12 +1,14 @@
 import uuid
 from datetime import datetime
 from io import BytesIO
+from utils.sucursales import SUCURSAL_MAP
 
 import pandas as pd
 from flask import Blueprint, render_template, request, session, send_file
 
 from sistemas import login_requerido
 from compras import procesar_archivo_cenefas, guardar_temporal, recuperar_temporal
+
 
 
 cenefas_sistemas_bp = Blueprint(
@@ -57,7 +59,8 @@ def index():
         mensaje_error=mensaje_error,
         total_registros=total_registros,
         fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta
+        fecha_hasta=fecha_hasta,
+        sucursal_map=SUCURSAL_MAP
     )
 
 
