@@ -26,7 +26,6 @@ def index():
 
     fecha_desde = request.form.get("fecha_desde") or ""
     fecha_hasta = request.form.get("fecha_hasta") or ""
-    tipo = request.form.get("tipo", "mayorista")
     grupo_sucursales = request.form.get("grupo_sucursales") or ""
 
     if request.method == "POST":
@@ -35,17 +34,27 @@ def index():
         try:
             df, preview, mensaje_error, total_registros = procesar_archivo_cenefas(
                 archivo=archivo,
-                tipo=tipo,
+                tipo="mayorista",
                 fecha_desde=fecha_desde,
                 fecha_hasta=fecha_hasta
             )
+
+            if df is not None and grupo_sucursales:
+                codigos = SUCURSAL_MAP.get(grupo_sucursales, "")
+
+                if codigos:
+                    df["Sucursales"] = codigos
+                    preview = df.to_html(
+                        classes="table table-striped table-bordered",
+                        index=False
+                    )
+                    total_registros = len(df)
 
             if df is not None:
                 lote_id = str(uuid.uuid4())
                 guardar_temporal(lote_id, df)
 
                 session["cenefas_sistemas_lote_id"] = lote_id
-                session["cenefas_sistemas_tipo"] = tipo
                 session["cenefas_sistemas_fecha_desde"] = fecha_desde
                 session["cenefas_sistemas_fecha_hasta"] = fecha_hasta
 
@@ -55,12 +64,11 @@ def index():
     return render_template(
         "cenefas_sistemas.html",
         preview=preview,
-        tipo=tipo,
         mensaje_error=mensaje_error,
         total_registros=total_registros,
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta,
-        grupo_sucursales=grupo_sucursales,   # 👈 importante
+        grupo_sucursales=grupo_sucursales,
         sucursal_map=SUCURSAL_MAP
     )
 
