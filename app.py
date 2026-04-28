@@ -13,11 +13,13 @@ from pedidoya import pedidoya_bp
 from diarios import diarios_bp
 from saltarefrescos import saltarefrescos_bp
 from ecommerce_cenefas import ecommerce_cenefas_bp
+from cenefas_sistemas import cenefas_sistemas_bp
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta_demo"
 
 # Registrar blueprints
+app.register_blueprint(cenefas_sistemas_bp)
 app.register_blueprint(ecommerce_cenefas_bp)
 app.register_blueprint(diarios_bp)
 app.register_blueprint(saltarefrescos_bp)
