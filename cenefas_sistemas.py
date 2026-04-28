@@ -9,10 +9,6 @@ from flask import Blueprint, render_template, request, session, send_file
 from sistemas import login_requerido
 from compras import procesar_archivo_cenefas, guardar_temporal, recuperar_temporal
 
-
-grupo_sucursales = request.form.get("grupo_sucursales") or ""
-
-
 cenefas_sistemas_bp = Blueprint(
     "cenefas_sistemas",
     __name__,
@@ -30,6 +26,7 @@ def index():
     fecha_desde = request.form.get("fecha_desde") or ""
     fecha_hasta = request.form.get("fecha_hasta") or ""
     tipo = request.form.get("tipo", "mayorista")
+    grupo_sucursales = request.form.get("grupo_sucursales") or ""
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
