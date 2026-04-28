@@ -9,6 +9,7 @@ from flask import Blueprint, render_template, request, session, send_file
 from sistemas import login_requerido
 from compras import procesar_archivo_cenefas, guardar_temporal, recuperar_temporal
 
+
 cenefas_sistemas_bp = Blueprint(
     "cenefas_sistemas",
     __name__,
@@ -36,8 +37,7 @@ def index():
                 archivo=archivo,
                 tipo=tipo,
                 fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta,
-                grupo_sucursales=grupo_sucursales
+                fecha_hasta=fecha_hasta
             )
 
             if df is not None:
@@ -60,6 +60,7 @@ def index():
         total_registros=total_registros,
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta,
+        grupo_sucursales=grupo_sucursales,   # 👈 importante
         sucursal_map=SUCURSAL_MAP
     )
 
