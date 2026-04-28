@@ -10,6 +10,8 @@ from sistemas import login_requerido
 from compras import procesar_archivo_cenefas, guardar_temporal, recuperar_temporal
 
 
+grupo_sucursales = request.form.get("grupo_sucursales") or ""
+
 
 cenefas_sistemas_bp = Blueprint(
     "cenefas_sistemas",
@@ -37,7 +39,8 @@ def index():
                 archivo=archivo,
                 tipo=tipo,
                 fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta
+                fecha_hasta=fecha_hasta,
+                grupo_sucursales=grupo_sucursales
             )
 
             if df is not None:

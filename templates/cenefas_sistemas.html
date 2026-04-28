@@ -50,7 +50,7 @@
                     <select id="grupo_sucursales"
                             name="grupo_sucursales"
                             class="form-control mb-3">
-                            
+
                         {% for nombre, codigos in sucursal_map.items() %}
                             <option value="{{ nombre }}"
                                     data-codigos="{{ codigos }}"
@@ -129,7 +129,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const grupoSucursales = document.getElementById("grupo_sucursales");
     if (grupoSucursales) {
-        grupoSucursales.addEventListener("change", actualizarCodigosSucursales);
+       grupoSucursales.addEventListener("change", function() {
+            actualizarCodigosSucursales();
+            const archivo = document.querySelector("input[name='archivo']");
+            const form = document.querySelector(".folder-form");
+            if (archivo && archivo.files.length > 0) {
+                form.requestSubmit();
+            }
+        });
     }
 
     document.querySelectorAll(".folder-form").forEach(form => {
