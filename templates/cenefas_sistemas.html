@@ -50,8 +50,7 @@
                     <select id="grupo_sucursales"
                             name="grupo_sucursales"
                             class="form-control mb-3">
-                        <option value="">Automático / Desde archivo</option>
-
+                            
                         {% for nombre, codigos in sucursal_map.items() %}
                             <option value="{{ nombre }}"
                                     data-codigos="{{ codigos }}"
