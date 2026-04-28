@@ -36,6 +36,11 @@
 
         <div class="submenu">
 
+          <a href="{{ url_for('cenefas_sistemas.index') }}"
+            class="submenu-item {% if '/sistemas/cenefas' in request.path %}active-link{% endif %}">
+            Cenefas
+          </a>
+
           <a href="{{ url_for('ecommerce_cenefas.cenefas') }}"
             class="submenu-item {% if 'ecommerce/cenefas' in request.path %}active-link{% endif %}">
             Ecommerce
