@@ -105,16 +105,58 @@
         Variación de Farmacia
       </a>
 
-      <a href="#"
-        class="submenu-item {% if request.path == url_for('farmacia.index') %}active-link{% endif %}">
-        Archivo Maestro
+      <div class="submenu-group 
+    {% if 'rubros' in request.path or 'subrubros' in request.path or 'laboratorios' in request.path %}open{% endif %}">
+
+      <a href="#" class="submenu-item submenu-toggle" onclick="toggleSubmenu(event)">
+        Tablas Maestras <i class="bi bi-chevron-down arrow"></i>
       </a>
+
+      <div class="submenu-nested">
+
+          <a href="{{ url_for('farmacia.rubros_view') }}"
+            class="submenu-item {% if request.path == url_for('farmacia.rubros_view') %}active-link{% endif %}">
+            Rubros
+          </a>
+
+          <a href="{{ url_for('farmacia.subrubros_view') }}"
+            class="submenu-item {% if request.path == url_for('farmacia.subrubros_view') %}active-link{% endif %}">
+            Subrubros
+          </a>
+
+          <a href="{{ url_for('farmacia.laboratorios_view') }}"
+            class="submenu-item {% if request.path == url_for('farmacia.laboratorios_view') %}active-link{% endif %}">
+            Laboratorios
+          </a>
+          
+      </div>
+    </div>
 
     </div>
   </div>
 
   {% endif %}
 
+    {% if session.get("usuario_rol") == "farmacia" %}
+
+    <div class="menu-section 
+      {% if 'archivo_maestro' in request.path %}active{% endif %}">
+
+      <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+        Archivo Maestro <i class="bi bi-chevron-down arrow"></i>
+      </a>
+
+      <div class="submenu">
+
+        <a href="{{ url_for('farmacia.generar_archivo_maestro') }}"
+          class="submenu-item {% if request.path == url_for('farmacia.generar_archivo_maestro') %}active-link{% endif %}">
+          Generar Archivo Maestro
+        </a>
+
+      </div>
+    </div>
+
+  {% endif %}
 
   <!-- ================= COMPRAS ================= -->
   {% if session.get("usuario_rol") == "compras" %}
@@ -323,6 +365,13 @@ function toggleMenu(event) {
     }
   });
   currentSection.classList.toggle("active");
+}
+
+
+function toggleSubmenu(event) {
+  event.preventDefault();
+  const parent = event.currentTarget.closest('.submenu-group');
+  parent.classList.toggle('open');
 }
 
 </script>

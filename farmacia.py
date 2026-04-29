@@ -10,6 +10,26 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
 ARCHIVO_TEMP = os.path.join(os.path.dirname(__file__), "temp_procesado_farmacia.xlsx")
 
+@farmacia_bp.route("/rubros")
+def rubros_view():
+    return render_template("farmacia/rubros.html")
+
+
+@farmacia_bp.route("/subrubros")
+def subrubros_view():
+    return render_template("farmacia/subrubros.html")
+
+
+@farmacia_bp.route("/laboratorios")
+def laboratorios_view():
+    return render_template("farmacia/laboratorios.html")
+
+
+@farmacia_bp.route("/archivo-maestro")
+def generar_archivo_maestro():
+    return render_template("farmacia/archivo_maestro.html")
+
+
 def limpiar_numero(serie):
     print(f"\nDEBUG LIMPIEZA - dtype inicial: {serie.dtype}")
     print("ANTES:")

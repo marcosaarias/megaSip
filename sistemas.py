@@ -38,7 +38,6 @@ def limpiar_numero(x):
     s = str(x).strip()
     if s == "":
         return ""
-    # quitar separadores de miles, normalizar coma decimal
     s = s.replace(".", "").replace(",", ".")
     try:
         return float(s)
@@ -147,24 +146,19 @@ def preview():
         file = request.files["file"]
         sucursal = session.get("usuario_nombre")
 
-        # Leer Excel
         df = pd.read_excel(file)
-        # Normalizar nombres de columnas
         df.columns = df.columns.str.strip().str.lower()
 
         columnas_salida = ["codigo", "descripcion", "precio", "cantidad"]
         aliases_descripcion = ["descripción", "descripcion", "descripcion material"]
         aliases_precio = ["puntual", "precio", "costo", "valor"]
-        aliases_codigo = ["codigo", "material"]  # normalizados a lower()
+        aliases_codigo = ["codigo", "material"]
 
-        # Ubicar columnas por alias
         codigo_col = next((col for col in df.columns if any(alias in col for alias in aliases_codigo)), None)
         if codigo_col:
             df["codigo"] = df[codigo_col]
 
-        # Filtrar registros con código válido
         if "codigo" not in df.columns:
-            # si no hay columna código, tabla vacía
             df = pd.DataFrame(columns=columnas_salida)
         else:
             df = df[df["codigo"].notna() & (df["codigo"].astype(str).str.strip() != "")]

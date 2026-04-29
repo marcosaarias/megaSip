@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Rubros{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <h2 class="mb-4">Rubros</h2>
+
+  <div class="card p-4 shadow-sm mb-4">
+    <form method="POST" enctype="multipart/form-data">
+      <label class="form-label">Archivo Excel:</label>
+      <input type="file" name="archivo" class="form-control mb-3" accept=".xlsx,.xls" required>
+
+      <button type="submit" class="btn-sys w-100">
+        Actualizar Tabla Rubros
+      </button>
+    </form>
+  </div>
+
+  {% if preview %}
+  <div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+      <h5 class="mb-0">Previsualización Rubros</h5>
+    </div>
+
+    <div class="card-body">
+      {% if total_registros %}
+      <h5 class="mb-3">Registros: {{ total_registros }}</h5>
+      {% endif %}
+
+      <div class="tabla-scroll">
+        {{ preview | safe }}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+.tabla-scroll {
+  max-height: 400px;
+  overflow: auto;
+  position: relative;
+}
+
+.tabla-scroll table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tabla-scroll thead th,
+.tabla-scroll table tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #212529;
+  color: white;
+}
+
+.tabla-scroll td,
+.tabla-scroll th {
+  padding: 0.4rem;
+}
+</style>
+
+{% endblock %}
