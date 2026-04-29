@@ -73,6 +73,25 @@ def detectar_header_refrescos(df_raw):
 
     return None
 
+def obtener_columna(df, posibles_nombres):
+    for col in df.columns:
+        col_norm = normalizar_texto_refrescos(col).replace(".", "").strip()
+
+        for nombre in posibles_nombres:
+            nombre_norm = normalizar_texto_refrescos(nombre).replace(".", "").strip()
+
+            if nombre_norm == col_norm or nombre_norm in col_norm:
+                return col
+
+    return None
+
+
+def validar_columna(nombre, columna):
+    if columna is None:
+        raise ValueError(f"No se encontró la columna requerida: {nombre}")
+
+
+
 
 def detectar_columna_sucursales(df):
     for i in range(df.shape[1]):
@@ -96,6 +115,25 @@ def mapear_sucursales(texto):
         return SUCURSAL_MAP_REFRESCOS["Total Empresa"]
 
     return ""
+
+
+def obtener_columna(df, posibles_nombres):
+    for col in df.columns:
+        col_norm = normalizar_texto_refrescos(col).replace(".", "").strip()
+
+        for nombre in posibles_nombres:
+            nombre_norm = normalizar_texto_refrescos(nombre).replace(".", "").strip()
+
+            if nombre_norm == col_norm or nombre_norm in col_norm:
+                return col
+
+    return None
+
+
+def validar_columna(nombre, columna):
+    if columna is None:
+        raise ValueError(f"No se encontró la columna requerida: {nombre}")
+
 
 
 @saltarefrescos_bp.route("/", methods=["GET", "POST"])
@@ -123,12 +161,35 @@ def refrescos():
                 if header_idx is None:
                     raise ValueError("No se encontró la cabecera 'Cód.' en el archivo.")
 
-                df_data = df_raw.iloc[header_idx + 1:].copy()
+                # Usar la fila detectada como encabezado real
+                df_data = df_raw.iloc[header_idx:].copy()
+                df_data.columns = df_data.iloc[0]
+                df_data = df_data.iloc[1:].copy()
+
+                # Normalizar nombres de columnas
+                df_data.columns = [
+                    normalizar_texto_refrescos(col).replace(".", "").strip()
+                    for col in df_data.columns
+                ]
+
+                print("COLUMNAS DETECTADAS:", list(df_data.columns), flush=True)
+
+                col_codigo = obtener_columna(df_data, ["cod", "codigo"])
+                col_desc = obtener_columna(df_data, ["descrip", "descripcion"])
+                col_precio = obtener_columna(df_data, ["precio", "normal"])
+                col_oferta = obtener_columna(df_data, ["accion", "oferta"])
+                col_cenefa = obtener_columna(df_data, ["descarga", "cenefa"])
+
+                validar_columna("CODIGO", col_codigo)
+                validar_columna("DESCRIPCION", col_desc)
+                validar_columna("NORMAL / PRECIO", col_precio)
+                validar_columna("OFERTA / ACCION", col_oferta)
+                validar_columna("CENEFA / DESCARGA", col_cenefa)
 
                 df_final = pd.DataFrame()
 
                 df_final["CODIGO"] = (
-                    df_data.iloc[:, 0]
+                    df_data[col_codigo]
                     .astype(str)
                     .str.strip()
                     .str.replace(".0", "", regex=False)
@@ -137,16 +198,14 @@ def refrescos():
 
                 df_final = completar_ean(df_final)
 
-                df_final["descripcion"] = df_data.iloc[:, 1].astype(str).str.strip()
-                df_final["Normal"] = df_data.iloc[:, 2]
+                df_final["descripcion"] = df_data[col_desc].astype(str).str.strip()
+                df_final["Normal"] = df_data[col_precio]
 
-                # Columnas según estructura:
-                # A Cód. | B Descrip | C Precio | D Accion | E Descarga | F Etiquetas | G/H Sucursales
-                df_final["Oferta"] = df_data.iloc[:, 3].replace(
+                df_final["Oferta"] = df_data[col_oferta].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
 
-                df_final["Cenefa"] = df_data.iloc[:, 5].replace(
+                df_final["Cenefa"] = df_data[col_cenefa].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
 
@@ -180,7 +239,7 @@ def refrescos():
                     ["nan", "None", "NaN"], ""
                 ).fillna("")
 
-                for col in ["Normal", "Oferta"]:
+                for col in ["Normal", "Oferta", "Cenefa"]:
                     if col in df_final.columns:
                         df_final[col] = df_final[col].apply(formatear_moneda)
 
