@@ -300,7 +300,7 @@ def index():
                     "Activo", "Visible", "Tipo Bonif.", "Bonif.", "Tipo Bonif. Dif",
                     "Bonif Diferencial", "e-commerce", "Delivery", "Cod. en Proveedor",
                     "ABC", "Estacional", "Margen", "Etiqueta Electronica", "Tipo Bonif. Dif.", 
-                    "Bonif. Diferencial", "Codebar","codebar1","A-Farmacia","A-Super"
+                    "Bonif. Diferencial", "Codebar","A-Farmacia","A-Super"
                 ]
 
                 df = df.drop(columns=columnas_a_eliminar, errors="ignore")
