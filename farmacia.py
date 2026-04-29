@@ -305,6 +305,33 @@ def index():
 
                 df = df.drop(columns=columnas_a_eliminar, errors="ignore")
 
+                orden_columnas = [
+                    "Estado",
+                    "Cod.Producto",
+                    "Costo Neto",
+                    "Precio Mi",
+                    "Costo",
+                    "Precio",
+                    "Dif Cost",
+                    "dif Precio",
+                    "Troquel",
+                    "F-Super",
+                    "F-Farmacia",
+                    "Producto",
+                    "codebar1",
+                    "IVA",
+                    "laboratorio",
+                    "Rubro",
+                    "Sub Rubro"
+
+                    ]
+
+                orden_columnas = [col for col in orden_columnas if col in df.columns]
+
+                columnas_restantes = [col for col in df.columns if col not in orden_columnas]
+
+                df = df[orden_columnas + columnas_restantes]
+
                 df.to_excel(ARCHIVO_TEMP, index=False)
 
                 preview = df.to_html(
