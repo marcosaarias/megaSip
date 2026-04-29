@@ -326,11 +326,20 @@ def index():
 
                     ]
 
-                orden_columnas = [col for col in orden_columnas if col in df.columns]
+                orden_columnas_final = []
 
-                columnas_restantes = [col for col in df.columns if col not in orden_columnas]
+                for col_deseada in orden_columnas:
+                    for col_real in df.columns:
+                        if col_deseada.strip().lower() == str(col_real).strip().lower():
+                            orden_columnas_final.append(col_real)
+                            break
 
-                df = df[orden_columnas + columnas_restantes]
+                columnas_restantes = [
+                    col for col in df.columns
+                    if col not in orden_columnas_final
+                ]
+
+                df = df[orden_columnas_final + columnas_restantes]
 
                 df.to_excel(ARCHIVO_TEMP, index=False)
 
