@@ -51,6 +51,19 @@ def normalizar_texto_refrescos(texto):
     return texto
 
 
+def detectar_columnas_etiquetas(df_raw, header_idx):
+    fila_header = df_raw.iloc[header_idx]
+
+    for i, val in enumerate(fila_header):
+        texto = normalizar_texto_refrescos(val)
+
+        if "etiqueta" in texto:
+            return i, i + 1
+
+    return None, None
+
+
+
 def detectar_header_refrescos(df_raw):
     for i, row in df_raw.iterrows():
         valores = [
@@ -161,12 +174,20 @@ def refrescos():
                 if header_idx is None:
                     raise ValueError("No se encontró la cabecera 'Cód.' en el archivo.")
 
-                # Usar la fila detectada como encabezado real
+                col_cenefa_idx, col_oferta_idx = detectar_columnas_etiquetas(df_raw, header_idx)
+                
+
+                if col_cenefa_idx is None or col_oferta_idx is None:
+                    raise ValueError("No se pudieron detectar columnas de Etiquetas")
+                                
+
+                if header_idx is None:
+                    raise ValueError("No se encontró la cabecera 'Cód.' en el archivo.")
+
                 df_data = df_raw.iloc[header_idx:].copy()
                 df_data.columns = df_data.iloc[0]
                 df_data = df_data.iloc[1:].copy()
 
-                # Normalizar nombres de columnas
                 df_data.columns = [
                     normalizar_texto_refrescos(col).replace(".", "").strip()
                     for col in df_data.columns
@@ -177,15 +198,11 @@ def refrescos():
                 col_codigo = obtener_columna(df_data, ["cod", "codigo"])
                 col_desc = obtener_columna(df_data, ["descrip", "descripcion"])
                 col_precio = obtener_columna(df_data, ["precio", "normal"])
-                col_oferta = obtener_columna(df_data, ["accion", "oferta"])
-                col_cenefa = obtener_columna(df_data, ["descarga", "cenefa"])
 
                 validar_columna("CODIGO", col_codigo)
                 validar_columna("DESCRIPCION", col_desc)
                 validar_columna("NORMAL / PRECIO", col_precio)
-                validar_columna("OFERTA / ACCION", col_oferta)
-                validar_columna("CENEFA / DESCARGA", col_cenefa)
-
+        
                 df_final = pd.DataFrame()
 
                 df_final["CODIGO"] = (
@@ -201,11 +218,11 @@ def refrescos():
                 df_final["descripcion"] = df_data[col_desc].astype(str).str.strip()
                 df_final["Normal"] = df_data[col_precio]
 
-                df_final["Oferta"] = df_data[col_oferta].replace(
+                df_final["Oferta"] = df_data.iloc[:, col_cenefa_idx].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
 
-                df_final["Cenefa"] = df_data[col_cenefa].replace(
+                df_final["Cenefa"] = df_data.iloc[:, col_oferta_idx].replace(
                     ["nan", "None", "", "NaN"], pd.NA
                 )
 
@@ -239,7 +256,7 @@ def refrescos():
                     ["nan", "None", "NaN"], ""
                 ).fillna("")
 
-                for col in ["Normal", "Oferta", "Cenefa"]:
+                for col in ["Normal", "Oferta"]:
                     if col in df_final.columns:
                         df_final[col] = df_final[col].apply(formatear_moneda)
 
@@ -253,6 +270,8 @@ def refrescos():
                         df_final.to_json(orient="records"),
                         ex=3600
                     )
+
+                    print("Cache omitido (Redis no disponible)")
 
                     preview = df_final.to_html(
                         classes="table table-sm table-hover table-bordered text-center",
