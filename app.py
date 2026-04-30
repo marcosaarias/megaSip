@@ -5,6 +5,9 @@ from sistemas import sistemas_bp
 from usuarios import usuarios_bp
 from farmacia import farmacia_bp
 from farmacia_folder import farmacia_folder_bp
+from laboratorios import laboratorios_bp
+from rubros import rubros_bp
+from subrubros import subrubros_bp
 from compras import compras_bp
 from vencimientos import vencimientos_bp
 from promociones import promociones_bp
@@ -26,6 +29,9 @@ app.register_blueprint(sistemas_bp, url_prefix='/sistemas')
 app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
 app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
 app.register_blueprint(farmacia_folder_bp, url_prefix='/farmacia_folder')
+app.register_blueprint(laboratorios_bp, url_prefix='/laboratorios')
+app.register_blueprint(rubros_bp, url_prefix='/rubros')
+app.register_blueprint(subrubros_bp, url_prefix='/subrubros')
 app.register_blueprint(pedidoya_bp, url_prefix="/pedidoya")
 app.register_blueprint(compras_bp, url_prefix='/compras')
 app.register_blueprint(vencimientos_bp)

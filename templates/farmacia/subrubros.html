@@ -6,8 +6,50 @@
 
   <h2 class="mb-4">Subrubros</h2>
 
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white">
+      <h5 class="mb-0">Tabla Subrubros</h5>
+    </div>
+
+    <div class="card-body">
+
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <input type="text"
+                 id="buscarCodigo"
+                 class="form-control"
+                 placeholder="Buscar por idsubrubro...">
+        </div>
+      </div>
+
+      <div class="tabla-scroll">
+        <table class="table table-striped table-bordered table-sm" id="tablaSubrubros">
+          <thead>
+            <tr>
+              <th>ID Subrubro</th>
+              <th>ID Rubro</th>
+              <th>Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in subrubros %}
+            <tr>
+              <td>{{ s.idsubrubro }}</td>
+              <td>{{ s.idrubro }}</td>
+              <td>{{ s.nombre }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
   <div class="card p-4 shadow-sm mb-4">
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST"
+      action="{{ url_for('subrubros.subrubros_view') }}"
+      enctype="multipart/form-data">
       <label class="form-label">Archivo Excel:</label>
       <input type="file" name="archivo" class="form-control mb-3" accept=".xlsx,.xls" required>
 
@@ -17,7 +59,9 @@
     </form>
   </div>
 
-  <style>
+</div>
+
+<style>
 .tabla-scroll {
   max-height: 400px;
   overflow: auto;
@@ -30,8 +74,7 @@
   border-spacing: 0;
 }
 
-.tabla-scroll thead th,
-.tabla-scroll table tr:first-child th {
+.tabla-scroll thead th {
   position: sticky;
   top: 0;
   z-index: 20;
@@ -45,24 +88,16 @@
 }
 </style>
 
-  {% if preview %}
-  <div class="card shadow-sm">
-    <div class="card-header bg-dark text-white">
-      <h5 class="mb-0">Previsualización Subrubros</h5>
-    </div>
+<script>
+document.getElementById("buscarCodigo").addEventListener("keyup", function () {
+  const filtro = this.value.toLowerCase();
+  const filas = document.querySelectorAll("#tablaSubrubros tbody tr");
 
-    <div class="card-body">
-      {% if total_registros %}
-      <h5 class="mb-3">Registros: {{ total_registros }}</h5>
-      {% endif %}
-
-      <div class="tabla-scroll">
-        {{ preview | safe }}
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-</div>
+  filas.forEach(fila => {
+    const idsubrubro = fila.children[0].textContent.toLowerCase();
+    fila.style.display = idsubrubro.includes(filtro) ? "" : "none";
+  });
+});
+</script>
 
 {% endblock %}

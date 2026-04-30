@@ -1,11 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Rubros{% endblock %}
+{% block title %}Laboratorios{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
 
   <h2 class="mb-4">Rubros</h2>
 
+  <!-- TABLA ACTUAL -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white">
+      <h5 class="mb-0">Tabla Rubros</h5>
+    </div>
+
+    <div class="card-body">
+
+      <!-- BUSCADOR -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <input type="text"
+                 id="buscarCodigo"
+                 class="form-control"
+                 placeholder="Buscar por código...">
+        </div>
+      </div>
+
+      <!-- TABLA -->
+      <div class="tabla-scroll">
+        <table class="table table-striped table-bordered table-sm" id="tablarubros">
+          <thead>
+            <tr>
+              <th>idrubro</th>
+              <th>Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in rubros %}
+            <tr>
+              <td>{{ l.idrubro }}</td>
+              <td>{{ l.nombre }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CARGA EXCEL ABAJO -->
   <div class="card p-4 shadow-sm mb-4">
     <form method="POST" enctype="multipart/form-data">
       <label class="form-label">Archivo Excel:</label>
@@ -16,24 +58,6 @@
       </button>
     </form>
   </div>
-
-  {% if preview %}
-  <div class="card shadow-sm">
-    <div class="card-header bg-dark text-white">
-      <h5 class="mb-0">Previsualización Rubros</h5>
-    </div>
-
-    <div class="card-body">
-      {% if total_registros %}
-      <h5 class="mb-3">Registros: {{ total_registros }}</h5>
-      {% endif %}
-
-      <div class="tabla-scroll">
-        {{ preview | safe }}
-      </div>
-    </div>
-  </div>
-  {% endif %}
 
 </div>
 
@@ -50,8 +74,7 @@
   border-spacing: 0;
 }
 
-.tabla-scroll thead th,
-.tabla-scroll table tr:first-child th {
+.tabla-scroll thead th {
   position: sticky;
   top: 0;
   z-index: 20;
@@ -64,5 +87,17 @@
   padding: 0.4rem;
 }
 </style>
+
+<script>
+document.getElementById("buscarCodigo").addEventListener("keyup", function () {
+  const filtro = this.value.toLowerCase();
+  const filas = document.querySelectorAll("#tablarubros tbody tr");
+
+  filas.forEach(fila => {
+    const codigo = fila.children[0].textContent.toLowerCase();
+    fila.style.display = codigo.includes(filtro) ? "" : "none";
+  });
+});
+</script>
 
 {% endblock %}

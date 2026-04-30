@@ -114,18 +114,18 @@
 
       <div class="submenu-nested">
 
-          <a href="{{ url_for('farmacia.rubros_view') }}"
-            class="submenu-item {% if request.path == url_for('farmacia.rubros_view') %}active-link{% endif %}">
+          <a href="{{ url_for('rubros.rubros_view') }}"
+            class="submenu-item {% if request.path == url_for('rubros.rubros_view') %}active-link{% endif %}">
             Rubros
           </a>
 
-          <a href="{{ url_for('farmacia.subrubros_view') }}"
-            class="submenu-item {% if request.path == url_for('farmacia.subrubros_view') %}active-link{% endif %}">
+          <a href="{{ url_for('subrubros.subrubros_view') }}"
+            class="submenu-item {% if request.path == url_for('subrubros.subrubros_view') %}active-link{% endif %}">
             Subrubros
           </a>
 
-          <a href="{{ url_for('farmacia.laboratorios_view') }}"
-            class="submenu-item {% if request.path == url_for('farmacia.laboratorios_view') %}active-link{% endif %}">
+          <a href="{{ url_for('laboratorios.laboratorios_view') }}"
+            class="submenu-item {% if request.path == url_for('laboratorios.laboratorios_view') %}active-link{% endif %}">
             Laboratorios
           </a>
           
