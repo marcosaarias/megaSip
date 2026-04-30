@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Archivo Maestro{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <h2 class="mb-4">Archivo Maestro</h2>
+
+    {% if mensaje_error %}
+    <div class="alert alert-danger">
+        {{ mensaje_error }}
+    </div>
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="card p-4 shadow-sm mb-4">
+        <h4 class="mb-3">Cargar Archivo</h4>
+
+        <form method="POST"
+              enctype="multipart/form-data"
+              action="{{ url_for('archivo_maestro.index') }}">
+
+            <label class="form-label">Archivo Excel:</label>
+
+            <input type="file"
+                   name="archivo"
+                   class="form-control mb-3"
+                   accept=".xlsx,.xls"
+                   required>
+
+            <button type="submit" class="btn btn-primary w-100">
+                Previsualizar Archivo
+            </button>
+        </form>
+    </div>
+
+    {% if preview %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                Archivo Maestro
+                {% if total_registros %}
+                    | Total: {{ total_registros }}
+                {% endif %}
+            </h5>
+
+            {% if cache_id %}
+            <a href="{{ url_for('archivo_maestro.descargar_archivo', cache_id=cache_id) }}"
+               class="btn btn-success btn-sm">
+                Descargar archivo
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="card-body p-2">
+            <div class="tabla-scroll">
+                {{ preview | safe }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+.tabla-scroll {
+    max-height: 600px;
+    overflow: auto;
+    position: relative;
+}
+
+.tabla-scroll table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.tabla-scroll thead th,
+.tabla-scroll table tr:first-child th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #212529;
+    color: white;
+}
+
+.tabla-scroll td,
+.tabla-scroll th {
+    padding: 0.4rem;
+    white-space: nowrap;
+}
+</style>
+
+{% endblock %}

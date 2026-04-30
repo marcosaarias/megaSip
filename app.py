@@ -1,6 +1,7 @@
 import os
 from flask import Flask, url_for, redirect
 
+from archivo_maestro import archivo_maestro_bp
 from sistemas import sistemas_bp
 from usuarios import usuarios_bp
 from farmacia import farmacia_bp
@@ -21,6 +22,8 @@ from cenefas_sistemas import cenefas_sistemas_bp
 app = Flask(__name__)
 app.secret_key = "clave_secreta_demo"
 
+
+app.register_blueprint(archivo_maestro_bp, url_prefix="/archivo_maestro")
 app.register_blueprint(cenefas_sistemas_bp)
 app.register_blueprint(ecommerce_cenefas_bp)
 app.register_blueprint(diarios_bp)
