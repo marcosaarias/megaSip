@@ -5,7 +5,9 @@
 <div class="container-fluid">
 
     <div class="row mb-3">
-        <div class="col-md-4">
+        
+        <!-- Buscador Material -->
+        <div class="col-md-6">
             <div class="d-flex align-items-center gap-2">
                 <label for="buscadorMaterial" class="form-label mb-0 fw-bold">
                     Material:
@@ -19,6 +21,23 @@
                 >
             </div>
         </div>
+
+        <!-- Buscador Departamento -->
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-2 justify-content-end">
+                <label for="buscadorDepartamento" class="form-label mb-0 fw-bold">
+                    Departamento:
+                </label>
+
+                <input
+                    type="text"
+                    id="buscadorDepartamento"
+                    class="form-control w-auto"
+                    placeholder="Departamento..."
+                >
+            </div>
+        </div>
+
     </div>
 
     <div class="row mb-3">
@@ -45,8 +64,6 @@
             </div>
         </div>
     </div>
-
-    <h2 class="mb-4">Cenefas Disponibles</h2>
 
     <div class="card shadow-sm">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -157,6 +174,32 @@
     box-shadow: 0 0 5px #ff9800;
     outline: none;
 }
+
+#buscadorDepartamento {
+    border: 2px solid #000;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+#buscadorDepartamento:focus {
+    border-color: #ff9800;
+    box-shadow: 0 0 5px #ff9800;
+    outline: none;
+}
+
+
+#materialesMultiples{
+    border: 2px solid #000;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+#materialesMultiples:focus {
+    border-color: #ff9800;
+    box-shadow: 0 0 5px #ff9800;
+    outline: none;
+}
+
 
 
 input.chk-imprimir.form-check-input {
