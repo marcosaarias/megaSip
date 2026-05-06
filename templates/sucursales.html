@@ -21,6 +21,31 @@
         </div>
     </div>
 
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="materialesMultiples" class="form-label fw-bold">
+                Materiales múltiples:
+            </label>
+
+            <textarea
+                id="materialesMultiples"
+                class="form-control"
+                rows="3"
+                placeholder="ingresa multiples materiales"
+            ></textarea>
+
+            <div class="mt-2 d-flex gap-2">
+                <button type="button" class="btn btn-warning btn-sm" onclick="marcarMaterialesMultiples()">
+                    Marcar y previsualizar
+                </button>
+
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limpiarMaterialesMultiples()">
+                    Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <h2 class="mb-4">Cenefas Disponibles</h2>
 
     <div class="card shadow-sm">
@@ -826,6 +851,78 @@ function imprimirTabla() {
 
     setTimeout(imprimirIframe, 300);
 }
+
+function obtenerCodigosMultiples() {
+    const texto = document.getElementById("materialesMultiples").value || "";
+
+    return texto
+        .split(/[\s,;]+/)
+        .map(codigo => codigo.trim().toLowerCase())
+        .filter(codigo => codigo !== "");
+}
+
+function marcarMaterialesMultiples() {
+    const codigos = obtenerCodigosMultiples();
+
+    if (codigos.length === 0) {
+        alert("Ingresá al menos un código de material.");
+        return;
+    }
+
+    let encontrados = 0;
+
+    document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
+        const index = parseInt(fila.dataset.index, 10);
+        const codigoFila = fila.cells[2].innerText.trim().toLowerCase();
+        const coincide = codigos.includes(codigoFila);
+        const checkbox = fila.querySelector(".chk-imprimir");
+
+        fila.style.display = coincide ? "" : "none";
+
+        if (coincide) {
+            encontrados++;
+        }
+
+        if (checkbox) {
+            checkbox.checked = coincide;
+        }
+
+        if (!isNaN(index) && datosCompletos[index]) {
+            datosCompletos[index].seleccionado = coincide;
+
+            if (coincide) {
+                datosCompletos[index].cantidad_imprimir = datosCompletos[index].cantidad_imprimir || 1;
+            }
+        }
+    });
+
+    document.getElementById("buscadorMaterial").value = "";
+
+    if (encontrados === 0) {
+        alert("No se encontró ningún material con los códigos ingresados.");
+    }
+}
+
+function limpiarMaterialesMultiples() {
+    document.getElementById("materialesMultiples").value = "";
+    document.getElementById("buscadorMaterial").value = "";
+
+    document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
+        const index = parseInt(fila.dataset.index, 10);
+        const checkbox = fila.querySelector(".chk-imprimir");
+
+        fila.style.display = "";
+
+        if (checkbox) {
+            checkbox.checked = false;
+        }
+
+        if (!isNaN(index) && datosCompletos[index]) {
+            datosCompletos[index].seleccionado = false;
+        }
+    });
+}
+
 </script>
 
 {% endblock %}
