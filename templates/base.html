@@ -196,6 +196,11 @@
         Oferta Interna
       </a>
 
+      <a href="{{ url_for('compras.ofertas', modo='vencimientos') }}"
+         class="submenu-item {% if 'vencimientos' in request.path %}active-link{% endif %}">
+        Oferta por Liquidacion
+      </a>
+
     </div>
   </div>
 
@@ -278,6 +283,11 @@
       <a href="{{ url_for('compras.sucursal', tipo='interna') }}"
         class="submenu-item {% if request.args.get('tipo') == 'interna' %}active-link{% endif %}">
         Oferta Interna
+      </a>
+
+      <a href="{{ url_for('compras.sucursal', tipo='vencimientos') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'vencimientos' %}active-link{% endif %}">
+        Oferta por Liquidacion
       </a>
 
     </div>
