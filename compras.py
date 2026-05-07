@@ -125,6 +125,50 @@ def cargar_material_map():
         print("Error cargando archivo EAN:", e)
         return {}
 
+
+
+
+# mappeo de departamentos
+
+def cargar_departamento_map():
+    try:
+        material_df = pd.read_excel(
+            RUTA_MATERIAL,
+            sheet_name="Hoja2",
+            dtype=str,
+            header=1
+        )
+
+        material_df.columns = material_df.columns.str.strip().str.lower()
+
+        material_df["scaner"] = (
+            material_df["scaner"]
+            .astype(str)
+            .str.strip()
+            .str.replace(".0", "", regex=False)
+        )
+
+        material_df["departamento"] = (
+            material_df["departamento"]
+            .astype(str)
+            .str.strip()
+        )
+
+        material_df.dropna(subset=["scaner"], inplace=True)
+
+        return dict(
+            zip(
+                material_df["scaner"],
+                material_df["departamento"]
+            )
+        )
+
+    except Exception as e:
+        print("Error cargando departamentos:", e)
+        return {}
+
+
+
 MATERIAL_MAP = cargar_material_map()
 
 DEPARTAMENTO_MAP = cargar_departamento_map()
@@ -206,48 +250,6 @@ def completar_departamento(df):
         )
 
     return df
-
-
-
-# mappeo de departamentos
-
-def cargar_departamento_map():
-    try:
-        material_df = pd.read_excel(
-            RUTA_MATERIAL,
-            sheet_name="Hoja2",
-            dtype=str,
-            header=1
-        )
-
-        material_df.columns = material_df.columns.str.strip().str.lower()
-
-        material_df["scaner"] = (
-            material_df["scaner"]
-            .astype(str)
-            .str.strip()
-            .str.replace(".0", "", regex=False)
-        )
-
-        material_df["departamento"] = (
-            material_df["departamento"]
-            .astype(str)
-            .str.strip()
-        )
-
-        material_df.dropna(subset=["scaner"], inplace=True)
-
-        return dict(
-            zip(
-                material_df["scaner"],
-                material_df["departamento"]
-            )
-        )
-
-    except Exception as e:
-        print("Error cargando departamentos:", e)
-        return {}
-
 
 
 
