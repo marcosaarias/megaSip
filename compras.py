@@ -245,7 +245,7 @@ def completar_departamento(df):
 
         df.insert(
             df.columns.get_loc("EAN") + 1,
-            "Departamento",
+            "departamento",
             mapped
         )
 
