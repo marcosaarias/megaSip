@@ -127,6 +127,8 @@ def cargar_material_map():
 
 MATERIAL_MAP = cargar_material_map()
 
+DEPARTAMENTO_MAP = cargar_departamento_map()
+
 def completar_ean(df):
     if "CODIGO" not in df.columns:
         return df
@@ -157,6 +159,100 @@ def completar_ean(df):
         df.insert(df.columns.get_loc("CODIGO") + 1, "EAN", mapped)
 
     return df
+
+
+def completar_departamento(df):
+
+    if "EAN" not in df.columns:
+        return df
+
+    ean_str = (
+        df["EAN"]
+        .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+    )
+
+    departamento_map_normalized = {}
+
+    for k, v in DEPARTAMENTO_MAP.items():
+
+        key = (
+            str(k)
+            .strip()
+            .replace(".0", "")
+        )
+
+        departamento_map_normalized[key] = v
+
+    mapped = ean_str.map(
+        departamento_map_normalized
+    ).fillna("")
+
+    if "Departamento" in df.columns:
+
+        df["Departamento"] = (
+            df["Departamento"]
+            .replace("", mapped)
+            .fillna(mapped)
+        )
+
+    else:
+
+        df.insert(
+            df.columns.get_loc("EAN") + 1,
+            "Departamento",
+            mapped
+        )
+
+    return df
+
+
+
+# mappeo de departamentos
+
+def cargar_departamento_map():
+    try:
+        material_df = pd.read_excel(
+            RUTA_MATERIAL,
+            sheet_name="Hoja2",
+            dtype=str,
+            header=1
+        )
+
+        material_df.columns = material_df.columns.str.strip().str.lower()
+
+        material_df["scaner"] = (
+            material_df["scaner"]
+            .astype(str)
+            .str.strip()
+            .str.replace(".0", "", regex=False)
+        )
+
+        material_df["departamento"] = (
+            material_df["departamento"]
+            .astype(str)
+            .str.strip()
+        )
+
+        material_df.dropna(subset=["scaner"], inplace=True)
+
+        return dict(
+            zip(
+                material_df["scaner"],
+                material_df["departamento"]
+            )
+        )
+
+    except Exception as e:
+        print("Error cargando departamentos:", e)
+        return {}
+
+
+
+
+
+
 
 # ---------------- UTIL ----------------
 
@@ -267,6 +363,8 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             df["CODIGO"] = df["CODIGO"].astype(int)
 
         df = completar_ean(df)
+
+        df = completar_departamento(df)
 
         if "ean" in df.columns:
             df.rename(columns={"ean": "EAN"}, inplace=True)
