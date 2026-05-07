@@ -198,7 +198,12 @@ def completar_ean(df):
     mapped = codigos_str.map(material_map_normalized).fillna("")
 
     if "EAN" in df.columns:
-        df["EAN"] = df["EAN"].replace("", mapped).fillna(mapped)
+        #df["EAN"] = df["EAN"].replace("", mapped).fillna(mapped)
+
+        df["EAN"] = df["EAN"].mask(
+            df["EAN"].astype(str).str.strip() == "",
+            mapped
+        ).fillna(mapped)
     else:
         df.insert(df.columns.get_loc("CODIGO") + 1, "EAN", mapped)
 
@@ -233,13 +238,12 @@ def completar_departamento(df):
         departamento_map_normalized
     ).fillna("")
 
-    if "Departamento" in df.columns:
+    if "departamento" in df.columns:
 
-        df["Departamento"] = (
-            df["Departamento"]
-            .replace("", mapped)
-            .fillna(mapped)
-        )
+        df["departamento"] = df["departamento"].mask(
+            df["departamento"].astype(str).str.strip() == "",
+            mapped
+        ).fillna(mapped)
 
     else:
 
@@ -250,10 +254,6 @@ def completar_departamento(df):
         )
 
     return df
-
-
-
-
 
 
 # ---------------- UTIL ----------------
