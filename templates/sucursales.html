@@ -114,6 +114,7 @@
                             <th style="width: 90px;">Cant.</th>
                             <th>Código</th>
                             <th>EAN</th>
+                            <th>Departamento</th>
                             <th>Descripción</th>
                             <th>Normal</th>
                             <th>Oferta</th>
@@ -145,6 +146,7 @@
                             </td>
                             <td>{{ item.Codigo }}</td>
                             <td>{{ item.ean }}</td>
+                            <td>{{ item.Departamento or item.departamento }}</td>
                             <td>{{ item.descripcion }}</td>
                             <td>{{ item.Normal }}</td>
                             <td>{{ item.Oferta }}</td>
@@ -251,6 +253,30 @@ document.addEventListener("DOMContentLoaded", function () {
             filas.forEach(fila => {
                 const codigo = fila.cells[2].innerText.toLowerCase();
                 fila.style.display = codigo.includes(filtro) ? "" : "none";
+            });
+        });
+    }
+
+    const buscadorDepartamento = document.getElementById("buscadorDepartamento");
+
+    if (buscadorDepartamento) {
+
+        buscadorDepartamento.addEventListener("keyup", function () {
+
+            const filtro = this.value.toLowerCase().trim();
+
+            const filas = document.querySelectorAll("#areaImpresion tbody tr");
+
+            filas.forEach(fila => {
+
+                const departamento = fila.cells[4]
+                    .innerText
+                    .toLowerCase();
+
+                fila.style.display =
+                    departamento.includes(filtro)
+                        ? ""
+                        : "none";
             });
         });
     }

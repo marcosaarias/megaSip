@@ -364,12 +364,11 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             df = df.dropna(subset=["CODIGO"])
             df["CODIGO"] = df["CODIGO"].astype(int)
 
-        df = completar_ean(df)
-
-        df = completar_departamento(df)
-
         if "ean" in df.columns:
             df.rename(columns={"ean": "EAN"}, inplace=True)
+        
+        df = completar_ean(df)
+        df = completar_departamento(df)
 
         columnas = list(df.columns)
         if "CODIGO" in columnas and "EAN" in columnas:
@@ -416,14 +415,15 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
         cursor.execute("""
             INSERT INTO cenefas
             (
-                Codigo, ean, descripcion, Normal, Oferta, cenefa,
+                Codigo, ean, departamento, descripcion, Normal, Oferta, cenefa,
                 desde, hasta, sucursales, tipo_cenefa,
                 fecha_carga, lote_carga, usuario_carga
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             row.get("CODIGO"),
             row.get("EAN"),
+            row.get("Departamento", ""),
             row.get("DESCRIPCION"),
             row.get("Normal"),
             row.get("Oferta"),
