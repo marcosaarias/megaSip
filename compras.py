@@ -289,9 +289,7 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
         #    return None, None, mensaje_error, 0
 
         if hoja_objetivo is None:
-            print("DEBUG: no existe hoja Cenefas. Ruta:", request.path)
-            print("DEBUG: hojas disponibles:", excel_file.sheet_names)
-
+            
             # fallback: usar la primera hoja del Excel
             hoja_objetivo = excel_file.sheet_names[0]
 
@@ -412,6 +410,10 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
     fecha_carga = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     for _, row in df.iterrows():
+
+        print("DEBUG EAN:", row.get("EAN"))
+        print("DEBUG DEPTO:", row.get("departamento"))
+
         cursor.execute("""
             INSERT INTO cenefas
             (
@@ -423,7 +425,8 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
         """, (
             row.get("CODIGO"),
             row.get("EAN"),
-            row.get("departamento", row.get("Departamento", "")),
+            row.get("departamento"),
+>>>>>>> c76b8c4 (Agregacorreccion definitiva de fix departamento)
             row.get("DESCRIPCION"),
             row.get("Normal"),
             row.get("Oferta"),
@@ -473,7 +476,6 @@ def _folder_base(tipo, template_name):
 
             if df is not None:
 
-                print("DEBUG TIPO QUE SE VA A GUARDAR:", tipo)
                 lote_carga, fecha_carga = guardar_cenefas_en_db(
                     df,
                     tipo,
@@ -744,10 +746,6 @@ def sucursal():
     tipo = request.args.get("tipo", "minorista")
     hoy = datetime.now().date() + timedelta(days=1)
 
-    print("DEBUG sucursal usuario:", sucursal_codigo)
-    print("DEBUG fecha hoy:", hoy)
-    print("DEBUG tipo solicitado:", tipo)
-
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -769,8 +767,7 @@ def sucursal():
         sucursales = str(r[9]).upper().replace(" ", "")
         lista_suc = [s.strip() for s in sucursales.split(",")]
 
-        print("DEBUG sucursales registro:", lista_suc)
-         
+    
         desde = convertir_fecha(r[7])
         hasta = convertir_fecha(r[8])
 
@@ -818,9 +815,6 @@ def sucursal():
         for item in filtradas:
             if item["lote_carga"] == lote_mas_reciente:
                 item["es_nueva"] = True
-
-    print("DEBUG registros vigentes encontrados:", len(filtradas))
-    print("DEBUG lote más reciente:", lote_mas_reciente)
 
     return render_template(
         "sucursales.html",
