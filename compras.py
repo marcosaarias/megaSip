@@ -752,7 +752,7 @@ def sucursal():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT Codigo, ean, descripcion, Normal, Oferta, cenefa,
+        SELECT Codigo, ean, departamento, descripcion, Normal, Oferta, cenefa,
                desde, hasta, sucursales, tipo_cenefa,
                fecha_carga, lote_carga, usuario_carga
         FROM cenefas
@@ -766,16 +766,16 @@ def sucursal():
     filtradas = []
 
     for r in rows:
-        sucursales = str(r[8]).upper().replace(" ", "")
+        sucursales = str(r[9]).upper().replace(" ", "")
         lista_suc = [s.strip() for s in sucursales.split(",")]
 
         print("DEBUG sucursales registro:", lista_suc)
-
-        desde = convertir_fecha(r[6])
-        hasta = convertir_fecha(r[7])
+         
+        desde = convertir_fecha(r[7])
+        hasta = convertir_fecha(r[8])
 
         if not desde or not hasta:
-            print("ERROR fecha:", r[6], r[7])
+            print("ERROR fecha:", r[7], r[8])
             continue
 
         print("DEBUG desde:", desde, "hasta:", hasta)
@@ -784,17 +784,18 @@ def sucursal():
             filtradas.append({
                 "Codigo": r[0],
                 "ean": r[1],
-                "descripcion": r[2],
-                "Normal": r[3],
-                "Oferta": r[4],
-                "cenefa": r[5],
-                "desde": formatear_fecha(r[6]),
-                "hasta": formatear_fecha(r[7]),
-                "sucursales": r[8],
-                "tipo_cenefa": r[9],
-                "fecha_carga": r[10],
-                "lote_carga": r[11],
-                "usuario_carga": r[12],
+                "departamento": r[2],
+                "descripcion": r[3],
+                "Normal": r[4],
+                "Oferta": r[5],
+                "cenefa": r[6],
+                "desde": formatear_fecha(r[7]),
+                "hasta": formatear_fecha(r[8]),
+                "sucursales": r[9],
+                "tipo_cenefa": r[10],
+                "fecha_carga": r[11],
+                "lote_carga": r[12],
+                "usuario_carga": r[13],
                 "es_nueva": False
             })
 
@@ -831,7 +832,6 @@ def sucursal():
 
 
     # --------------- FARMACIA --------------
-
 
 @compras_bp.route("/farmacia_folder", methods=["GET", "POST"])
 @login_requerido("farmacia")
