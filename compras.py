@@ -423,7 +423,7 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
         """, (
             row.get("CODIGO"),
             row.get("EAN"),
-            row.get("Departamento", ""),
+            row.get("departamento", row.get("Departamento", "")),
             row.get("DESCRIPCION"),
             row.get("Normal"),
             row.get("Oferta"),
