@@ -426,7 +426,6 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
             row.get("CODIGO"),
             row.get("EAN"),
             row.get("departamento"),
->>>>>>> c76b8c4 (Agregacorreccion definitiva de fix departamento)
             row.get("DESCRIPCION"),
             row.get("Normal"),
             row.get("Oferta"),
