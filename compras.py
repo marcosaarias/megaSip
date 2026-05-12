@@ -169,6 +169,42 @@ def cargar_departamento_map():
 
 
 
+def completar_dep(df):
+
+    if "EAN" not in df.columns:
+        return df
+
+    ean_str = (
+        df["EAN"]
+        .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+    )
+
+    departamento_map_normalized = {}
+
+    for k, v in DEPARTAMENTO_MAP.items():
+        key = str(k).strip().replace(".0", "")
+        departamento_map_normalized[key] = v
+
+    mapped = ean_str.map(departamento_map_normalized).fillna("")
+
+    if "Dep" in df.columns:
+        df["Dep"] = df["Dep"].mask(
+            df["Dep"].astype(str).str.strip() == "",
+            mapped
+        ).fillna(mapped)
+    else:
+        df.insert(
+            df.columns.get_loc("EAN") + 1,
+            "Dep",
+            mapped
+        )
+
+    return df
+
+
+
 MATERIAL_MAP = cargar_material_map()
 
 DEPARTAMENTO_MAP = cargar_departamento_map()
@@ -367,6 +403,7 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
         
         df = completar_ean(df)
         df = completar_departamento(df)
+        df = completar_dep(df)
 
         columnas = list(df.columns)
 
