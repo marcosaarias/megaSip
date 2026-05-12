@@ -369,20 +369,41 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
         df = completar_departamento(df)
 
         columnas = list(df.columns)
+
         if "CODIGO" in columnas and "EAN" in columnas:
             columnas.remove("EAN")
             index_codigo = columnas.index("CODIGO")
             columnas.insert(index_codigo + 1, "EAN")
             df = df[columnas]
+        
+        def limpiar_precio(valor):
+            if pd.isna(valor):
+                return np.nan
+
+            valor = str(valor).strip()
+
+            # Caso formato US: 13,539.99
+            if "," in valor and "." in valor:
+                valor = valor.replace(",", "")
+
+            # Caso formato ES: 13539,99
+            elif "," in valor:
+                valor = valor.replace(",", ".")
+
+            try:
+                return float(valor)
+            except:
+                return np.nan
 
         if "Oferta" in df.columns:
-            df["Oferta"] = pd.to_numeric(df["Oferta"], errors="coerce")
+            df["Oferta"] = df["Oferta"].apply(limpiar_precio)
             df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
 
         if "Normal" in df.columns:
-            df["Normal"] = pd.to_numeric(df["Normal"], errors="coerce")
+            df["Normal"] = df["Normal"].apply(limpiar_precio)
             df["Normal"] = np.floor(df["Normal"] * 100) / 100
 
+                
         if fecha_desde:
             df["Desde"] = fecha_desde
 
@@ -726,6 +747,7 @@ def sucursal():
             return None
 
         valor = str(valor).strip()
+        valor = valor.replace("$", "").replace(" ", "")
 
         for formato in ("%Y-%m-%d", "%d/%m/%Y"):
             try:
