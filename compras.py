@@ -204,8 +204,8 @@ def cargar_dep_map():
 
 
 MATERIAL_MAP = cargar_material_map()
-
 DEPARTAMENTO_MAP = cargar_departamento_map()
+DEP_MAP = cargar_dep_map()
 
 def completar_ean(df):
     if "CODIGO" not in df.columns:
@@ -284,6 +284,52 @@ def completar_departamento(df):
         df.insert(
             df.columns.get_loc("EAN") + 1,
             "departamento",
+            mapped
+        )
+
+    return df
+
+
+    def completar_dep(df):
+
+    if "EAN" not in df.columns:
+        return df
+
+    ean_str = (
+        df["EAN"]
+        .astype(str)
+        .str.strip()
+        .str.replace(".0", "", regex=False)
+    )
+
+    dep_map_normalized = {}
+
+    for k, v in DEP_MAP.items():
+
+        key = (
+            str(k)
+            .strip()
+            .replace(".0", "")
+        )
+
+        dep_map_normalized[key] = v
+
+    mapped = ean_str.map(
+        dep_map_normalized
+    ).fillna("")
+
+    if "dep" in df.columns:
+
+        df["dep"] = df["dep"].mask(
+            df["dep"].astype(str).str.strip() == "",
+            mapped
+        ).fillna(mapped)
+
+    else:
+
+        df.insert(
+            df.columns.get_loc("departamento") + 1,
+            "dep",
             mapped
         )
 
