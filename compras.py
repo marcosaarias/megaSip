@@ -169,39 +169,37 @@ def cargar_departamento_map():
 
 
 
-def completar_dep(df):
-
-    if "EAN" not in df.columns:
-        return df
-
-    ean_str = (
-        df["EAN"]
-        .astype(str)
-        .str.strip()
-        .str.replace(".0", "", regex=False)
-    )
-
-    departamento_map_normalized = {}
-
-    for k, v in DEPARTAMENTO_MAP.items():
-        key = str(k).strip().replace(".0", "")
-        departamento_map_normalized[key] = v
-
-    mapped = ean_str.map(departamento_map_normalized).fillna("")
-
-    if "Dep" in df.columns:
-        df["Dep"] = df["Dep"].mask(
-            df["Dep"].astype(str).str.strip() == "",
-            mapped
-        ).fillna(mapped)
-    else:
-        df.insert(
-            df.columns.get_loc("EAN") + 1,
-            "Dep",
-            mapped
+def cargar_dep_map():
+    try:
+        material_df = pd.read_excel(
+            RUTA_MATERIAL,
+            sheet_name="Hoja2",
+            dtype=str,
+            header=1
         )
 
-    return df
+        material_df.columns = material_df.columns.str.strip().str.lower()
+
+        material_df["scaner"] = (
+            material_df["scaner"]
+            .astype(str)
+            .str.strip()
+            .str.replace(".0", "", regex=False)
+        )
+
+        material_df["dep"] = (
+            material_df["dep"]
+            .astype(str)
+            .str.strip()
+        )
+
+        material_df.dropna(subset=["scaner"], inplace=True)
+
+        return dict(zip(material_df["scaner"], material_df["dep"]))
+
+    except Exception as e:
+        print("Error cargando DEP:", e)
+        return {}
 
 
 
