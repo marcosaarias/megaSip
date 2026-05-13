@@ -290,7 +290,7 @@ def completar_departamento(df):
     return df
 
 
-    def completar_dep(df):
+def completar_dep(df):
 
     if "EAN" not in df.columns:
         return df
