@@ -519,14 +519,15 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
         cursor.execute("""
             INSERT INTO cenefas
             (
-                Codigo, ean, departamento, descripcion, Normal, Oferta, cenefa,
+                Codigo, ean, dep, departamento, descripcion, Normal, Oferta, cenefa,
                 desde, hasta, sucursales, tipo_cenefa,
                 fecha_carga, lote_carga, usuario_carga
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             row.get("CODIGO"),
             row.get("EAN"),
+            row.get("dep"),
             row.get("departamento"),
             row.get("DESCRIPCION"),
             row.get("Normal"),
