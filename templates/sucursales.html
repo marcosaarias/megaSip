@@ -114,6 +114,7 @@
                             <th style="width: 90px;">Cant.</th>
                             <th>Código</th>
                             <th>EAN</th>
+                            <th>Dep</th>
                             <th>Departamento</th>
                             <th>Descripción</th>
                             <th>Normal</th>
@@ -146,6 +147,7 @@
                             </td>
                             <td>{{ item.Codigo }}</td>
                             <td>{{ item.ean }}</td>
+                            <td>{{ item.Dep or item.dep }}</td>
                             <td>{{ item.Departamento or item.departamento }}</td>
                             <td>{{ item.descripcion }}</td>
                             <td>{{ item.Normal }}</td>
