@@ -5,54 +5,19 @@
 <div class="container-fluid">
 
     <div class="row mb-3">
-        
-        <!-- Buscador Material -->
-        <div class="col-md-6">
-            <div class="d-flex align-items-center gap-2">
-                <label for="buscadorMaterial" class="form-label mb-0 fw-bold">
-                    Material:
+            <div class="col-md-6">
+                <label for="materialesMultiples" class="form-label fw-bold">
+                    Materiales múltiples:
                 </label>
 
-                <input
-                    type="text"
-                    id="buscadorMaterial"
-                    class="form-control"
-                    placeholder="Código de material..."
-                >
+                <textarea
+                    id="materialesMultiples"
+                    class="form-control textarea-multiple"
+                    rows="3"
+                    placeholder="ingresa multiples materiales"
+                ></textarea>
             </div>
-        </div>
 
-        <!-- Buscador Departamento -->
-        <div class="col-md-6">
-            <div class="d-flex align-items-center gap-2 justify-content-end">
-                <label for="buscadorDepartamento" class="form-label mb-0 fw-bold">
-                    Departamento:
-                </label>
-
-                <input
-                    type="text"
-                    id="buscadorDepartamento"
-                    class="form-control w-auto"
-                    placeholder="Departamento..."
-                >
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="materialesMultiples" class="form-label fw-bold">
-                Materiales múltiples:
-            </label>
-
-            <textarea
-                id="materialesMultiples"
-                class="form-control"
-                rows="3"
-                placeholder="ingresa multiples materiales"
-            ></textarea>
-           
             <div class="col-md-6">
                 <label for="departamentosMultiples" class="form-label fw-bold">
                     Departamentos múltiples:
@@ -60,14 +25,13 @@
 
                 <textarea
                     id="departamentosMultiples"
-                    class="form-control"
+                    class="form-control textarea-multiple"
                     rows="3"
                     placeholder="ingresa multiples departamentos"
                 ></textarea>
             </div>
-        
 
-            <div class="mt-2 d-flex gap-2">
+            <div class="col-12 mt-2 d-flex gap-2">
                 <button type="button" class="btn btn-warning btn-sm" onclick="marcarMultiples()">
                     Marcar y previsualizar
                 </button>
@@ -76,39 +40,37 @@
                     Limpiar
                 </button>
             </div>
-
         </div>
-    </div>
 
-    <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>Listado de Cenefas</span>
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>Listado de Cenefas</span>
 
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button type="button" class="btn btn-outline-light btn-sm" onclick="marcarTodas()">
-                    Marcar todas
-                </button>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-light btn-sm" onclick="marcarTodas()">
+                            Marcar todas
+                        </button>
 
-                <button type="button" class="btn btn-outline-light btn-sm" onclick="desmarcarTodas()">
-                    Desmarcar todas
-                </button>
+                        <button type="button" class="btn btn-outline-light btn-sm" onclick="desmarcarTodas()">
+                            Desmarcar todas
+                        </button>
 
-                <button type="button" class="btn btn-outline-light btn-sm" onclick="cantidadUnoTodas()">
-                    Cantidad = 1
-                </button>
+                        <button type="button" class="btn btn-outline-light btn-sm" onclick="cantidadUnoTodas()">
+                            Cantidad = 1
+                        </button>
 
-                <select id="cantidadCenefas" class="form-select form-select-sm" style="width:120px;">
-                    <option value="1">1 por hoja</option>
-                    <option value="2">2 por hoja</option>
-                    <option value="3">3 por hoja</option>
-                    <option value="5">5 por hoja</option>
-                </select>
+                        <select id="cantidadCenefas" class="form-select form-select-sm" style="width:120px;">
+                            <option value="1">1 por hoja</option>
+                            <option value="2">2 por hoja</option>
+                            <option value="3">3 por hoja</option>
+                            <option value="5">5 por hoja</option>
+                        </select>
 
-                <button onclick="imprimirTabla()" class="btn btn-light btn-sm">
-                    🖨 Imprimir
-                </button>
-            </div>
-        </div>
+                        <button onclick="imprimirTabla()" class="btn btn-light btn-sm">
+                            🖨 Imprimir
+                        </button>
+                    </div>
+                </div>
 
         <div class="card-body p-2">
             <p class="mb-2">
@@ -182,44 +144,18 @@
 </div>
 <style>
 
-#buscadorMaterial {
+.textarea-multiple {
     border: 2px solid #000;
     border-radius: 6px;
     padding: 6px 10px;
+    resize: vertical;
 }
 
-#buscadorMaterial:focus {
+.textarea-multiple:focus {
     border-color: #ff9800;
     box-shadow: 0 0 5px #ff9800;
     outline: none;
 }
-
-#buscadorDepartamento {
-    border: 2px solid #000;
-    border-radius: 6px;
-    padding: 6px 10px;
-}
-
-#buscadorDepartamento:focus {
-    border-color: #ff9800;
-    box-shadow: 0 0 5px #ff9800;
-    outline: none;
-}
-
-
-#materialesMultiples{
-    border: 2px solid #000;
-    border-radius: 6px;
-    padding: 6px 10px;
-}
-
-#materialesMultiples:focus {
-    border-color: #ff9800;
-    box-shadow: 0 0 5px #ff9800;
-    outline: none;
-}
-
-
 
 input.chk-imprimir.form-check-input {
     -webkit-appearance: none !important;
@@ -260,43 +196,17 @@ input.chk-imprimir.form-check-input:checked::after {
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const buscador = document.getElementById("buscadorMaterial");
 
-    if (buscador) {
-        buscador.addEventListener("keyup", function () {
-            const filtro = this.value.toLowerCase().trim();
-            const filas = document.querySelectorAll("#areaImpresion tbody tr");
+    const materialesMultiples = document.getElementById("materialesMultiples");
+    const departamentosMultiples = document.getElementById("departamentosMultiples");
 
-            filas.forEach(fila => {
-                const codigo = fila.cells[2].innerText.toLowerCase();
-                fila.style.display = codigo.includes(filtro) ? "" : "none";
-            });
-        });
-    }
+    materialesMultiples.addEventListener("input", function () {
+        departamentosMultiples.disabled = this.value.trim() !== "";
+    });
 
-    const buscadorDepartamento = document.getElementById("buscadorDepartamento");
-
-    if (buscadorDepartamento) {
-
-        buscadorDepartamento.addEventListener("keyup", function () {
-
-            const filtro = this.value.toLowerCase().trim();
-
-            const filas = document.querySelectorAll("#areaImpresion tbody tr");
-
-            filas.forEach(fila => {
-
-                const departamento = fila.cells[5]
-                    .innerText
-                    .toLowerCase();
-
-                fila.style.display =
-                    departamento.includes(filtro)
-                        ? ""
-                        : "none";
-            });
-        });
-    }
+    departamentosMultiples.addEventListener("input", function () {
+        materialesMultiples.disabled = this.value.trim() !== "";
+    });
 
     document.querySelectorAll(".chk-imprimir").forEach(chk => {
         chk.addEventListener("change", function () {
@@ -938,76 +848,79 @@ function imprimirTabla() {
     setTimeout(imprimirIframe, 300);
 }
 
-function obtenerCodigosMultiples() {
-    const texto = document.getElementById("materialesMultiples").value || "";
+function obtenerValoresMultiples(id) {
+    const texto = document.getElementById(id).value || "";
 
     return texto
-        .split(/[\s,;]+/)
-        .map(codigo => codigo.trim().toLowerCase())
-        .filter(codigo => codigo !== "");
+        .split(/[\n,;\s]+/)
+        .map(valor => valor.trim().toLowerCase())
+        .filter(valor => valor !== "");
 }
 
-function marcarMaterialesMultiples() {
-    const codigos = obtenerCodigosMultiples();
+    function marcarMultiples() {
+        const codigos = obtenerValoresMultiples("materialesMultiples");
+        const departamentos = obtenerValoresMultiples("departamentosMultiples");
 
-    if (codigos.length === 0) {
-        alert("Ingresá al menos un código de material.");
-        return;
-    }
-
-    let encontrados = 0;
-
-    document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
-        const index = parseInt(fila.dataset.index, 10);
-        const codigoFila = fila.cells[2].innerText.trim().toLowerCase();
-        const coincide = codigos.includes(codigoFila);
-        const checkbox = fila.querySelector(".chk-imprimir");
-
-        fila.style.display = coincide ? "" : "none";
-
-        if (coincide) {
-            encontrados++;
+        if (codigos.length > 0 && departamentos.length > 0) {
+            alert("No podés buscar materiales y departamentos múltiples al mismo tiempo.");
+            return;
         }
 
-        if (checkbox) {
-            checkbox.checked = coincide;
+        if (codigos.length === 0 && departamentos.length === 0) {
+            alert("Ingresá materiales o departamentos.");
+            return;
         }
 
-        if (!isNaN(index) && datosCompletos[index]) {
-            datosCompletos[index].seleccionado = coincide;
+        let encontrados = 0;
 
-            if (coincide) {
-                datosCompletos[index].cantidad_imprimir = datosCompletos[index].cantidad_imprimir || 1;
+        document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
+            const index = parseInt(fila.dataset.index, 10);
+            const codigoFila = fila.cells[2].innerText.trim().toLowerCase();
+            const departamentoFila = fila.cells[5].innerText.trim().toLowerCase();
+
+            const coincide = codigos.length > 0
+                ? codigos.includes(codigoFila)
+                : departamentos.includes(departamentoFila);
+
+            const checkbox = fila.querySelector(".chk-imprimir");
+
+            fila.style.display = coincide ? "" : "none";
+            if (coincide) encontrados++;
+
+            if (checkbox) checkbox.checked = coincide;
+
+            if (!isNaN(index) && datosCompletos[index]) {
+                datosCompletos[index].seleccionado = coincide;
+                if (coincide) {
+                    datosCompletos[index].cantidad_imprimir =
+                        datosCompletos[index].cantidad_imprimir || 1;
+                }
             }
+        });
+
+        if (encontrados === 0) {
+            alert("No se encontraron registros con los valores ingresados.");
         }
-    });
-
-    document.getElementById("buscadorMaterial").value = "";
-
-    if (encontrados === 0) {
-        alert("No se encontró ningún material con los códigos ingresados.");
     }
-}
 
-function limpiarMaterialesMultiples() {
-    document.getElementById("materialesMultiples").value = "";
-    document.getElementById("buscadorMaterial").value = "";
+    function limpiarMultiples() {
+        document.getElementById("materialesMultiples").value = "";
+        document.getElementById("departamentosMultiples").value = "";
+        document.getElementById("materialesMultiples").disabled = false;
+        document.getElementById("departamentosMultiples").disabled = false;
 
-    document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
-        const index = parseInt(fila.dataset.index, 10);
-        const checkbox = fila.querySelector(".chk-imprimir");
+        document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
+            const index = parseInt(fila.dataset.index, 10);
+            const checkbox = fila.querySelector(".chk-imprimir");
 
-        fila.style.display = "";
+            fila.style.display = "";
+            if (checkbox) checkbox.checked = false;
 
-        if (checkbox) {
-            checkbox.checked = false;
-        }
-
-        if (!isNaN(index) && datosCompletos[index]) {
-            datosCompletos[index].seleccionado = false;
-        }
-    });
-}
+            if (!isNaN(index) && datosCompletos[index]) {
+                datosCompletos[index].seleccionado = false;
+            }
+        });
+    }
 
 </script>
 
