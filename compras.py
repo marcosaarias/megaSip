@@ -870,7 +870,7 @@ def sucursal():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT Codigo, ean, departamento, descripcion, Normal, Oferta, cenefa,
+        SELECT Codigo, ean,dep, departamento, descripcion, Normal, Oferta, cenefa,
                desde, hasta, sucursales, tipo_cenefa,
                fecha_carga, lote_carga, usuario_carga
         FROM cenefas
@@ -884,12 +884,12 @@ def sucursal():
     filtradas = []
 
     for r in rows:
-        sucursales = str(r[9]).upper().replace(" ", "")
+        sucursales = str(r[10]).upper().replace(" ", "")
         lista_suc = [s.strip() for s in sucursales.split(",")]
 
     
-        desde = convertir_fecha(r[7])
-        hasta = convertir_fecha(r[8])
+        desde = convertir_fecha(r[8])
+        hasta = convertir_fecha(r[9])
 
         if not desde or not hasta:
             print("ERROR fecha:", r[7], r[8])
@@ -901,18 +901,19 @@ def sucursal():
             filtradas.append({
                 "Codigo": r[0],
                 "ean": r[1],
-                "departamento": r[2],
-                "descripcion": r[3],
-                "Normal": r[4],
-                "Oferta": r[5],
-                "cenefa": r[6],
-                "desde": formatear_fecha(r[7]),
-                "hasta": formatear_fecha(r[8]),
-                "sucursales": r[9],
-                "tipo_cenefa": r[10],
-                "fecha_carga": r[11],
-                "lote_carga": r[12],
-                "usuario_carga": r[13],
+                "dep": r[2],
+                "departamento": r[3],
+                "descripcion": r[4],
+                "Normal": r[5],
+                "Oferta": r[6],
+                "cenefa": r[7],
+                "desde": formatear_fecha(r[8]),
+                "hasta": formatear_fecha(r[9]),
+                "sucursales": r[10],
+                "tipo_cenefa": r[11],
+                "fecha_carga": r[12],
+                "lote_carga": r[13],
+                "usuario_carga": r[14],
                 "es_nueva": False
             })
 
@@ -999,9 +1000,10 @@ def historico_cenefas():
     cursor = conn.cursor()
 
     query = """
-        SELECT id, Codigo, ean, descripcion, Normal, Oferta, cenefa,
-               desde, hasta, sucursales, tipo_cenefa,
-               fecha_carga, lote_carga, usuario_carga
+        SELECT id, Codigo, ean, dep, departamento, descripcion,
+            Normal, Oferta, cenefa,
+            desde, hasta, sucursales, tipo_cenefa,
+            fecha_carga, lote_carga, usuario_carga
         FROM cenefas
         WHERE 1=1
     """
@@ -1031,6 +1033,8 @@ def historico_cenefas():
             "id": r["id"],
             "Codigo": r["Codigo"],
             "ean": r["ean"],
+            "dep": r["dep"],
+            "departamento": r["departamento"],
             "descripcion": r["descripcion"],
             "Normal": r["Normal"],
             "Oferta": r["Oferta"],
