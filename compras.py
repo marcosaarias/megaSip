@@ -447,9 +447,24 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             df = df.dropna(subset=["CODIGO"])
             df["CODIGO"] = df["CODIGO"].astype(int)
         
+        print("DEBUG columnas despues rename:", df.columns.tolist())
+        print("DEBUG preview antes completar EAN:")
+        print(df.head(5).to_string())
+
         df = completar_ean(df)
+
+        print("DEBUG despues completar_ean:")
+        print(df[["CODIGO", "EAN"]].head(10).to_string())
+
         df = completar_departamento(df)
+
+        print("DEBUG despues completar_departamento:")
+        print(df[["CODIGO", "EAN", "departamento"]].head(10).to_string())
+
         df = completar_dep(df)
+
+        print("DEBUG despues completar_dep:")
+        print(df[["CODIGO", "EAN", "departamento", "dep"]].head(10).to_string())
 
         columnas = list(df.columns)
 
