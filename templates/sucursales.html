@@ -52,16 +52,31 @@
                 rows="3"
                 placeholder="ingresa multiples materiales"
             ></textarea>
+           
+            <div class="col-md-6">
+                <label for="departamentosMultiples" class="form-label fw-bold">
+                    Departamentos múltiples:
+                </label>
+
+                <textarea
+                    id="departamentosMultiples"
+                    class="form-control"
+                    rows="3"
+                    placeholder="ingresa multiples departamentos"
+                ></textarea>
+            </div>
+        
 
             <div class="mt-2 d-flex gap-2">
-                <button type="button" class="btn btn-warning btn-sm" onclick="marcarMaterialesMultiples()">
+                <button type="button" class="btn btn-warning btn-sm" onclick="marcarMultiples()">
                     Marcar y previsualizar
                 </button>
 
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limpiarMaterialesMultiples()">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limpiarMultiples()">
                     Limpiar
                 </button>
             </div>
+
         </div>
     </div>
 
@@ -271,7 +286,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             filas.forEach(fila => {
 
-                const departamento = fila.cells[4]
+                const departamento = fila.cells[5]
                     .innerText
                     .toLowerCase();
 
