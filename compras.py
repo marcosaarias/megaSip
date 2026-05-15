@@ -61,11 +61,11 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
 compras_bp = Blueprint("compras", __name__, url_prefix="/compras")
 RUTA_MATERIAL = "/mnt/excel/ARCHIVOS IMPORTANTES/Base de datos completa.xlsx"
-HEADERS = ["CODIGO", "ean", "DESCRIPCION", "Normal", "Oferta", "cenefa", "desde", "hasta", "sucursales", "CÓD. SUCURSALES"]
+HEADERS = ["CODIGO", "EAN", "DESCRIPCION", "Normal", "Oferta", "cenefa", "desde", "hasta", "sucursales", "CÓD. SUCURSALES"]
 
 ALIAS = {
     "CODIGO": ["CODIGO", "codigo", "id", "cod", "material", "mat", "Cód.", "CODGO"],
-    "ean": ["ean", "codigo ean"],
+    "EAN": ["ean", "EAN","codigo ean"],
     "DESCRIPCION": ["descripcion", "DESCRIPCION", "Descripción", "Descrip", "nombre", "texto breve de material", "Texto breve de material"],
     "Normal": ["normal", "precio normal", "precio unitario", "Precio", "PVN", "pvn", "Nrmal"],
     "Oferta": ["oferta", "promo", "Ofrta"],
