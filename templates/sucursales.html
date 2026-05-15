@@ -304,12 +304,8 @@ function imprimirTabla() {
     }
 
     const cantidad = parseInt(document.getElementById("cantidadCenefas").value, 10) || 1;
-    const filtro = document.getElementById("buscadorMaterial").value.toLowerCase().trim();
-
     const seleccionados = datosCompletos.filter(row => {
-        const codigo = String(row.Codigo ?? "").toLowerCase();
-        const seleccionado = row.seleccionado === true;
-        return seleccionado && codigo.includes(filtro);
+        return row.seleccionado === true;
     });
 
     if (seleccionados.length === 0) {
