@@ -91,6 +91,45 @@ SUCURSAL_MAP = {
     }
 }
 
+
+def limpiar_codigo(valor):
+    if pd.isna(valor):
+        return ""
+
+    valor = str(valor).strip()
+
+    if valor.lower() in ["nan", "none", "null", ""]:
+        return ""
+
+    try:
+        valor = str(int(float(valor)))
+    except:
+        valor = valor.replace(".0", "")
+
+    return valor.lstrip("0")
+
+
+def limpiar_ean(valor):
+    if pd.isna(valor):
+        return ""
+
+    valor = str(valor).strip()
+
+    if valor.lower() in ["nan", "none", "null", ""]:
+        return ""
+
+    try:
+        if "e" in valor.lower():
+            valor = str(int(float(valor)))
+    except:
+        pass
+
+    if re.fullmatch(r"\d+\.0", valor):
+        valor = valor[:-2]
+
+    return valor.strip()
+
+
 # ---------------- EAN MAP ----------------
 
 def cargar_material_map():
@@ -104,27 +143,21 @@ def cargar_material_map():
 
         material_df.columns = material_df.columns.str.strip().str.lower()
 
-        material_df["material"] = (
-            material_df["material"]
-            .astype(str)
-            .str.strip()
-            .str.lstrip("0")
-        )
+        material_df["material"] = material_df["material"].apply(limpiar_codigo)
+        material_df["scaner"] = material_df["scaner"].apply(limpiar_ean)
 
-        material_df["scaner"] = (
-            material_df["scaner"]
-            .astype(str)
-            .str.strip()
-        )
+        material_df = material_df[
+            (material_df["material"] != "") &
+            (material_df["scaner"] != "")
+        ]
 
-        material_df.dropna(subset=["material", "scaner"], inplace=True)
+        print("MATERIAL_MAP registros:", len(material_df))
 
         return dict(zip(material_df["material"], material_df["scaner"]))
 
     except Exception as e:
         print("Error cargando archivo EAN:", e)
         return {}
-
 
 
 
@@ -141,32 +174,18 @@ def cargar_departamento_map():
 
         material_df.columns = material_df.columns.str.strip().str.lower()
 
-        material_df["scaner"] = (
-            material_df["scaner"]
-            .astype(str)
-            .str.strip()
-            .str.replace(".0", "", regex=False)
-        )
+        material_df["scaner"] = material_df["scaner"].apply(limpiar_ean)
+        material_df["departamento"] = material_df["departamento"].astype(str).str.strip()
 
-        material_df["departamento"] = (
-            material_df["departamento"]
-            .astype(str)
-            .str.strip()
-        )
+        material_df = material_df[material_df["scaner"] != ""]
 
-        material_df.dropna(subset=["scaner"], inplace=True)
+        print("DEPARTAMENTO_MAP registros:", len(material_df))
 
-        return dict(
-            zip(
-                material_df["scaner"],
-                material_df["departamento"]
-            )
-        )
+        return dict(zip(material_df["scaner"], material_df["departamento"]))
 
     except Exception as e:
         print("Error cargando departamentos:", e)
         return {}
-
 
 
 def cargar_dep_map():
@@ -180,27 +199,18 @@ def cargar_dep_map():
 
         material_df.columns = material_df.columns.str.strip().str.lower()
 
-        material_df["scaner"] = (
-            material_df["scaner"]
-            .astype(str)
-            .str.strip()
-            .str.replace(".0", "", regex=False)
-        )
+        material_df["scaner"] = material_df["scaner"].apply(limpiar_ean)
+        material_df["dep"] = material_df["dep"].astype(str).str.strip()
 
-        material_df["dep"] = (
-            material_df["dep"]
-            .astype(str)
-            .str.strip()
-        )
+        material_df = material_df[material_df["scaner"] != ""]
 
-        material_df.dropna(subset=["scaner"], inplace=True)
+        print("DEP_MAP registros:", len(material_df))
 
         return dict(zip(material_df["scaner"], material_df["dep"]))
 
     except Exception as e:
         print("Error cargando DEP:", e)
         return {}
-
 
 
 MATERIAL_MAP = cargar_material_map()
@@ -211,37 +221,19 @@ def completar_ean(df):
     if "CODIGO" not in df.columns:
         return df
 
-    codigos_str = (
-        df["CODIGO"]
-        .astype(str)
-        .str.strip()
-        .str.replace(".0", "", regex=False)
-        .str.lstrip("0")
-    )
-
-    material_map_normalized = {}
-
-    for k, v in MATERIAL_MAP.items():
-        try:
-            key = str(int(float(str(k).strip())))
-        except:
-            key = str(k).strip()
-
-        material_map_normalized[key.lstrip("0")] = v
-
-    mapped = codigos_str.map(material_map_normalized).fillna("")
+    codigos_str = df["CODIGO"].apply(limpiar_codigo)
+    mapped = codigos_str.map(MATERIAL_MAP).fillna("")
 
     if "EAN" in df.columns:
-        #df["EAN"] = df["EAN"].replace("", mapped).fillna(mapped)
-
-        df["EAN"] = df["EAN"].mask(
-            df["EAN"].astype(str).str.strip() == "",
-            mapped
-        ).fillna(mapped)
+        df["EAN"] = df["EAN"].apply(limpiar_ean)
+        df["EAN"] = df["EAN"].mask(df["EAN"] == "", mapped)
     else:
         df.insert(df.columns.get_loc("CODIGO") + 1, "EAN", mapped)
 
+    print("DEBUG EAN vacios:", (df["EAN"] == "").sum())
+
     return df
+
 
 
 def completar_departamento(df):
@@ -249,12 +241,7 @@ def completar_departamento(df):
     if "EAN" not in df.columns:
         return df
 
-    ean_str = (
-        df["EAN"]
-        .astype(str)
-        .str.strip()
-        .str.replace(".0", "", regex=False)
-    )
+    ean_str = df["EAN"].apply(limpiar_ean)
 
     departamento_map_normalized = {}
 
@@ -295,12 +282,7 @@ def completar_dep(df):
     if "EAN" not in df.columns:
         return df
 
-    ean_str = (
-        df["EAN"]
-        .astype(str)
-        .str.strip()
-        .str.replace(".0", "", regex=False)
-    )
+    ean_str = df["EAN"].apply(limpiar_ean)
 
     dep_map_normalized = {}
 
@@ -441,9 +423,6 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
             df = df.dropna(subset=["CODIGO"])
             df["CODIGO"] = df["CODIGO"].astype(int)
-
-        if "ean" in df.columns:
-            df.rename(columns={"ean": "EAN"}, inplace=True)
         
         df = completar_ean(df)
         df = completar_departamento(df)
