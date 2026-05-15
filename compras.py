@@ -118,6 +118,8 @@ def limpiar_ean(valor):
     if valor.lower() in ["nan", "none", "null", ""]:
         return ""
 
+    valor = valor.replace(" ", "").replace("-", "")
+
     try:
         if "e" in valor.lower():
             valor = str(int(float(valor)))
@@ -126,6 +128,8 @@ def limpiar_ean(valor):
 
     if re.fullmatch(r"\d+\.0", valor):
         valor = valor[:-2]
+
+    valor = re.sub(r"\D", "", valor)
 
     return valor.strip()
 
@@ -219,17 +223,31 @@ DEP_MAP = cargar_dep_map()
 
 def completar_ean(df):
     if "CODIGO" not in df.columns:
+        print("DEBUG EAN: no existe columna CODIGO")
         return df
+
+    print("DEBUG columnas antes EAN:", df.columns.tolist())
 
     codigos_str = df["CODIGO"].apply(limpiar_codigo)
     mapped = codigos_str.map(MATERIAL_MAP).fillna("")
 
+    print("DEBUG MATERIAL_MAP size:", len(MATERIAL_MAP))
+    print("DEBUG CODIGOS archivo:", codigos_str.head(10).tolist())
+    print("DEBUG EAN desde MATERIAL_MAP:", mapped.head(10).tolist())
+
     if "EAN" in df.columns:
+        print("DEBUG EAN original archivo:", df["EAN"].head(10).tolist())
+
         df["EAN"] = df["EAN"].apply(limpiar_ean)
+
+        print("DEBUG EAN limpio archivo:", df["EAN"].head(10).tolist())
+
         df["EAN"] = df["EAN"].mask(df["EAN"] == "", mapped)
     else:
+        print("DEBUG no vino columna EAN, se inserta desde MATERIAL_MAP")
         df.insert(df.columns.get_loc("CODIGO") + 1, "EAN", mapped)
 
+    print("DEBUG EAN final:", df["EAN"].head(10).tolist())
     print("DEBUG EAN vacios:", (df["EAN"] == "").sum())
 
     return df
@@ -368,7 +386,12 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             mensaje_error = "No se encontró la fila de encabezados (CODIGO)."
             return None, None, mensaje_error, 0
 
-        df = pd.read_excel(excel_file, sheet_name=hoja_objetivo, header=fila_header)
+        df = pd.read_excel(
+            excel_file,
+            sheet_name=hoja_objetivo,
+            header=fila_header,
+            dtype=str
+        )
 
         df.columns = [normalizar_texto(col).strip() for col in df.columns]
 
