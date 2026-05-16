@@ -872,7 +872,7 @@ function obtenerValoresMultiples(id) {
         document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
             const index = parseInt(fila.dataset.index, 10);
             const codigoFila = fila.cells[2].innerText.trim().toLowerCase();
-            const departamentoFila = fila.cells[5].innerText.trim().toLowerCase();
+            const departamentoFila = fila.cells[4].innerText.trim().toLowerCase();
 
             const coincide = codigos.length > 0
                 ? codigos.includes(codigoFila)
