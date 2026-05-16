@@ -864,7 +864,7 @@ def sucursal():
 
     sucursal_codigo = session.get("usuario_nombre", "").strip().upper()
     tipo = request.args.get("tipo", "minorista")
-    hoy = datetime.now().date() + timedelta(days=1)
+    hoy = datetime.now().date() + timedelta(days=2)
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
