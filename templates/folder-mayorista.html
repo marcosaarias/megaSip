@@ -42,6 +42,7 @@
                     <input type="hidden" name="tipo" value="mayorista">
                     <input type="hidden" name="fecha_desde">
                     <input type="hidden" name="fecha_hasta">
+                    <input type="hidden" name="sobrescribir" id="sobrescribir" value="0">
 
                     <input type="file" name="archivo" class="form-control mb-3" required>
 
@@ -104,31 +105,23 @@
 </div>
 
 <script>
-document.querySelectorAll(".folder-form").forEach(form => {
-    form.addEventListener("submit", function(event) {
-        const desde = document.getElementById("fecha_desde").value;
-        const hasta = document.getElementById("fecha_hasta").value;
-
-        if (!desde || !hasta) {
-            alert("Debe seleccionar las fechas Desde y Hasta.");
-            event.preventDefault();
-            return;
-        }
-
-        const archivoInput = form.querySelector("input[name='archivo']");
-        if (!archivoInput || !archivoInput.files || archivoInput.files.length === 0) {
-            alert("Debe seleccionar un archivo.");
-            event.preventDefault();
-            return;
-        }
-
-        form.querySelector("input[name='fecha_desde']").value = desde;
-        form.querySelector("input[name='fecha_hasta']").value = hasta;
-    });
-});
-
 function confirmarTransmision() {
-    let confirmar = confirm("¿Está seguro que desea transmitir el folder?");
+    const requiereSobrescribir =
+        "{{ requiere_sobrescribir|default(false)|lower }}" === "true";
+
+    if (requiereSobrescribir) {
+        const confirmar = confirm(
+            "Ya existen registros para este período. ¿Desea sobrescribirlos?"
+        );
+
+        if (!confirmar) return false;
+
+        document.getElementById("sobrescribir").value = "1";
+        alert("Sobrescribiendo información...");
+        return true;
+    }
+
+    const confirmar = confirm("¿Está seguro que desea transmitir el folder?");
 
     if (confirmar) {
         alert("Transmitiendo información...");

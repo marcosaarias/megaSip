@@ -519,7 +519,38 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
     return df, preview, mensaje_error, total_registros
 
-def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
+
+# Controlar cenefas repetidas
+
+def existen_cenefas_repetidas(df, tipo_cenefa):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    repetidos = []
+
+    for _, row in df.iterrows():
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM cenefas
+            WHERE Codigo = ?
+              AND tipo_cenefa = ?
+              AND desde = ?
+              AND hasta = ?
+        """, (
+            row.get("CODIGO"),
+            tipo_cenefa,
+            row.get("Desde"),
+            row.get("Hasta")
+        ))
+
+        if cursor.fetchone()[0] > 0:
+            repetidos.append(row.get("CODIGO"))
+
+    conn.close()
+    return repetidos
+
+
+def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, sobrescribir=False):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -528,11 +559,22 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
 
     fecha_carga = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    if sobrescribir:
+        for _, row in df.iterrows():
+            cursor.execute("""
+                DELETE FROM cenefas
+                WHERE Codigo = ?
+                  AND tipo_cenefa = ?
+                  AND desde = ?
+                  AND hasta = ?
+            """, (
+                row.get("CODIGO"),
+                tipo_cenefa,
+                row.get("Desde"),
+                row.get("Hasta")
+            ))
+
     for _, row in df.iterrows():
-
-        print("DEBUG EAN:", row.get("EAN"))
-        print("DEBUG DEPTO:", row.get("departamento"))
-
         cursor.execute("""
             INSERT INTO cenefas
             (
@@ -566,7 +608,6 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None):
 
 
 
-
 # ---------------- ROUTES ----------------
 
 @compras_bp.route("/")
@@ -595,10 +636,37 @@ def _folder_base(tipo, template_name):
 
             if df is not None:
 
+                #lote_carga, fecha_carga = guardar_cenefas_en_db(
+                #    df,
+                #   tipo,
+                #    usuario=usuario
+                #)
+                sobrescribir = request.form.get("sobrescribir") == "1"
+
+                repetidos = existen_cenefas_repetidas(df, tipo)
+
+                if repetidos and not sobrescribir:
+                    mensaje_error = (
+                        f"Ya existen {len(repetidos)} registros para este período. "
+                        "Si desea sobrescribirlos, confirme nuevamente."
+                    )
+
+                    return render_template(
+                        template_name,
+                        preview=preview,
+                        tipo=tipo,
+                        mensaje_error=mensaje_error,
+                        total_registros=total_registros,
+                        fecha_desde=fecha_desde,
+                        fecha_hasta=fecha_hasta,
+                        requiere_sobrescribir=True
+                    )
+
                 lote_carga, fecha_carga = guardar_cenefas_en_db(
                     df,
                     tipo,
-                    usuario=usuario
+                    usuario=usuario,
+                    sobrescribir=sobrescribir
                 )
 
                 guardar_log_compras(
