@@ -844,7 +844,36 @@ def transmitir_ofertas():
         #    return "Los datos ya no están disponibles. Volvé a cargar el archivo.", 400
 
         usuario = session.get("usuario_nombre", "desconocido")
-        lote_carga, fecha_carga = guardar_cenefas_en_db(df, modo, usuario=usuario)
+        sobrescribir = request.form.get("sobrescribir") == "1"
+
+        repetidos = existen_cenefas_repetidas(df, modo)
+
+        if repetidos and not sobrescribir:
+            return render_template(
+                "ofertas.html",
+                modo=modo,
+                titulo_vista=modos_validos.get(modo, "Ofertas"),
+                preview=df.to_html(
+                    classes="table table-striped table-bordered",
+                    index=False
+                ),
+                tipo=tipo,
+                mensaje_error=(
+                    f"Ya existen {len(repetidos)} registros para este período. "
+                    "Si desea sobrescribirlos, confirme nuevamente."
+                ),
+                total_registros=len(df),
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+                requiere_sobrescribir=True
+            )
+
+        lote_carga, fecha_carga = guardar_cenefas_en_db(
+            df,
+            modo,
+            usuario=usuario,
+            sobrescribir=sobrescribir
+        )
         redis_client.delete(lote_id) 
         guardar_log_compras(
             usuario=usuario,

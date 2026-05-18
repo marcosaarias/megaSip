@@ -57,6 +57,7 @@
 
                     <input type="hidden" name="fecha_desde">
                     <input type="hidden" name="fecha_hasta">
+                    <input type="hidden" name="sobrescribir" id="sobrescribir" value="0">
 
                     <input type="file"
                            name="archivo"
@@ -122,6 +123,11 @@
                                name="fecha_hasta"
                                value="{{ fecha_hasta }}">
 
+                        <input type="hidden"
+                                name="sobrescribir"
+                                id="sobrescribir"
+                                value="0">
+
                         <button type="submit"
                                 class="btn btn-success px-4">
                             Transmitir
@@ -173,30 +179,48 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ---------------- CONFIRMACION TRANSMISION ----------------
 
-    document.querySelectorAll(".transmitir-form").forEach(form => {
+document.querySelectorAll(".transmitir-form").forEach(form => {
 
-        form.addEventListener("submit", function(event) {
+    form.addEventListener("submit", function(event) {
 
-            const tipo = form.querySelector("input[name='tipo']").value;
-            const desde = form.querySelector("input[name='fecha_desde']").value;
-            const hasta = form.querySelector("input[name='fecha_hasta']").value;
+        const requiereSobrescribir =
+            "{{ requiere_sobrescribir|default(false)|lower }}" === "true";
 
-            const mensaje =
-                "⚠️ CONFIRMACION DE TRANSMISION\n\n" +
+        if (requiereSobrescribir) {
 
-                "Tipo de cenefa: " + tipo.toUpperCase() + "\n" +
-                "Vigencia Desde: " + desde + "\n" +
-                "Vigencia Hasta: " + hasta + "\n\n" +
+            const confirmarSobrescribir = confirm(
+                "Ya existen registros para este período.\n\n¿Desea sobrescribirlos?"
+            );
 
-                "¿Desea continuar con la transmisión?";
-
-            const confirmar = confirm(mensaje);
-
-            if (!confirmar) {
+            if (!confirmarSobrescribir) {
                 event.preventDefault();
+                return;
             }
 
-        });
+            document.getElementById("sobrescribir").value = "1";
+
+            alert("Sobrescribiendo información...");
+            return;
+        }
+
+        const tipo = form.querySelector("input[name='tipo']").value;
+        const desde = form.querySelector("input[name='fecha_desde']").value;
+        const hasta = form.querySelector("input[name='fecha_hasta']").value;
+
+        const mensaje =
+            "⚠️ CONFIRMACION DE TRANSMISION\n\n" +
+
+            "Tipo de cenefa: " + tipo.toUpperCase() + "\n" +
+            "Vigencia Desde: " + desde + "\n" +
+            "Vigencia Hasta: " + hasta + "\n\n" +
+
+            "¿Desea continuar con la transmisión?";
+
+        const confirmar = confirm(mensaje);
+
+        if (!confirmar) {
+            event.preventDefault();
+        }
 
     });
 
