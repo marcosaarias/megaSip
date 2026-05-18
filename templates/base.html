@@ -165,12 +165,12 @@
     {% if request.path in [
         url_for('compras.folder_mayorista'),
         url_for('compras.folder_minorista')
-    ] %}
+    ]
         or 'competencia' in request.path
         or 'interna' in request.path
         or 'vencimientos' in request.path %}
         active
-        {% endif %}">
+    {% endif %}">
 
     <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
       Cenefas <i class="bi bi-chevron-down arrow"></i>
