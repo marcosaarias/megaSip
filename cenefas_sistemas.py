@@ -16,6 +16,9 @@ cenefas_sistemas_bp = Blueprint(
     url_prefix="/sistemas/cenefas"
 )
 
+def preparar_df_sistemas(df):
+    columnas_ocultar = ["dep", "departamento", "Dep", "Departamento"]
+    return df.drop(columns=[c for c in columnas_ocultar if c in df.columns])
 
 @cenefas_sistemas_bp.route("/", methods=["GET", "POST"])
 @login_requerido("sistemas")
@@ -84,13 +87,16 @@ def index():
                     print(df.head().to_string())
 
             if df is not None:
-                preview = df.to_html(
+
+                df_salida = preparar_df_sistemas(df)
+
+                preview = df_salida.to_html(
                     classes="table table-striped table-bordered",
                     index=False
                 )
-                total_registros = len(df)
 
-                guardar_temporal(lote_id, df)
+                total_registros = len(df_salida)
+                guardar_temporal(lote_id, df_salida)
 
                 session["cenefas_sistemas_fecha_desde"] = fecha_desde
                 session["cenefas_sistemas_fecha_hasta"] = fecha_hasta
@@ -122,7 +128,7 @@ def descargar():
     output = BytesIO()
 
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Cenefas")
+        df.to_excel(writer, index=False, sheet_name="Hoja1")
 
     output.seek(0)
 
