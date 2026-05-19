@@ -123,9 +123,9 @@
                                value="{{ fecha_hasta }}">
 
                         <input type="hidden"
-                                name="sobrescribir"
-                                id="sobrescribir"
-                                value="0">
+                               name="sobrescribir"
+                               id="sobrescribir"
+                               value="0">
 
                         <button type="submit"
                                 class="btn btn-success px-4">
@@ -175,51 +175,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
     });
 
-
     // ---------------- CONFIRMACION TRANSMISION ----------------
 
-document.querySelectorAll(".transmitir-form").forEach(form => {
+    document.querySelectorAll(".transmitir-form").forEach(form => {
 
-    form.addEventListener("submit", function(event) {
+        form.addEventListener("submit", function(event) {
 
-        const requiereSobrescribir =
-            "{{ requiere_sobrescribir|default(false)|lower }}" === "true";
+            const requiereSobrescribir =
+                "{{ requiere_sobrescribir|default(false)|lower }}" === "true";
 
-        if (requiereSobrescribir) {
+            if (requiereSobrescribir) {
 
-            const confirmarSobrescribir = confirm(
-                "Ya existen registros para este período.\n\n¿Desea sobrescribirlos?"
-            );
+                const confirmarSobrescribir = confirm(
+                    "Ya existen registros para este período.\n\n¿Desea sobrescribirlos?"
+                );
 
-            if (!confirmarSobrescribir) {
-                event.preventDefault();
+                if (!confirmarSobrescribir) {
+                    event.preventDefault();
+                    return;
+                }
+
+                form.querySelector("input[name='sobrescribir']").value = "1";
+
+                alert("Sobrescribiendo información...");
                 return;
             }
 
-            form.querySelector("input[name='sobrescribir']").value = "1";
+            const tipo = form.querySelector("input[name='tipo']").value;
+            const desde = form.querySelector("input[name='fecha_desde']").value;
+            const hasta = form.querySelector("input[name='fecha_hasta']").value;
 
-            alert("Sobrescribiendo información...");
-            return;
-        }
+            const mensaje =
+                "⚠️ CONFIRMACION DE TRANSMISION\n\n" +
+                "Tipo de cenefa: " + tipo.toUpperCase() + "\n" +
+                "Vigencia Desde: " + desde + "\n" +
+                "Vigencia Hasta: " + hasta + "\n\n" +
+                "¿Desea continuar con la transmisión?";
 
-        const tipo = form.querySelector("input[name='tipo']").value;
-        const desde = form.querySelector("input[name='fecha_desde']").value;
-        const hasta = form.querySelector("input[name='fecha_hasta']").value;
+            const confirmar = confirm(mensaje);
 
-        const mensaje =
-            "⚠️ CONFIRMACION DE TRANSMISION\n\n" +
+            if (!confirmar) {
+                event.preventDefault();
+            }
 
-            "Tipo de cenefa: " + tipo.toUpperCase() + "\n" +
-            "Vigencia Desde: " + desde + "\n" +
-            "Vigencia Hasta: " + hasta + "\n\n" +
-
-            "¿Desea continuar con la transmisión?";
-
-        const confirmar = confirm(mensaje);
-
-        if (!confirmar) {
-            event.preventDefault();
-        }
+        });
 
     });
 
