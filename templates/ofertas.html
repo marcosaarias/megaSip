@@ -57,7 +57,6 @@
 
                     <input type="hidden" name="fecha_desde">
                     <input type="hidden" name="fecha_hasta">
-                    <input type="hidden" name="sobrescribir" id="sobrescribir" value="0">
 
                     <input type="file"
                            name="archivo"
@@ -197,7 +196,7 @@ document.querySelectorAll(".transmitir-form").forEach(form => {
                 return;
             }
 
-            document.getElementById("sobrescribir").value = "1";
+            form.querySelector("input[name='sobrescribir']").value = "1";
 
             alert("Sobrescribiendo información...");
             return;
