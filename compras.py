@@ -364,20 +364,20 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                 hoja_objetivo = hoja
                 break
 
-        #if hoja_objetivo is None:
-        #    mensaje_error = "No se encontró la hoja 'Cenefas'."
-        #    return None, None, mensaje_error, 0
-
         if hoja_objetivo is None:
-            
-            # fallback: usar la primera hoja del Excel
             hoja_objetivo = excel_file.sheet_names[0]
 
-        df_temp = pd.read_excel(excel_file, sheet_name=hoja_objetivo, header=None)
+        df_temp = pd.read_excel(
+            excel_file,
+            sheet_name=hoja_objetivo,
+            header=None
+        )
 
         fila_header = None
+
         for i, row in df_temp.iterrows():
             valores = [normalizar_texto(x) for x in row.values]
+
             if "codigo" in valores:
                 fila_header = i
                 break
@@ -393,16 +393,39 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             dtype=str
         )
 
-        df.columns = [normalizar_texto(col).strip() for col in df.columns]
+        df.columns = [
+            normalizar_texto(col).strip()
+            for col in df.columns
+        ]
+
+        # ---------------- MANEJO CENEFA/PROMO ----------------
+
+        # si no existe cenefa pero existe promo
+        # promo pasa a llamarse cenefa
+        if "cenefa" not in df.columns:
+
+            if "promo" in df.columns:
+                df = df.rename(columns={"promo": "cenefa"})
+
+            else:
+                df["cenefa"] = "OFERTA"
+
+        # -----------------------------------------------------
 
         column_mapping = {}
 
         for header in HEADERS:
+
             header_norm = normalizar_texto(header)
+
             posibles = ALIAS.get(header, [])
-            posibles_norm = [normalizar_texto(p) for p in posibles]
+            posibles_norm = [
+                normalizar_texto(p)
+                for p in posibles
+            ]
 
             for col in df.columns:
+
                 if col == header_norm or col in posibles_norm:
                     column_mapping[col] = header
                     break
@@ -414,6 +437,7 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
         df = df.rename(columns=column_mapping)
 
         if tipo in SUCURSAL_MAP:
+
             clave_total = (
                 "Total Empresa - Mayorista"
                 if tipo == "mayorista"
@@ -424,6 +448,7 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                 df["sucursales"] = ""
 
             def generar_codigos(valor):
+
                 if pd.isna(valor) or str(valor).strip() == "":
                     return SUCURSAL_MAP[tipo].get(clave_total, "")
 
@@ -434,62 +459,61 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                     SUCURSAL_MAP[tipo].get(clave_total, "")
                 )
 
-            df["sucursales"] = df["sucursales"].apply(generar_codigos)
+            df["sucursales"] = df["sucursales"].apply(
+                generar_codigos
+            )
 
-        columnas_validas = [col for col in df.columns if col in HEADERS]
+        columnas_validas = [
+            col for col in df.columns
+            if col in HEADERS
+        ]
+
         df = df[columnas_validas]
 
         df = df.replace(r'^\s*$', pd.NA, regex=True)
         df = df.dropna(how="all")
 
         if "CODIGO" in df.columns:
-            df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
+            df["CODIGO"] = pd.to_numeric(
+                df["CODIGO"],
+                errors="coerce"
+            )
+
             df = df.dropna(subset=["CODIGO"])
             df["CODIGO"] = df["CODIGO"].astype(int)
-        
-        print("DEBUG columnas despues rename:", df.columns.tolist())
-        print("DEBUG preview antes completar EAN:")
-        print(df.head(5).to_string())
 
         df = completar_ean(df)
-
-        print("DEBUG despues completar_ean:")
-        print(df[["CODIGO", "EAN"]].head(10).to_string())
-
         df = completar_departamento(df)
-
-        print("DEBUG despues completar_departamento:")
-        print(df[["CODIGO", "EAN", "departamento"]].head(10).to_string())
-
         df = completar_dep(df)
-
-        print("DEBUG despues completar_dep:")
-        print(df[["CODIGO", "EAN", "departamento", "dep"]].head(10).to_string())
 
         columnas = list(df.columns)
 
         if "CODIGO" in columnas and "EAN" in columnas:
+
             columnas.remove("EAN")
+
             index_codigo = columnas.index("CODIGO")
+
             columnas.insert(index_codigo + 1, "EAN")
+
             df = df[columnas]
-        
+
         def limpiar_precio(valor):
+
             if pd.isna(valor):
                 return np.nan
 
             valor = str(valor).strip()
 
-            # Caso formato US: 13,539.99
             if "," in valor and "." in valor:
                 valor = valor.replace(",", "")
 
-            # Caso formato ES: 13539,99
             elif "," in valor:
                 valor = valor.replace(",", ".")
 
             try:
                 return float(valor)
+
             except:
                 return np.nan
 
@@ -501,7 +525,6 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             df["Normal"] = df["Normal"].apply(limpiar_precio)
             df["Normal"] = np.floor(df["Normal"] * 100) / 100
 
-                
         if fecha_desde:
             df["Desde"] = fecha_desde
 
@@ -509,7 +532,9 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             df["Hasta"] = fecha_hasta
 
         df = df.reset_index(drop=True)
+
         total_registros = len(df)
+
         df = df.fillna("")
 
         preview = df.to_html(
