@@ -402,13 +402,30 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
         # si no existe cenefa pero existe promo
         # promo pasa a llamarse cenefa
-        if "cenefa" not in df.columns:
+        #if "cenefa" not in df.columns:
 
-            if "promo" in df.columns:
-                df = df.rename(columns={"promo": "cenefa"})
+        #    if "promo" in df.columns:
+        #        df = df.rename(columns={"promo": "cenefa"})
 
-            else:
-                df["cenefa"] = "OFERTA"
+        #    else:
+        #        df["cenefa"] = "OFERTA"
+
+        # ---------------- MANEJO CENEFA / PROMO ----------------
+
+        columnas_cenefa = ["cenefa", "cenefas", "promo", "promos"]
+
+        col_cenefa_detectada = None
+
+        for col in df.columns:
+            if normalizar_texto(col) in columnas_cenefa:
+                col_cenefa_detectada = col
+                break
+
+        if col_cenefa_detectada:
+            df = df.rename(columns={col_cenefa_detectada: "cenefa"})
+        else:
+            df["cenefa"] = "OFERTA"
+
 
         # -----------------------------------------------------
 
