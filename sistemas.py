@@ -22,7 +22,8 @@ def login_requerido(rol=None):
             if "usuario_id" not in session:
                 flash("Debe iniciar sesión para acceder.", "warning")
                 return redirect(url_for("sistemas.login"))
-            if rol and session.get("usuario_rol").lower() != rol.lower():
+            #if rol and session.get("usuario_rol").lower() != rol.lower():
+            if rol and str(session.get("usuario_rol", "")).strip().lower() != str(rol).strip().lower():
                 flash("No tiene permiso para acceder a esta página.", "danger")
                 return redirect(url_for("sistemas.login"))
             return f(*args, **kwargs)
@@ -70,7 +71,8 @@ def login():
 
         if user:
             user_id, user_rol = user
-            rol_lower = user_rol.lower()
+            #rol_lower = user_rol.lower()
+            rol_lower = str(user_rol).strip().lower()
 
             session["usuario_id"] = user_id
             session["usuario_nombre"] = nombre
@@ -94,6 +96,9 @@ def login():
 
             elif rol_lower == "farmacia":
                 return redirect(url_for("farmacia.index"))
+
+            elif rol_lower == "cm":
+                return redirect(url_for("operadores.index"))    
 
             else:
                 flash("Rol no reconocido", "danger")
