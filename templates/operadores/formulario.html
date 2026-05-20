@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Informe - Central de Monitoreo{% endblock %}
+
+{% block content %}
+
+<style>
+    .hoja {
+        width: 794px;
+        min-height: 1123px;
+        background: white;
+        margin: auto;
+        border: 3px solid #f2b400;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    .encabezado {
+        display: grid;
+        grid-template-columns: 140px 1fr 185px;
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    .logo-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .logo-box img {
+        max-width: 120px;
+        max-height: 55px;
+    }
+
+    .titulo-box,
+    .datos-box,
+    .sucursal-box,
+    .pie {
+        border: 2px solid #f2b400;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
+
+    .titulo-box {
+        text-align: center;
+        font-weight: bold;
+        padding-top: 12px;
+        font-size: 14px;
+        line-height: 18px;
+    }
+
+    .datos-box {
+        padding: 8px 12px;
+        font-weight: bold;
+        font-size: 13px;
+        line-height: 28px;
+    }
+
+    .datos-box input {
+        width: 95px;
+    }
+
+    .sucursal-box {
+        margin-top: 6px;
+        width: 520px;
+        padding: 5px 8px;
+        font-weight: bold;
+        font-size: 13px;
+    }
+
+    .hoja input {
+        border: none;
+        outline: none;
+        font-weight: bold;
+        font-size: 13px;
+        background: transparent;
+    }
+
+    .texto {
+        margin-top: 30px;
+        margin-left: 65px;
+        font-weight: bold;
+        font-size: 12px;
+    }
+
+    textarea {
+        width: calc(100% - 80px);
+        height: 820px;
+        margin: 15px 40px 0 40px;
+        border: none;
+        outline: none;
+        resize: none;
+        font-size: 15px;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .pie {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        margin-top: 10px;
+        padding: 5px 8px;
+        font-weight: bold;
+        font-size: 12px;
+    }
+
+    .pie input {
+        width: 250px;
+    }
+
+    .btn-generar {
+        margin-top: 15px;
+        width: 100%;
+        padding: 14px;
+        background: #111;
+        color: white;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .btn-generar:hover {
+        background: #333;
+    }
+</style>
+
+<form class="hoja" action="{{ url_for('operadores.generar') }}" method="post">
+
+    <div class="encabezado">
+        <div class="logo-box">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Alberdi">
+        </div>
+
+        <div class="titulo-box">
+            INFORME<br>
+            CENTRAL DE MONITOREO
+        </div>
+
+        <div class="datos-box">
+            Nº: <input type="text" name="nro" required><br>
+            FECHA: <input type="date" name="fecha" required><br>
+            HORA: <input type="time" name="hora" required>
+        </div>
+    </div>
+
+    <div class="sucursal-box">
+        SUCURSAL:
+        <input type="text" name="sucursal" required>
+    </div>
+
+    <div class="texto">
+        Por la presente se informa que:
+    </div>
+
+    <textarea name="mensaje" required></textarea>
+
+    <div class="pie">
+        <div>
+            Operador:
+            <input type="text" name="operador" required>
+        </div>
+
+        <div>
+            Para:
+            <input type="text" name="para" required>
+        </div>
+    </div>
+
+    <button type="submit" class="btn-generar">
+        Generar y Descargar PDF
+    </button>
+
+</form>
+
+{% endblock %}
