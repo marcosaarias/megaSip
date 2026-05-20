@@ -20,67 +20,47 @@
 
 <div class="menu">
 
-  <!-- ================= SISTEMAS ================= -->
-  {% if session.get("usuario_rol") == "sistemas" %}
-  
-  <a href="{{ url_for('usuarios.index') }}" class="menu-toggle">
-    Gestión de Usuarios
+<!-- ================= SISTEMAS ================= -->
+
+{% if session.get("usuario_rol") == "sistemas" %}
+ <div class="menu-section 
+  {% if '/sistemas/cenefas' in request.path 
+        or 'ecommerce/cenefas' in request.path
+        or 'vencimientos' in request.path 
+        or 'pedidoya' in request.path %}
+    active
+  {% endif %}">
+
+  <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+    Diarias <i class="bi bi-chevron-down arrow"></i>
   </a>
 
-  <div class="menu-section 
-    {% if 'vencimientos' in request.path or 'pedidoya' in request.path %}active{% endif %}">
+  <div class="submenu">
 
-      <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-        Diarias <i class="bi bi-chevron-down arrow"></i>
-      </a>
-
-        <div class="submenu">
-
-          <a href="{{ url_for('cenefas_sistemas.index') }}"
-            class="submenu-item {% if '/sistemas/cenefas' in request.path %}active-link{% endif %}">
-            Cenefas
-          </a>
-
-          <a href="{{ url_for('ecommerce_cenefas.cenefas') }}"
-            class="submenu-item {% if 'ecommerce/cenefas' in request.path %}active-link{% endif %}">
-            Ecommerce
-          </a>
-
-          <a href="{{ url_for('vencimientos.index') }}"
-            class="submenu-item {% if 'vencimientos' in request.path %}active-link{% endif %}">
-            Vencimientos
-          </a>
-
-          <a href="{{ url_for('pedidoya.index') }}"
-            class="submenu-item {% if 'pedidoya' in request.path %}active-link{% endif %}">
-            Pedido Ya
-          </a>
-
-        </div>
-    </div>
-  <div class="menu-section 
-    {% if 'logs_compras' in request.path or 'logs_farmacia' in request.path %}active{% endif %}">
-    
-    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-      Logs <i class="bi bi-chevron-down arrow"></i>
+    <a href="{{ url_for('cenefas_sistemas.index') }}"
+       class="submenu-item {% if '/sistemas/cenefas' in request.path %}active-link{% endif %}">
+      Cenefas
     </a>
 
-    <div class="submenu" id="submenu-logs">
-      <a href="{{ url_for('logs.logs_compras') }}"
-         class="submenu-item {% if 'logs_compras' in request.path %}active-link{% endif %}">
-        Logs Compras
-      </a>
+    <a href="{{ url_for('ecommerce_cenefas.cenefas') }}"
+       class="submenu-item {% if 'ecommerce/cenefas' in request.path %}active-link{% endif %}">
+      Ecommerce
+    </a>
 
-      <a href="{{ url_for('logs.logs_farmacia') }}"
-         class="submenu-item {% if 'logs_farmacia' in request.path %}active-link{% endif %}">
-        Logs Farmacia
-      </a>
-    </div>
+    <a href="{{ url_for('vencimientos.index') }}"
+       class="submenu-item {% if 'vencimientos' in request.path %}active-link{% endif %}">
+      Vencimientos
+    </a>
+
+    <a href="{{ url_for('pedidoya.index') }}"
+       class="submenu-item {% if 'pedidoya' in request.path %}active-link{% endif %}">
+      Pedido Ya
+    </a>
+
   </div>
+</div>
 
-
-  {% endif %}
-
+{% endif %}
 
   <!-- ================= FARMACIA ================= -->
 
