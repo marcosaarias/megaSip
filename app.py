@@ -18,6 +18,7 @@ from diarios import diarios_bp
 from saltarefrescos import saltarefrescos_bp
 from ecommerce_cenefas import ecommerce_cenefas_bp
 from cenefas_sistemas import cenefas_sistemas_bp
+from operadores import operadores_bp
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta_demo"
@@ -40,7 +41,7 @@ app.register_blueprint(compras_bp, url_prefix='/compras')
 app.register_blueprint(vencimientos_bp)
 app.register_blueprint(logs_bp)
 app.register_blueprint(promociones_bp)
-
+app.register_blueprint(operadores_bp)
 
 @app.route("/")
 def home():

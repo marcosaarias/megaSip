@@ -346,6 +346,37 @@
 
 {% endif %}
 
+
+<!-- ================= CENTRAL DE MONITOREO ================= -->
+ 
+{% if session.get("usuario_rol") == "CM" %}
+
+<div class="menu-section {% if 'operadores' in request.path %}active{% endif %}">
+
+  <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+    Central de Monitoreo <i class="bi bi-chevron-down arrow"></i>
+  </a>
+
+  <div class="submenu">
+
+    <a href="{{ url_for('operadores.index') }}"
+       class="submenu-item {% if 'operadores' in request.path %}active-link{% endif %}">
+      Informe de Monitoreo
+    </a>
+
+  </div>
+</div>
+
+{% endif %}
+
+
+
+
+
+
+
+
+
 </div>
 
   </div>
