@@ -333,6 +333,9 @@ function imprimirTabla() {
         const cenefa = row.cenefa ?? "";
         const desde = row.desde ?? "";
         const hasta = row.hasta ?? "";
+        const esOferta = String(cenefa).trim().toLowerCase() === "oferta";
+        const textoPaga = esOferta ? "" : "Ud paga c/u";
+        const etiquetaPrecioNormal = esOferta ? "Precio Normal" : "Precio Unitario";
 
         if (cantidad === 1) {
             partes.push(`
@@ -342,9 +345,9 @@ function imprimirTabla() {
                     <div class="zona-central">
                         <div class="cenefa-titulo-grande">${cenefa}</div>
                         <div class="descripcion-grande">${descripcion}</div>
-                        <div class="texto-paga">Ud paga c/u</div>
+                        <div class="texto-paga">${textoPaga}</div>
                         <div class="precio-oferta-grande">$ ${oferta}</div>
-                        <div class="precio-normal-mediano">$ ${normal}</div>
+                        <div class="precio-normal-mediano"><span class="etiqueta-unitario">${etiquetaPrecioNormal}</span> $ ${normal}</div>
 
                         <div class="datos-finales">
                             <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
@@ -362,9 +365,9 @@ function imprimirTabla() {
                     <div class="contenido-media-hoja">
                         <div class="cenefa-titulo-media">${cenefa}</div>
                         <div class="descripcion-media">${descripcion}</div>
-                        <div class="texto-paga-media">Ud paga c/u</div>
+                        <div class="texto-paga-media">${textoPaga}</div>
                         <div class="precio-oferta-media">$ ${oferta}</div>
-                        <div class="precio-normal-media">$ ${normal}</div>
+                        <div class="precio-normal-media"><span class="etiqueta-unitario">${etiquetaPrecioNormal}</span> $ ${normal}</div>
 
                         <div class="datos-finales-media">
                             <strong>Cod/Scan:</strong> ${codigo} - ${ean} &nbsp;&nbsp;
@@ -380,11 +383,11 @@ function imprimirTabla() {
                     <div class="contenido-tercio-hoja">
                         <div class="cenefa-titulo-tercio">${cenefa}</div>
                         <div class="descripcion-tercio">${descripcion}</div>
-                        <div class="texto-paga-tercio">Ud paga c/u</div>
+                        <div class="texto-paga-tercio">${textoPaga}</div>
                         <div class="precio-oferta-tercio">$ ${oferta}</div>
 
                         <div class="precio-normal-tercio">
-                            <span class="etiqueta-unitario">Precio Normal</span> $${normal} 
+                            <span class="etiqueta-unitario">${etiquetaPrecioNormal}</span> $${normal} 
                         </div>
 
                         <div class="datos-finales-tercio">
@@ -401,10 +404,10 @@ function imprimirTabla() {
                     <div class="contenido-quinto-hoja">
                         <div class="cenefa-titulo-quinto">${cenefa}</div>
                         <div class="descripcion-quinto">${descripcion}</div>
-                        <div class="texto-paga-quinto">Ud paga c/u</div>
+                        <div class="texto-paga-quinto">${textoPaga}</div>
                         <div class="precio-oferta-quinto">$ ${oferta}</div>
                         <div class="precio-normal-quinto">
-                            <span class="etiqueta-unitario">Precio Normal</span> $${normal}
+                            <span class="etiqueta-unitario">${etiquetaPrecioNormal}</span> $${normal}
                         </div>
 
                         <div class="datos-finales-quinto">
