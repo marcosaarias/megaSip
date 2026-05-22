@@ -2,13 +2,106 @@ import os
 import pandas as pd
 import numpy as np
 import sqlite3
+from flask import session, request, g
+from datetime import datetime
+import uuid
 from flask import Blueprint, render_template, request, send_file
+
 
 farmacia_bp = Blueprint("farmacia", __name__)
 
+@farmacia_bp.before_request
+def medir_ingreso_farmacia():
+    crear_tabla_metricas()
+
+    ahora = datetime.now()
+
+    if "farmacia_session_id" not in session:
+        session["farmacia_session_id"] = str(uuid.uuid4())
+        session["farmacia_inicio"] = ahora.isoformat()
+
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                INSERT INTO farmacia_metricas (
+                    session_id, ruta, metodo, fecha_ingreso,
+                    ultima_actividad, duracion_segundos, ip, user_agent
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                session["farmacia_session_id"],
+                request.path,
+                request.method,
+                ahora.isoformat(),
+                ahora.isoformat(),
+                0,
+                request.remote_addr,
+                request.headers.get("User-Agent", "")
+            ))
+            conn.commit()
+        finally:
+            conn.close()
+
+    g.farmacia_request_time = ahora
+
+
+@farmacia_bp.after_request
+def actualizar_tiempo_farmacia(response):
+    session_id = session.get("farmacia_session_id")
+    inicio = session.get("farmacia_inicio")
+
+    if session_id and inicio:
+        ahora = datetime.now()
+        inicio_dt = datetime.fromisoformat(inicio)
+        duracion = int((ahora - inicio_dt).total_seconds())
+
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                UPDATE farmacia_metricas
+                SET ultima_actividad = ?,
+                    duracion_segundos = ?,
+                    ruta = ?
+                WHERE session_id = ?
+            """, (
+                ahora.isoformat(),
+                duracion,
+                request.path,
+                session_id
+            ))
+            conn.commit()
+        finally:
+            conn.close()
+
+    return response
+
+
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
+
 ARCHIVO_TEMP = os.path.join(os.path.dirname(__file__), "temp_procesado_farmacia.xlsx")
+#medir tiempo de conexion
+def crear_tabla_metricas():
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS farmacia_metricas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT,
+                ruta TEXT,
+                metodo TEXT,
+                fecha_ingreso TEXT,
+                ultima_actividad TEXT,
+                duracion_segundos INTEGER,
+                ip TEXT,
+                user_agent TEXT
+            )
+        """)
+        conn.commit()
+    finally:
+        conn.close()
+
 
 @farmacia_bp.route("/rubros")
 def rubros_view():
