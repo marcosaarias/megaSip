@@ -90,6 +90,26 @@
     </div>
   </div>
 
+<div class="menu-section 
+  {% if 'informes-uso' in request.path %}
+    active
+  {% endif %}">
+
+  <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+    Informes de Uso <i class="bi bi-chevron-down arrow"></i>
+  </a>
+
+  <div class="submenu">
+
+    <a href="{{ url_for('farmacia.informes_uso_farmacia') }}"
+      class="submenu-item {% if 'informes-uso' in request.path %}active-link{% endif %}">
+      Farmacia
+    </a>
+
+  </div>
+</div>
+
+
   {% endif %}
 
 

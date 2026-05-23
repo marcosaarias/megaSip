@@ -81,6 +81,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
 
 ARCHIVO_TEMP = os.path.join(os.path.dirname(__file__), "temp_procesado_farmacia.xlsx")
+
 #medir tiempo de conexion
 def crear_tabla_metricas():
     conn = sqlite3.connect(DB_PATH)
@@ -698,6 +699,42 @@ def obtener_vigencia_super():
 
     return desde, hasta
 
+
+
+@farmacia_bp.route("/informes-uso")
+def informes_uso_farmacia():
+
+    conn = sqlite3.connect(DB_PATH)
+
+    try:
+        query = """
+            SELECT
+                session_id AS Sesion,
+                ip AS IP,
+                ruta AS Pantalla,
+                metodo AS Metodo,
+                fecha_ingreso AS Ingreso,
+                ultima_actividad AS Ultima_Actividad,
+                ROUND(duracion_segundos / 60.0, 2) AS Minutos,
+                user_agent AS Navegador
+            FROM farmacia_metricas
+            ORDER BY ultima_actividad DESC
+        """
+
+        df = pd.read_sql_query(query, conn)
+
+    finally:
+        conn.close()
+
+    tabla = df.to_html(
+        classes="table table-striped table-hover table-bordered",
+        index=False
+    )
+
+    return render_template(
+        "farmacia/informes_uso.html",
+        tabla=tabla
+    )
 
 
 
