@@ -1003,7 +1003,8 @@ def sucursal():
 
     sucursal_codigo = session.get("usuario_nombre", "").strip().upper()
     tipo = request.args.get("tipo", "minorista")
-    hoy = datetime.now().date() + timedelta(days=2)
+    #hoy = datetime.now().date() + timedelta(days=2)
+    hoy = datetime.now().date()
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -1036,7 +1037,10 @@ def sucursal():
 
         print("DEBUG desde:", desde, "hasta:", hasta)
 
-        if sucursal_codigo in lista_suc and desde <= hoy <= hasta:
+        #if sucursal_codigo in lista_suc and desde <= hoy <= hasta:
+        inicio_visualizacion = desde - timedelta(days=2)
+        if sucursal_codigo in lista_suc and inicio_visualizacion <= hoy <= hasta:
+
             filtradas.append({
                 "Codigo": r[0],
                 "ean": r[1],
