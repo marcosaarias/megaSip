@@ -72,7 +72,7 @@ ALIAS = {
     "cenefa": ["cenefa", "cenefas", "Cenefas"],
     "desde": ["desde", "inicio"],
     "hasta": ["hasta", "fin"],
-    "sucursales": ["sucursales", "tiendas"],
+    "sucursales": ["sucursales", "tiendas", "sap", "SAP", "Sap"],
     "CÓD. SUCURSALES": ["codigos sucursales", "cod sucursales", "sucursales codigos"],
 }
 
@@ -464,17 +464,39 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             if "sucursales" not in df.columns:
                 df["sucursales"] = ""
 
+            #def generar_codigos(valor):
+
+            #    if pd.isna(valor) or str(valor).strip() == "":
+            #        return SUCURSAL_MAP[tipo].get(clave_total, "")
+
+            #    provincia = normalizar_texto(valor)
+
+            #    return SUCURSAL_MAP[tipo].get(
+            #        provincia,
+            #        SUCURSAL_MAP[tipo].get(clave_total, "")
+            #    )
+
+
             def generar_codigos(valor):
 
                 if pd.isna(valor) or str(valor).strip() == "":
                     return SUCURSAL_MAP[tipo].get(clave_total, "")
 
-                provincia = normalizar_texto(valor)
+                valor_original = str(valor).strip().upper()
+                valor_norm = normalizar_texto(valor)
+
+                if valor_norm in ["", "interna"]:
+                    return SUCURSAL_MAP[tipo].get(clave_total, "")
+
+                # Si ya viene un código de sucursal tipo CO24 o MA02
+                if re.fullmatch(r"(CO\d{2}|MA\d{2})", valor_original):
+                    return valor_original
 
                 return SUCURSAL_MAP[tipo].get(
-                    provincia,
+                    valor_norm,
                     SUCURSAL_MAP[tipo].get(clave_total, "")
                 )
+
 
             df["sucursales"] = df["sucursales"].apply(
                 generar_codigos
