@@ -9,12 +9,14 @@ from datetime import datetime
 from datetime import timedelta
 import uuid
 import traceback
-import sqlite3
+#import sqlite3
+import psycopg2
 import redis
 import json
 from io import StringIO
 import re
 import unicodedata
+from psycopg2.extras import RealDictCursor
 
 SUCURSAL_MAP = {
     "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02",
@@ -42,6 +44,15 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
+def get_db_connection():
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST", "postgres"),
+        port=os.getenv("DB_PORT", "5432"),
+        dbname=os.getenv("DB_NAME", "sip"),
+        user=os.getenv("DB_USER", "sip_user"),
+        password=os.getenv("DB_PASSWORD", "Alberdi2026_db")
+    )
+
 def guardar_temporal(lote_id, df):
     redis_client.setex(
         lote_id,
@@ -57,7 +68,7 @@ def recuperar_temporal(lote_id):
 
 
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
+#DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
 
 compras_bp = Blueprint("compras", __name__, url_prefix="/compras")
 RUTA_MATERIAL = "/mnt/excel/ARCHIVOS IMPORTANTES/Base de datos completa.xlsx"
@@ -587,7 +598,8 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 # Controlar cenefas repetidas
 
 def existen_cenefas_repetidas(df, tipo_cenefa):
-    conn = sqlite3.connect(DB_PATH)
+    #conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     repetidos = []
@@ -596,10 +608,10 @@ def existen_cenefas_repetidas(df, tipo_cenefa):
         cursor.execute("""
             SELECT COUNT(*)
             FROM cenefas
-            WHERE Codigo = ?
-              AND tipo_cenefa = ?
-              AND desde = ?
-              AND hasta = ?
+            WHERE Codigo = %s
+              AND tipo_cenefa = %s
+              AND desde = %s
+              AND hasta = %s
         """, (
             row.get("CODIGO"),
             tipo_cenefa,
@@ -615,7 +627,8 @@ def existen_cenefas_repetidas(df, tipo_cenefa):
 
 
 def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, sobrescribir=False):
-    conn = sqlite3.connect(DB_PATH)
+    #conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     if lote_carga is None:
@@ -627,10 +640,10 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
         for _, row in df.iterrows():
             cursor.execute("""
                 DELETE FROM cenefas
-                WHERE Codigo = ?
-                  AND tipo_cenefa = ?
-                  AND desde = ?
-                  AND hasta = ?
+                WHERE Codigo = %s
+                  AND tipo_cenefa = %s
+                  AND desde = %s
+                  AND hasta = %s
             """, (
                 row.get("CODIGO"),
                 tipo_cenefa,
@@ -646,7 +659,7 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
                 desde, hasta, sucursales, tipo_cenefa,
                 fecha_carga, lote_carga, usuario_carga
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             row.get("CODIGO"),
             row.get("EAN"),
@@ -757,7 +770,8 @@ def _folder_base(tipo, template_name):
                     total_registros=0
                 )
 
-        except sqlite3.Error as e:
+        #except sqlite3.Error as e:
+        except psycopg2.Error as e:
             mensaje_error = f"Error de base de datos: {e}"
 
             guardar_log_compras(
@@ -968,7 +982,8 @@ def transmitir_ofertas():
             fecha_hasta=fecha_hasta
         )
 
-    except sqlite3.Error as e:
+    #except sqlite3.Error as e:
+    except psycopg2.Error as e:
         guardar_log_compras(
             usuario=usuario,
             nivel="CRITICAL",
@@ -1028,7 +1043,8 @@ def sucursal():
     #hoy = datetime.now().date() + timedelta(days=2)
     hoy = datetime.now().date()
 
-    conn = sqlite3.connect(DB_PATH)
+    #conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1036,7 +1052,7 @@ def sucursal():
                desde, hasta, sucursales, tipo_cenefa,
                fecha_carga, lote_carga, usuario_carga
         FROM cenefas
-        WHERE tipo_cenefa = ?
+        WHERE tipo_cenefa = %s
         ORDER BY fecha_carga DESC, desde DESC
     """, (tipo,))
 
@@ -1160,9 +1176,11 @@ def historico_cenefas():
     filtro_tipo = request.args.get("tipo", "").strip()
     filtro_lote = request.args.get("lote", "").strip()
 
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    #conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
+    #conn.row_factory = sqlite3.Row
+    #cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     query = """
         SELECT id, Codigo, ean, dep, departamento, descripcion,
@@ -1175,15 +1193,16 @@ def historico_cenefas():
     params = []
 
     if filtro_codigo:
-        query += " AND Codigo LIKE ?"
+        #query += " AND Codigo LIKE %s"
+        query += " AND Codigo::text LIKE %s"
         params.append(f"%{filtro_codigo}%")
 
     if filtro_tipo:
-        query += " AND tipo_cenefa = ?"
+        query += " AND tipo_cenefa = %s"
         params.append(filtro_tipo)
 
     if filtro_lote:
-        query += " AND lote_carga LIKE ?"
+        query += " AND lote_carga LIKE %s"
         params.append(f"%{filtro_lote}%")
 
     query += " ORDER BY fecha_carga DESC, id DESC"
