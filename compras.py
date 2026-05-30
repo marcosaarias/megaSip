@@ -615,8 +615,8 @@ def existen_cenefas_repetidas(df, tipo_cenefa):
         """, (
             row.get("CODIGO"),
             tipo_cenefa,
-            row.get("Desde"),
-            row.get("Hasta")
+            row.get("desde"),
+            row.get("hasta")
         ))
 
         if cursor.fetchone()[0] > 0:
@@ -637,8 +637,8 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
 
     if sobrescribir:
         for _, row in df.iterrows():
-            desde = row.get("Desde") or row.get("desde")
-            hasta = row.get("Hasta") or row.get("hasta")
+            desde = row.get("desde") or row.get("desde")
+            hasta = row.get("hasta") or row.get("hasta")
 
             cursor.execute("""
                 DELETE FROM cenefas
@@ -654,8 +654,8 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
             ))
 
     for _, row in df.iterrows():
-        desde = row.get("Desde") or row.get("desde")
-        hasta = row.get("Hasta") or row.get("hasta")
+        desde = row.get("desde") or row.get("desde")
+        hasta = row.get("hasta") or row.get("hasta")
 
         print(
                 "DEBUG GUARDAR =>",
