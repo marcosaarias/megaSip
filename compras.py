@@ -657,7 +657,7 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
         desde = row.get("Desde") or row.get("desde")
         hasta = row.get("Hasta") or row.get("hasta")
 
-           print(
+        print(
                 "DEBUG GUARDAR =>",
                 "CODIGO:", row.get("CODIGO"),
                 "DESDE:", repr(desde),
