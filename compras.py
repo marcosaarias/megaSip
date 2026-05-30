@@ -576,10 +576,10 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             df["Normal"] = np.floor(df["Normal"] * 100) / 100
 
         if fecha_desde:
-            df["Desde"] = fecha_desde
+            df["desde"] = fecha_desde
 
         if fecha_hasta:
-            df["Hasta"] = fecha_hasta
+            df["hasta"] = fecha_hasta
 
         df = df.reset_index(drop=True)
 
