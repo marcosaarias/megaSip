@@ -627,7 +627,6 @@ def existen_cenefas_repetidas(df, tipo_cenefa):
 
 
 def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, sobrescribir=False):
-    #conn = sqlite3.connect(DB_PATH)
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -638,6 +637,9 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
 
     if sobrescribir:
         for _, row in df.iterrows():
+            desde = row.get("Desde") or row.get("desde")
+            hasta = row.get("Hasta") or row.get("hasta")
+
             cursor.execute("""
                 DELETE FROM cenefas
                 WHERE Codigo = %s
@@ -647,11 +649,14 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
             """, (
                 row.get("CODIGO"),
                 tipo_cenefa,
-                row.get("Desde"),
-                row.get("Hasta")
+                desde,
+                hasta
             ))
 
     for _, row in df.iterrows():
+        desde = row.get("Desde") or row.get("desde")
+        hasta = row.get("Hasta") or row.get("hasta")
+
         cursor.execute("""
             INSERT INTO cenefas
             (
@@ -669,8 +674,8 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
             row.get("Normal"),
             row.get("Oferta"),
             row.get("cenefa"),
-            row.get("Desde"),
-            row.get("Hasta"),
+            desde,
+            hasta,
             row.get("sucursales"),
             tipo_cenefa,
             fecha_carga,
@@ -682,8 +687,6 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
     conn.close()
 
     return lote_carga, fecha_carga
-
-
 
 # ---------------- ROUTES ----------------
 
