@@ -142,9 +142,26 @@
         </div>
     </div>
 
-    <div class="sucursal-box">
-        SUCURSAL:
-        <input type="text" name="sucursal" required>
+    <div class="sucursal-box" style="display:flex; align-items:center; gap:20px; width:100%;">
+        
+        <div>
+            <label><strong>SUCURSAL:</strong></label>
+            <input type="text" name="sucursal" required>
+        </div>
+
+        <div>
+            <label><strong>Tipo de Informe:</strong></label>
+
+            <select name="tipo_informe" required
+                    style="border:none; font-weight:bold; background:transparent;">
+                <option value="">Seleccionar</option>
+                <option value="Hurto">Hurto</option>
+                <option value="Personal interno y externo">Personal interno y externo</option>
+                <option value="Consumo">Consumo</option>
+                <option value="Rotura">Rotura</option>
+            </select>
+        </div>
+
     </div>
 
     <div class="texto">
