@@ -244,6 +244,6 @@ def monitoreo():
     conn.close()
 
     return render_template(
-        "monitoreo_gerencia.html",
+        "operadores/monitoreo_gerencia.html",
         datos=datos
     )
