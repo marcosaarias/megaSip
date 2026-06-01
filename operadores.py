@@ -215,3 +215,35 @@ def generar():
     ruta_pdf = generar_pdf_operador(datos)
 
     return send_file(ruta_pdf, as_attachment=True)
+
+
+@operadores_bp.route("/monitoreo")
+@login_requerido("gerencia-cm")
+def monitoreo():
+
+    if session.get("usuario_rol") != "gerencia-cm":
+        flash("No tiene permisos para acceder.", "danger")
+        return redirect(url_for("sistemas.login"))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            fecha_informe,
+            nro_informe,
+            operador,
+            tipo_informe
+        FROM monitoreo_informes
+        ORDER BY fecha_generacion DESC
+    """)
+
+    datos = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "monitoreo_gerencia.html",
+        datos=datos
+    )
