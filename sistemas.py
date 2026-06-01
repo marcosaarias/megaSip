@@ -89,6 +89,9 @@ def login():
             elif rol_lower == "gerencia":
                 return redirect(url_for("compras.lista_pedidos"))
 
+            elif rol_lower == "gerencia-cm":
+                return redirect(url_for("operadores.monitoreo"))
+
             elif rol_lower == "sucursal":
                 return redirect(url_for("compras.sucursal", tipo="minorista"))
 

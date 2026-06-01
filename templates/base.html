@@ -389,6 +389,28 @@
 
 {% endif %}
 
+<!-- ================= CENTRAL DE MONITOREO - GERENCIA ================= -->
+
+{% if session.get("usuario_rol") == "gerencia-cm" %}
+
+<div class="menu-section {% if 'monitoreo' in request.path %}active{% endif %}">
+
+  <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+    Gerencia CM <i class="bi bi-chevron-down arrow"></i>
+  </a>
+
+  <div class="submenu">
+
+    <a href="{{ url_for('operadores.monitoreo') }}"
+       class="submenu-item {% if 'monitoreo' in request.path %}active-link{% endif %}">
+      Monitoreo de Informes
+    </a>
+
+  </div>
+
+</div>
+
+{% endif %}
 
 
 
