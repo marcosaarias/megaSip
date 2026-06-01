@@ -62,10 +62,26 @@
 
     .sucursal-box {
         margin-top: 6px;
-        width: 520px;
-        padding: 5px 8px;
+        width: 100%;
+        padding: 8px 12px;
         font-weight: bold;
         font-size: 13px;
+
+        display: flex;
+        align-items: center;
+        gap: 30px;
+    }
+
+    .sucursal-box select {
+        border: none;
+        outline: none;
+        font-weight: bold;
+        font-size: 13px;
+        background: transparent;
+    }
+
+    .sucursal-box input {
+        min-width: 180px;
     }
 
     .hoja input {
@@ -142,7 +158,7 @@
         </div>
     </div>
 
-    <div class="sucursal-box" style="display:flex; align-items:center; gap:20px; width:100%;">
+    <div class="sucursal-box">
         
         <div>
             <label><strong>SUCURSAL:</strong></label>
@@ -158,6 +174,7 @@
                 <option value="Hurto">Hurto</option>
                 <option value="Personal interno y externo">Personal interno y externo</option>
                 <option value="Consumo">Consumo</option>
+                <option value="Catastrofes">Catastrofes</option>
                 <option value="Rotura">Rotura</option>
             </select>
         </div>
