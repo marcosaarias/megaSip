@@ -402,8 +402,13 @@
   <div class="submenu">
 
     <a href="{{ url_for('operadores.monitoreo') }}"
-       class="submenu-item {% if 'monitoreo' in request.path %}active-link{% endif %}">
+      class="submenu-item {% if 'monitoreo' in request.path %}active-link{% endif %}">
       Monitoreo de Informes
+    </a>
+
+    <a href="{{ url_for('operadores.index') }}"
+      class="submenu-item {% if 'operadores' in request.path %}active-link{% endif %}">
+       Generar Informes
     </a>
 
   </div>
