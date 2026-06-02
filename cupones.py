@@ -6,7 +6,7 @@ cupones_bp = Blueprint("cupones", __name__, url_prefix="/cupones")
 
 @cupones_bp.route("/", methods=["GET", "POST"])
 def index():
-    if session.get("usuario_rol") != "gerencia-cm":
+    if session.get("usuario_rol") != "publicidad":
         return redirect(url_for("sistemas.login"))
 
     cupones = []
