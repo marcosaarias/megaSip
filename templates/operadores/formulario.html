@@ -241,9 +241,21 @@
     <textarea name="mensaje" required></textarea>
 
     <div class="pie">
+        
         <div>
             Operador:
-            <input type="text" name="operador" required>
+            <input type="text" name="operador"
+                value="{% if session.get('usuario') == 'MedinaJ' %}Operador 01
+                        {% elif session.get('usuario') == 'NievesA' %}Operador 02
+                        {% elif session.get('usuario') == 'MartinezP' %}Operador 03
+                        {% elif session.get('usuario') == 'FigueroaG' %}Operador 04
+                        {% elif session.get('usuario') == 'AyardeG' %}Operador 05
+                        {% elif session.get('usuario') == 'MoralesM' %}Operador 06
+                        {% elif session.get('usuario') == 'LizrragaJ' %}Operador 07
+                        {% elif session.get('usuario') == 'BarcontiJ' %}Operador 08
+                        {% elif session.get('usuario') == 'marcoso' %}Administrador
+                        {% endif %}"
+                readonly>
         </div>
 
         <div>
