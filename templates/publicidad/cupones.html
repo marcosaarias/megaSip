@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Generar Cupones{% endblock %}
+
+{% block content %}
+
+<style>
+    .contenedor-cupones {
+        padding: 20px;
+    }
+
+    .card-carga {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+    }
+
+    .card-carga h2 {
+        margin-bottom: 15px;
+    }
+
+    .form-cupones {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-procesar,
+    .btn-imprimir {
+        padding: 8px 14px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .btn-procesar {
+        background: #111;
+        color: white;
+    }
+
+    .btn-imprimir {
+        background: #f2b400;
+        color: #111;
+        margin-bottom: 20px;
+    }
+
+    .resumen {
+        margin-top: 15px;
+        font-weight: bold;
+    }
+
+    .cupon {
+        width: 350px;
+        border: 2px dashed #000;
+        padding: 15px;
+        margin: 10px;
+        display: inline-block;
+        vertical-align: top;
+        background: white;
+        font-family: Arial, sans-serif;
+    }
+
+    .cupon h3 {
+        text-align: center;
+        margin-top: 0;
+        border-bottom: 1px solid #000;
+        padding-bottom: 8px;
+    }
+
+    .cupon p {
+        margin: 8px 0;
+        font-size: 14px;
+    }
+
+    @media print {
+        .sidebar,
+        .card-carga,
+        .btn-imprimir {
+            display: none !important;
+        }
+
+        .main-content {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        .cupon {
+            page-break-inside: avoid;
+        }
+    }
+</style>
+
+<div class="contenedor-cupones">
+
+    <div class="card-carga">
+        <h2>Generar Cupones</h2>
+
+        <form method="post" enctype="multipart/form-data" class="form-cupones">
+            <label><strong>Archivo Excel:</strong></label>
+            <input type="file" name="archivo" accept=".xlsx,.xls" required>
+
+            <button type="submit" class="btn-procesar">
+                Procesar archivo
+            </button>
+        </form>
+
+        {% if total_filas > 0 %}
+            <div class="resumen">
+                Filas leídas: {{ total_filas }} |
+                Cupones generados: {{ total_cupones }}
+            </div>
+        {% endif %}
+    </div>
+
+    {% if cupones %}
+        <button onclick="window.print()" class="btn-imprimir">
+            Imprimir Cupones
+        </button>
+
+        <div class="lista-cupones">
+            {% for cupon in cupones %}
+                <div class="cupon">
+                    <h3>CUPÓN</h3>
+                    <p><strong>Nombre y apellido:</strong> {{ cupon.nombre }}</p>
+                    <p><strong>DNI:</strong> {{ cupon.dni }}</p>
+                    <p><strong>Teléfono:</strong> {{ cupon.telefono }}</p>
+                    <p><strong>Sucursal:</strong> {{ cupon.sucursal }}</p>
+                    <p><strong>Estado:</strong> {{ cupon.estado }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
