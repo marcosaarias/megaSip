@@ -103,6 +103,9 @@ def login():
 
             elif rol_lower == "cm":
                 return redirect(url_for("operadores.index"))
+                
+            elif rol_lower == "publicidad":
+                return redirect(url_for("cupones.index"))
 
             else:
                 flash("Rol no reconocido", "danger")
