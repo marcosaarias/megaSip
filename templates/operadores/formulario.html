@@ -66,7 +66,6 @@
         padding: 8px 12px;
         font-weight: bold;
         font-size: 13px;
-
         display: flex;
         align-items: center;
         gap: 30px;
@@ -78,10 +77,6 @@
         font-weight: bold;
         font-size: 13px;
         background: transparent;
-    }
-
-    .sucursal-box input {
-        min-width: 180px;
     }
 
     .hoja input {
@@ -139,7 +134,7 @@
     }
 </style>
 
-<form class="hoja" action="{{ url_for('operadores.generar') }}" method="post">
+<form class="hoja" action="{{ url_for('operadores.generar') }}" method="post" onsubmit="prepararPaginas()">
 
     <div class="encabezado">
         <div class="logo-box">
@@ -159,76 +154,40 @@
     </div>
 
     <div class="sucursal-box">
-        
-    <div>
-        <label><strong>SUCURSAL:</strong></label>
-        <select name="sucursal" required>
-            <option value="">Seleccione una sucursal</option>
 
-            <option value="Administracion">Administracion</option>
-            
-            <!-- Comodines -->
-            <option value="Comodin 1">Comodin 1</option>
-            <option value="Comodin 2">Comodin 2</option>
-            <option value="Comodin 3">Comodin 3</option>
-            <option value="Comodin 4">Comodin 4</option>
-            <option value="Comodin 5">Comodin 5</option>
-            <option value="Comodin 6">Comodin 6</option>
-            <option value="Comodin 7">Comodin 7</option>
-            <option value="Comodin 8">Comodin 8</option>
-            <option value="Comodin 9">Comodin 9</option>
-            <option value="Comodin 10">Comodin 10</option>
-            <option value="Comodin 11">Comodin 11</option>
-            <option value="Comodin 12">Comodin 12</option>
-            <option value="Comodin 13">Comodin 13</option>
-            <option value="Comodin 14">Comodin 14</option>
-            <option value="Comodin 15">Comodin 15</option>
-            <option value="Comodin 16">Comodin 16</option>
-            <option value="Comodin 17">Comodin 17</option>
-            <option value="Comodin 18">Comodin 18</option>
-            <option value="Comodin 19">Comodin 19</option>
-            <option value="Comodin 20">Comodin 20</option>
-            <option value="Comodin 21">Comodin 21</option>
-            <option value="Comodin 22">Comodin 22</option>
-            <option value="Comodin 23">Comodin 23</option>
-            <option value="Comodin 24">Comodin 24</option>
-            <option value="Comodin 25">Comodin 25</option>
-            <option value="Comodin 26">Comodin 26</option>
-            <option value="Comodin 27">Comodin 27</option>
-            <option value="Comodin 28">Comodin 28</option>
-            <option value="Comodin 29">Comodin 29</option>
+        <div>
+            <label><strong>SUCURSAL:</strong></label>
+            <select name="sucursal" required>
+                <option value="">Seleccione una sucursal</option>
+                <option value="Administracion">Administracion</option>
 
-            <!-- Mayorista -->
-            <option value="Mayorista 2">Mayorista 2</option>
+                {% for i in range(1, 30) %}
+                    <option value="Comodin {{ i }}">Comodin {{ i }}</option>
+                {% endfor %}
 
-            <!-- Centro de Distribución -->
-            <option value="Centro de Distribucion">Centro de Distribucion</option>
+                <option value="Mayorista 2">Mayorista 2</option>
+                <option value="Centro de Distribucion">Centro de Distribucion</option>
 
-            <!-- Boticas -->
-            <option value="Botica 1">Botica 1</option>
-            <option value="Botica 2">Botica 2</option>
-            <option value="Botica 3">Botica 3</option>
-            <option value="Botica 4">Botica 4</option>
-            <option value="Botica 5">Botica 5</option>
-            <option value="Botica 6">Botica 6</option>
+                {% for i in range(1, 7) %}
+                    <option value="Botica {{ i }}">Botica {{ i }}</option>
+                {% endfor %}
 
-            <!-- Sino Motors -->
-            <option value="Sino Motors 1">Sino Motors 1</option>
-            <option value="Sino Motors 2">Sino Motors 2</option>
-        </select>
-    </div>
+                <option value="Sino Motors 1">Sino Motors 1</option>
+                <option value="Sino Motors 2">Sino Motors 2</option>
+            </select>
+        </div>
 
         <div>
             <label><strong>Tipo de Informe:</strong></label>
-
-            <select name="tipo_informe" required
-                    style="border:none; font-weight:bold; background:transparent;">
+            <select name="tipo_informe" required style="border:none; font-weight:bold; background:transparent;">
                 <option value="">Seleccionar</option>
                 <option value="Hurto">Hurto</option>
                 <option value="Personal interno y externo">Personal interno y externo</option>
                 <option value="Consumo">Consumo</option>
                 <option value="Catastrofes">Catastrofes</option>
                 <option value="Rotura">Rotura</option>
+                <option value="Desperfecto Tecnico">Desperfecto Tecnico</option>
+                <option value="Accidente">Accidente</option>
             </select>
         </div>
 
@@ -238,23 +197,16 @@
         Por la presente se informa que:
     </div>
 
-    <textarea name="mensaje" required></textarea>
+    <textarea name="mensaje" id="mensaje" required></textarea>
+
+    <input type="hidden" name="mensajes_paginas" id="mensajes_paginas">
 
     <div class="pie">
-        
+
         <div>
             Operador:
             <input type="text" name="operador"
-                value="{% if session.get('usuario') == 'MedinaJ' %}Operador 01
-                        {% elif session.get('usuario') == 'NievesA' %}Operador 02
-                        {% elif session.get('usuario') == 'MartinezP' %}Operador 03
-                        {% elif session.get('usuario') == 'FigueroaG' %}Operador 04
-                        {% elif session.get('usuario') == 'AyardeG' %}Operador 05
-                        {% elif session.get('usuario') == 'MoralesM' %}Operador 06
-                        {% elif session.get('usuario') == 'LizrragaJ' %}Operador 07
-                        {% elif session.get('usuario') == 'BarcontiJ' %}Operador 08
-                        {% elif session.get('usuario') == 'marcoso' %}Administrador
-                        {% endif %}"
+                value="{% if session.get('usuario_nombre') == 'MedinaJ' %}Operador 01{% elif session.get('usuario_nombre') == 'NievesA' %}Operador 02{% elif session.get('usuario_nombre') == 'MartinezP' %}Operador 03{% elif session.get('usuario_nombre') == 'FigueroaG' %}Operador 04{% elif session.get('usuario_nombre') == 'AyardeG' %}Operador 05{% elif session.get('usuario_nombre') == 'MoralesM' %}Operador 06{% elif session.get('usuario_nombre') == 'LizrragaJ' %}Operador 07{% elif session.get('usuario_nombre') == 'BarcontiJ' %}Operador 08{% elif session.get('usuario_nombre') == 'marcoso' %}Administrador{% endif %}"
                 readonly>
         </div>
 
@@ -265,7 +217,10 @@
                 <option value="Personal">Personal</option>
                 <option value="RR HH">RR HH</option>
                 <option value="Directorio">Directorio</option>
+                <option value="Gerencia">Gerencia</option>
                 <option value="Gerencia CCTV">Gerencia CCTV</option>
+                <option value="Auditoria">Auditoria</option>
+                <option value="Tesoreria">Tesoreria</option>
             </select>
         </div>
 
@@ -276,5 +231,29 @@
     </button>
 
 </form>
+
+<script>
+function prepararPaginas() {
+    const textarea = document.getElementById("mensaje");
+    const hidden = document.getElementById("mensajes_paginas");
+
+    const texto = textarea.value.trim();
+
+    /*
+      Ajustá este número si querés:
+      - Menor número = más páginas, menos texto por hoja
+      - Mayor número = menos páginas, más texto por hoja
+    */
+    const maxCaracteresPorHoja = 2800;
+
+    let paginas = [];
+
+    for (let i = 0; i < texto.length; i += maxCaracteresPorHoja) {
+        paginas.push(texto.substring(i, i + maxCaracteresPorHoja));
+    }
+
+    hidden.value = JSON.stringify(paginas);
+}
+</script>
 
 {% endblock %}

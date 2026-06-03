@@ -1,5 +1,6 @@
 import os
-from flask import Blueprint, render_template, request, send_file, session
+import json
+from flask import Blueprint, render_template, request, send_file, session, flash, redirect, url_for
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -97,13 +98,7 @@ def generar_nro_informe_y_guardar(datos):
         conn.close()
 
 
-def generar_pdf_operador(datos):
-    os.makedirs("reports", exist_ok=True)
-
-    filename = f"Informe_{datos['nro']}.pdf"
-    path = os.path.join("reports", filename)
-
-    c = canvas.Canvas(path, pagesize=A4)
+def dibujar_hoja(c, datos, mensaje_pagina, pagina_actual, total_paginas):
     width, height = A4
 
     amarillo = "#f2b400"
@@ -128,6 +123,7 @@ def generar_pdf_operador(datos):
 
     c.setStrokeColor(amarillo)
     c.setLineWidth(1.5)
+
     c.roundRect(margen + 42 * mm, height - margen - 20 * mm, 82 * mm, 18 * mm, 3)
 
     c.setFillColor("#000000")
@@ -160,7 +156,7 @@ def generar_pdf_operador(datos):
         leading=13
     )
 
-    texto = datos["mensaje"].replace("\n", "<br/>")
+    texto = mensaje_pagina.replace("\n", "<br/>")
     p = Paragraph(texto, style)
 
     x_texto = margen + 20 * mm
@@ -180,6 +176,32 @@ def generar_pdf_operador(datos):
     c.drawString(margen + 5 * mm, y_pie + 2.5 * mm, f"Operador: {datos['operador']}")
     c.drawString(width / 2 + 5 * mm, y_pie + 2.5 * mm, f"Para: {datos['para']}")
 
+    c.setFont("Helvetica", 6)
+    c.drawRightString(
+        width - margen - 5 * mm,
+        margen + 16 * mm,
+        f"Página {pagina_actual} de {total_paginas}"
+    )
+
+
+def generar_pdf_operador(datos):
+    os.makedirs("reports", exist_ok=True)
+
+    filename = f"Informe_{datos['nro']}.pdf"
+    path = os.path.join("reports", filename)
+
+    c = canvas.Canvas(path, pagesize=A4)
+
+    mensajes_paginas = datos.get("mensajes_paginas") or [datos.get("mensaje", "")]
+
+    total_paginas = len(mensajes_paginas)
+
+    for idx, mensaje_pagina in enumerate(mensajes_paginas, start=1):
+        dibujar_hoja(c, datos, mensaje_pagina, idx, total_paginas)
+
+        if idx < total_paginas:
+            c.showPage()
+
     c.save()
 
     return path
@@ -198,6 +220,16 @@ def index():
 @operadores_bp.route("/generar", methods=["POST"])
 @login_requerido("cm")
 def generar():
+    mensajes_paginas_json = request.form.get("mensajes_paginas", "")
+
+    try:
+        mensajes_paginas = json.loads(mensajes_paginas_json) if mensajes_paginas_json else []
+    except Exception:
+        mensajes_paginas = []
+
+    if not mensajes_paginas:
+        mensajes_paginas = [request.form.get("mensaje", "")]
+
     datos = {
         "sucursal": request.form["sucursal"],
         "operador": request.form["operador"],
@@ -206,6 +238,7 @@ def generar():
         "fecha": request.form["fecha"],
         "hora": request.form["hora"],
         "mensaje": request.form["mensaje"],
+        "mensajes_paginas": mensajes_paginas,
         "tipo_informe": request.form["tipo_informe"]
     }
 
