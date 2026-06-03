@@ -208,8 +208,12 @@ def generar_pdf_operador(datos):
 
 
 @operadores_bp.route("/", methods=["GET"])
-@login_requerido("cm")
+@login_requerido()
 def index():
+    if session.get("usuario_rol") not in ["cm", "gerencia-cm"]:
+        flash("No tiene permisos para acceder.", "danger")
+        return redirect(url_for("sistemas.login"))
+
     nro_preview = obtener_siguiente_nro_preview()
     return render_template(
         "operadores/formulario.html",
@@ -218,8 +222,12 @@ def index():
 
 
 @operadores_bp.route("/generar", methods=["POST"])
-@login_requerido("cm")
+@login_requerido()
 def generar():
+    if session.get("usuario_rol") not in ["cm", "gerencia-cm"]:
+        flash("No tiene permisos para acceder.", "danger")
+        return redirect(url_for("sistemas.login"))
+
     mensajes_paginas_json = request.form.get("mensajes_paginas", "")
 
     try:
