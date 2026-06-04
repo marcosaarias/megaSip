@@ -672,7 +672,7 @@ def obtener_vigencia_super():
         consulta = """
             SELECT desde, hasta
             FROM cenefas
-            WHERE tipo_cenefa IN ('mayorista', 'minorista')
+            WHERE tipo_cenefa IN ('minorista')
               AND desde IS NOT NULL
               AND hasta IS NOT NULL
             ORDER BY fecha_carga DESC
