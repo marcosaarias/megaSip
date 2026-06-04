@@ -5,10 +5,16 @@ import pandas as pd
 import io
 from io import StringIO
 
-from flask import Blueprint, render_template, request, send_file
+from flask import Blueprint, render_template, request, send_file, session
 
-from compras import redis_client, completar_ean
-
+from compras import (
+    redis_client,
+    completar_ean,
+    completar_departamento,
+    completar_dep,
+    guardar_cenefas_en_db,
+    existen_cenefas_repetidas
+)
 
 saltarefrescos_bp = Blueprint(
     "saltarefrescos",
@@ -149,6 +155,149 @@ def validar_columna(nombre, columna):
 
 
 
+#@saltarefrescos_bp.route("/", methods=["GET", "POST"])
+#def refrescos():
+#    preview = None
+#    total_registros = 0
+#    cache_id = None
+
+#    if request.method == "POST":
+#        archivo = request.files.get("archivo")
+#        f_desde_raw = request.form.get("fecha_desde")
+#        f_hasta_raw = request.form.get("fecha_hasta")
+
+#        if archivo:
+#            try:
+#                cache_id = str(uuid.uuid4())
+
+#                f_desde = pd.to_datetime(f_desde_raw).strftime("%d/%m/%Y") if f_desde_raw else ""
+#                f_hasta = pd.to_datetime(f_hasta_raw).strftime("%d/%m/%Y") if f_hasta_raw else ""
+
+#                df_raw = pd.read_excel(archivo, header=None)
+
+#                header_idx = detectar_header_refrescos(df_raw)
+
+#                if header_idx is None:
+#                    raise ValueError("No se encontró la cabecera 'Cód.' en el archivo.")
+
+#                col_cenefa_idx, col_oferta_idx = detectar_columnas_etiquetas(df_raw, header_idx)
+                
+
+#                if col_cenefa_idx is None or col_oferta_idx is None:
+#                    raise ValueError("No se pudieron detectar columnas de Etiquetas")
+                                
+
+#                if header_idx is None:
+#                    raise ValueError("No se encontró la cabecera 'Cód.' en el archivo.")
+
+#                df_data = df_raw.iloc[header_idx:].copy()
+#                df_data.columns = df_data.iloc[0]
+#                df_data = df_data.iloc[1:].copy()
+
+#                df_data.columns = [
+#                    normalizar_texto_refrescos(col).replace(".", "").strip()
+#                    for col in df_data.columns
+#                ]
+
+#                print("COLUMNAS DETECTADAS:", list(df_data.columns), flush=True)
+
+#                col_codigo = obtener_columna(df_data, ["cod", "codigo"])
+#                col_desc = obtener_columna(df_data, ["descrip", "descripcion"])
+#                col_precio = obtener_columna(df_data, ["precio", "normal"])
+
+#                validar_columna("CODIGO", col_codigo)
+#                validar_columna("DESCRIPCION", col_desc)
+#                validar_columna("NORMAL / PRECIO", col_precio)
+        
+#                df_final = pd.DataFrame()
+
+#                df_final["CODIGO"] = (
+#                    df_data[col_codigo]
+#                    .astype(str)
+#                    .str.strip()
+#                    .str.replace(".0", "", regex=False)
+#                    .str.lstrip("0")
+#                )
+
+#                df_final = completar_ean(df_final)
+
+#                df_final["descripcion"] = df_data[col_desc].astype(str).str.strip()
+#                df_final["Normal"] = df_data[col_precio]
+
+#                df_final["Oferta"] = df_data.iloc[:, col_cenefa_idx].replace(
+#                    ["nan", "None", "", "NaN"], pd.NA
+#                )
+
+#                df_final["Cenefa"] = df_data.iloc[:, col_oferta_idx].replace(
+#                    ["nan", "None", "", "NaN"], pd.NA
+#                )
+
+#                df_final["desde"] = f_desde
+#                df_final["hasta"] = f_hasta
+
+#                col_suc = detectar_columna_sucursales(df_data)
+
+#                if col_suc is None:
+#                    raise ValueError("No se pudo detectar la columna de sucursales")
+
+#                df_final["Sucursales"] = df_data.iloc[:, col_suc]
+
+#                df_final["Sucursales"] = df_final["Sucursales"].astype(str)
+#                df_final["Sucursales"] = df_final["Sucursales"].apply(normalizar_texto_refrescos)
+
+#                df_final["Sucursales"] = df_final["Sucursales"].apply(
+#                    lambda x: x if ("jujuy" in x or "salta" in x or "tucuman" in x) else pd.NA
+#                )
+
+#                cols_to_fill = ["Oferta", "Cenefa", "Sucursales"]
+#                df_final[cols_to_fill] = df_final[cols_to_fill].ffill()
+
+#                df_final["Sucursales"] = df_final["Sucursales"].apply(mapear_sucursales)
+
+#                df_final["CODIGO"] = pd.to_numeric(df_final["CODIGO"], errors="coerce")
+#                df_final = df_final.dropna(subset=["CODIGO"])
+#                df_final["CODIGO"] = df_final["CODIGO"].astype(int)
+
+#                df_final["descripcion"] = df_final["descripcion"].replace(
+#                    ["nan", "None", "NaN"], ""
+#                ).fillna("")
+
+#                for col in ["Normal", "Oferta"]:
+#                    if col in df_final.columns:
+#                        df_final[col] = df_final[col].apply(formatear_moneda)
+
+#                df_final = df_final.fillna("")
+
+#                if not df_final.empty:
+#                    total_registros = len(df_final)
+
+#                    redis_client.set(
+#                        f"refrescos:{cache_id}",
+#                        df_final.to_json(orient="records"),
+#                        ex=3600
+#                    )
+
+#                    print("Cache omitido (Redis no disponible)")
+
+#                    preview = df_final.to_html(
+#                        classes="table table-sm table-hover table-bordered text-center",
+#                        index=False,
+#                        na_rep=""
+#                    )
+#                else:
+#                    preview = "<div class='alert alert-warning'>No se encontraron registros válidos.</div>"
+
+#            except Exception as e:
+#                preview = f"<div class='alert alert-danger'>Error procesando Refrescos: {e}</div>"
+
+#    return render_template(
+#        "saltarefrescos.html",
+#        preview=preview,
+#        total_registros=total_registros,
+#        cache_id=cache_id
+#    )
+
+
 @saltarefrescos_bp.route("/", methods=["GET", "POST"])
 def refrescos():
     preview = None
@@ -156,6 +305,93 @@ def refrescos():
     cache_id = None
 
     if request.method == "POST":
+
+        accion = request.form.get("accion")
+
+        # ================= TRANSMITIR =================
+        if accion == "transmitir":
+            cache_id = request.form.get("cache_id")
+
+            if not cache_id:
+                preview = "<div class='alert alert-danger'>Cache inválido.</div>"
+                return render_template(
+                    "saltarefrescos.html",
+                    preview=preview,
+                    total_registros=0,
+                    cache_id=None
+                )
+
+            data = redis_client.get(f"refrescos:{cache_id}")
+
+            if not data:
+                preview = "<div class='alert alert-danger'>No hay datos para transmitir. Volvé a procesar el archivo.</div>"
+                return render_template(
+                    "saltarefrescos.html",
+                    preview=preview,
+                    total_registros=0,
+                    cache_id=None
+                )
+
+            try:
+                df = pd.read_json(StringIO(data), orient="records")
+
+                df = df.rename(columns={
+                    "ean": "EAN",
+                    "descripcion": "DESCRIPCION",
+                    "Cenefa": "cenefa",
+                    "Sucursales": "sucursales"
+                })
+
+                if "dep" not in df.columns:
+                    df["dep"] = ""
+
+                if "departamento" not in df.columns:
+                    df["departamento"] = ""
+
+                repetidos = existen_cenefas_repetidas(df, "saltarefrescos")
+
+                if repetidos:
+                    preview = (
+                        f"<div class='alert alert-warning'>"
+                        f"Ya existen {len(repetidos)} registros de Salta Refrescos para este período."
+                        f"</div>"
+                    )
+
+                    return render_template(
+                        "saltarefrescos.html",
+                        preview=preview,
+                        total_registros=len(df),
+                        cache_id=cache_id
+                    )
+
+                guardar_cenefas_en_db(
+                    df,
+                    "saltarefrescos",
+                    usuario=session.get("usuario_nombre", "desconocido")
+                )
+
+                redis_client.delete(f"refrescos:{cache_id}")
+
+                preview = "<div class='alert alert-success'>Salta Refrescos transmitido correctamente a sucursales.</div>"
+
+                return render_template(
+                    "saltarefrescos.html",
+                    preview=preview,
+                    total_registros=0,
+                    cache_id=None
+                )
+
+            except Exception as e:
+                preview = f"<div class='alert alert-danger'>Error transmitiendo Refrescos: {e}</div>"
+
+                return render_template(
+                    "saltarefrescos.html",
+                    preview=preview,
+                    total_registros=0,
+                    cache_id=cache_id
+                )
+
+        # ================= PROCESAR ARCHIVO =================
         archivo = request.files.get("archivo")
         f_desde_raw = request.form.get("fecha_desde")
         f_hasta_raw = request.form.get("fecha_hasta")
@@ -175,14 +411,9 @@ def refrescos():
                     raise ValueError("No se encontró la cabecera 'Cód.' en el archivo.")
 
                 col_cenefa_idx, col_oferta_idx = detectar_columnas_etiquetas(df_raw, header_idx)
-                
 
                 if col_cenefa_idx is None or col_oferta_idx is None:
                     raise ValueError("No se pudieron detectar columnas de Etiquetas")
-                                
-
-                if header_idx is None:
-                    raise ValueError("No se encontró la cabecera 'Cód.' en el archivo.")
 
                 df_data = df_raw.iloc[header_idx:].copy()
                 df_data.columns = df_data.iloc[0]
@@ -202,7 +433,7 @@ def refrescos():
                 validar_columna("CODIGO", col_codigo)
                 validar_columna("DESCRIPCION", col_desc)
                 validar_columna("NORMAL / PRECIO", col_precio)
-        
+
                 df_final = pd.DataFrame()
 
                 df_final["CODIGO"] = (
@@ -214,6 +445,9 @@ def refrescos():
                 )
 
                 df_final = completar_ean(df_final)
+                df_final = completar_departamento(df_final)
+                df_final = completar_dep(df_final)
+
 
                 df_final["descripcion"] = df_data[col_desc].astype(str).str.strip()
                 df_final["Normal"] = df_data[col_precio]
@@ -265,13 +499,17 @@ def refrescos():
                 if not df_final.empty:
                     total_registros = len(df_final)
 
+                    df_final = df_final.rename(columns={
+                        "descripcion": "DESCRIPCION",
+                        "Cenefa": "cenefa",
+                        "Sucursales": "sucursales"
+                    })
+
                     redis_client.set(
                         f"refrescos:{cache_id}",
                         df_final.to_json(orient="records"),
                         ex=3600
                     )
-
-                    print("Cache omitido (Redis no disponible)")
 
                     preview = df_final.to_html(
                         classes="table table-sm table-hover table-bordered text-center",

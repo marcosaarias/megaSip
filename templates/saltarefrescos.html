@@ -35,11 +35,31 @@
     <div class="card shadow-sm">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Previsualización</h5>
-            {% if cache_id %}
-            <a href="{{ url_for('saltarefrescos.descargar_refrescos', cache_id=cache_id) }}" class="btn btn-success btn-sm">
-                <i class="fas fa-file-excel"></i> Descargar archivo
-            </a>
-            {% endif %}
+
+        {% if cache_id %}
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('saltarefrescos.descargar_refrescos', cache_id=cache_id) }}"
+                class="btn btn-success btn-sm">
+                    <i class="fas fa-file-excel"></i> Descargar archivo
+                </a>
+
+                <form method="POST"
+                    action="{{ url_for('saltarefrescos.refrescos') }}"
+                    onsubmit="return confirmarTransmision();">
+
+                    <input type="hidden" name="accion" value="transmitir">
+                    <input type="hidden" name="cache_id" value="{{ cache_id }}">
+
+                    <button type="submit" class="btn btn-warning btn-sm">
+                        📡 Transmitir
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+
+
+
+
         </div>
         <div class="card-body">
             <div class="mb-2 text-end">
@@ -60,4 +80,11 @@
     .tabla-scroll thead th { position: sticky; top: 0; z-index: 20; background: #212529; color: white; padding: 0.6rem; }
     .tabla-scroll td { padding: 0.5rem; vertical-align: middle; }
 </style>
+
+
+<script>
+function confirmarTransmision() {
+    return confirm("¿Está seguro que desea transmitir Salta Refrescos a las sucursales?");
+}
+</script>
 {% endblock %}
