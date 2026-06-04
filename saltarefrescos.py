@@ -28,19 +28,39 @@ SUCURSAL_MAP_REFRESCOS = {
 }
 
 
-def formatear_moneda(valor):
+#def formatear_moneda(valor):
+#    try:
+#        if valor == "" or pd.isna(valor):
+#            return ""
+
+#        valor_str = str(valor).replace(",", "").strip()
+#        num = float(valor_str)
+
+#        num_formateado = "{:,.2f}".format(num)
+#        return num_formateado.replace(",", "X").replace(".", ",").replace("X", ".")
+
+#    except (ValueError, TypeError):
+#        return valor
+
+
+def limpiar_precio(valor):
+
+    if pd.isna(valor):
+        return None
+
+    valor = str(valor).strip()
+
+    if "," in valor and "." in valor:
+        valor = valor.replace(".", "").replace(",", ".")
+
+    elif "," in valor:
+        valor = valor.replace(",", ".")
+
     try:
-        if valor == "" or pd.isna(valor):
-            return ""
+        return float(valor)
 
-        valor_str = str(valor).replace(",", "").strip()
-        num = float(valor_str)
-
-        num_formateado = "{:,.2f}".format(num)
-        return num_formateado.replace(",", "X").replace(".", ",").replace("X", ".")
-
-    except (ValueError, TypeError):
-        return valor
+    except:
+        return None
 
 
 def normalizar_texto_refrescos(texto):
@@ -492,7 +512,8 @@ def refrescos():
 
                 for col in ["Normal", "Oferta"]:
                     if col in df_final.columns:
-                        df_final[col] = df_final[col].apply(formatear_moneda)
+                       # df_final[col] = df_final[col].apply(formatear_moneda)
+                       df_final[col] = df_final[col].apply(limpiar_precio)
 
                 df_final = df_final.fillna("")
 
