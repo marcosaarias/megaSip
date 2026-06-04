@@ -7,7 +7,14 @@ import io
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 
-from compras import redis_client, ALIAS, completar_ean, normalizar_texto
+from compras import (
+    redis_client,
+    ALIAS,
+    completar_ean,
+    completar_departamento,
+    completar_dep,
+    normalizar_texto
+)
 
 
 diarios_bp = Blueprint("diarios", __name__, url_prefix="/compras/diario")
@@ -393,6 +400,8 @@ def transmitir_diario(hoja):
         usuario=usuario,
         sobrescribir=sobrescribir
     )
+
+    print("DIARIO GUARDADO:", len(df), "registros", flush=True)
 
     redis_client.delete(f"diario:{cache_id}:{hoja}")
 
