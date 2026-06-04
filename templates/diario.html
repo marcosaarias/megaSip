@@ -61,12 +61,20 @@
                       </a>
 
                         <!-- 🚀 Transmitir -->
-                       <form method="POST"
+                        <form method="POST"
                             action="{{ url_for('diarios.transmitir_diario', hoja=hoja) }}">
                             <input type="hidden" name="cache_id" value="{{ cache_id }}">
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                Transmitir
-                            </button>
+
+                            {% if requiere_sobrescribir %}
+                                <input type="hidden" name="sobrescribir" value="1">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    Confirmar sobrescritura
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    Transmitir
+                                </button>
+                            {% endif %}
                         </form>
 
                     </div>

@@ -324,7 +324,10 @@ def descargar_diario(hoja):
 
 @diarios_bp.route("/transmitir/<hoja>", methods=["POST"])
 def transmitir_diario(hoja):
-    cache_id = request.form.get("cache_id") or request.args.get("cache_id")
+    from flask import session
+    from compras import guardar_cenefas_en_db, existen_cenefas_repetidas
+
+    cache_id = request.form.get("cache_id")
 
     if not cache_id:
         flash("Cache inválido", "danger")
@@ -338,7 +341,60 @@ def transmitir_diario(hoja):
 
     df = pd.read_json(StringIO(data), orient="records")
 
-    print(f"Transmitiendo diario {hoja} ({len(df)} registros)", flush=True)
+    def limpiar_precio(valor):
+        if valor in ["", None]:
+            return None
+
+        valor = str(valor).strip()
+
+        # Convierte formato argentino: 1.234,56 -> 1234.56
+        valor = valor.replace(".", "").replace(",", ".")
+
+        try:
+            return float(valor)
+        except:
+            return None
+
+    for col in ["Normal", "Oferta"]:
+        if col in df.columns:
+            df[col] = df[col].apply(limpiar_precio)
+
+    usuario = session.get("usuario_nombre", "desconocido")
+    tipo_cenefa = "diario"
+
+    sobrescribir = request.form.get("sobrescribir") == "1"
+
+    repetidos = existen_cenefas_repetidas(df, tipo_cenefa)
+
+    if repetidos and not sobrescribir:
+        preview = {
+            hoja: df.to_html(
+                classes="table table-sm table-striped",
+                index=False
+            )
+        }
+
+        return render_template(
+            "diario.html",
+            preview=preview,
+            total_registros={hoja: len(df)},
+            hojas_orden=[hoja],
+            cache_id=cache_id,
+            mensaje_error=(
+                f"Ya existen {len(repetidos)} registros para este período. "
+                "Si desea sobrescribirlos, confirme nuevamente."
+            ),
+            requiere_sobrescribir=True
+        )
+
+    guardar_cenefas_en_db(
+        df,
+        tipo_cenefa,
+        usuario=usuario,
+        sobrescribir=sobrescribir
+    )
+
+    redis_client.delete(f"diario:{cache_id}:{hoja}")
 
     flash(f"{hoja} transmitido correctamente", "success")
     return redirect(url_for("diarios.diario"))
