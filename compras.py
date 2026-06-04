@@ -464,6 +464,18 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
         df = df.rename(columns=column_mapping)
 
+        if "sucursales" in df.columns:
+            df["sucursales"] = df["sucursales"].ffill()
+
+        if "cenefa" in df.columns:
+            df["cenefa"] = df["cenefa"].ffill()
+
+        if "Oferta" in df.columns:
+            df["Oferta"] = df["Oferta"].ffill()
+
+        if "Normal" in df.columns:
+            df["Normal"] = df["Normal"].ffill()
+
         if tipo in SUCURSAL_MAP:
 
             clave_total = (
