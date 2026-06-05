@@ -166,12 +166,12 @@ def cargar_material_map():
             (material_df["scaner"] != "")
         ]
 
-        print("MATERIAL_MAP registros:", len(material_df))
+        #print("MATERIAL_MAP registros:", len(material_df))
 
         return dict(zip(material_df["material"], material_df["scaner"]))
 
     except Exception as e:
-        print("Error cargando archivo EAN:", e)
+        #print("Error cargando archivo EAN:", e)
         return {}
 
 
@@ -1096,7 +1096,7 @@ def sucursal():
             print("ERROR fecha:", r[7], r[8])
             continue
 
-        print("DEBUG desde:", desde, "hasta:", hasta)
+        #print("DEBUG desde:", desde, "hasta:", hasta)
 
         #if sucursal_codigo in lista_suc and desde <= hoy <= hasta:
         inicio_visualizacion = desde - timedelta(days=2)
