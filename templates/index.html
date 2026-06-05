@@ -16,7 +16,7 @@
   <div class="container-cenefas">
     <h2>Cenefas - Alberdi SA</h2>
 
-    <form action="{{ url_for('cenefas.preview') }}" method="post" enctype="multipart/form-data">
+    <form action="{{ url_for('sistemas.preview') }}" method="post" enctype="multipart/form-data">
       <input type="file" name="file" accept=".xlsx,.xls" required>
       <button type="submit">Vista previa</button>
     </form>
@@ -33,7 +33,8 @@
       
       <input type="hidden" id="all-codes" value="{{ all_codes|join(',') }}">
 
-      <form id="download_form" action="{{ url_for('cenefas.convertir') }}" method="post">
+      <form id="download_form" method="post">
+       
         <input type="hidden" name="filename" value="{{ filename }}">
         <input type="hidden" id="table_data" name="table_data">
 
@@ -105,8 +106,6 @@
 
          <div style="text-align:center; margin-top:20px;">
       <button type="button" onclick="nuevaCenefa()">Guardar</button>
-    <!--<button type="button" onclick="transmitirArchivo()">Transmitir</button>-->
-    <!--<button type="button" onclick="verificarCambios()">Verificar</button>-->
  
 </div>    
   </div>
