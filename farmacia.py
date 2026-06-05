@@ -668,6 +668,7 @@ def obtener_vigencia_farmacia():
 
 def obtener_vigencia_super():
     conn = get_db_connection()
+    cur = conn.cursor()
 
     try:
         consulta = """
@@ -679,9 +680,12 @@ def obtener_vigencia_super():
             ORDER BY fecha_carga DESC
             LIMIT 1
         """
-        row = cur = conn.cursor()
-              cur.execute(consulta).fetchone()
+
+        cur.execute(consulta)
+        row = cur.fetchone()
+
     finally:
+        cur.close()
         conn.close()
 
     if not row:
@@ -700,7 +704,6 @@ def obtener_vigencia_super():
         hasta = hasta or "-"
 
     return desde, hasta
-
 
 
 @farmacia_bp.route("/informes-uso")
