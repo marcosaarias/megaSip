@@ -13,7 +13,9 @@ from compras import (
     completar_ean,
     completar_departamento,
     completar_dep,
-    normalizar_texto
+    normalizar_texto,
+    guardar_cenefas_en_db,
+    existen_cenefas_repetidas
 )
 
 
@@ -146,13 +148,6 @@ def diario():
 
         # ================= TRANSMITIR =================
         if accion == "transmitir":
-            from flask import session
-            from compras import (
-                guardar_cenefas_en_db,
-                existen_cenefas_repetidas,
-                completar_departamento,
-                completar_dep
-            )
 
             cache_id = request.form.get("cache_id")
             hoja = request.form.get("hoja")
