@@ -15,7 +15,8 @@ from compras import (
     completar_dep,
     normalizar_texto,
     guardar_cenefas_en_db,
-    existen_cenefas_repetidas
+    existen_cenefas_repetidas,
+    limpiar_precio,
 )
 
 
@@ -300,6 +301,13 @@ def diario():
                         )
                     
                     df = completar_ean(df)
+                    df = completar_departamento(df)
+                    df = completar_dep(df)
+
+                    for col in ["departamento", "dep"]:
+                        if col in df.columns:
+                            df[col] = df[col].replace(["None", "none", "nan", "NaN", None], "")
+
                     df = completar_departamento(df)
                     df = completar_dep(df)
 
