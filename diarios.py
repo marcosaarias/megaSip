@@ -198,7 +198,8 @@ def diario():
 
             try:
                 df = pd.read_json(StringIO(data), orient="records")
-                
+
+                # Reaseguro por si Redis tiene datos viejos sin mapeo
                 df = completar_departamento(df)
                 df = completar_dep(df)
 
@@ -279,8 +280,10 @@ def diario():
                 for nombre_hoja, df in xls.items():
 
                     fila_header = None
+
                     for i, row in df.iterrows():
                         valores = [normalizar_texto(x) for x in row.values]
+
                         if "codigo" in valores:
                             fila_header = i
                             break
@@ -288,13 +291,21 @@ def diario():
                     if fila_header is None:
                         continue
 
-                    df = pd.read_excel(archivo, sheet_name=nombre_hoja, header=fila_header)
+                    df = pd.read_excel(
+                        archivo,
+                        sheet_name=nombre_hoja,
+                        header=fila_header
+                    )
 
                     df_check = df.replace(r"^\s*$", pd.NA, regex=True)
+
                     if df_check.dropna(how="all").empty:
                         continue
 
-                    df.columns = [normalizar_texto(col).strip() for col in df.columns]
+                    df.columns = [
+                        normalizar_texto(col).strip()
+                        for col in df.columns
+                    ]
 
                     column_mapping = {}
 
@@ -318,20 +329,38 @@ def diario():
                             .str.replace(".0", "", regex=False)
                             .str.lstrip("0")
                         )
-                    
+
+                        df["CODIGO"] = pd.to_numeric(
+                            df["CODIGO"],
+                            errors="coerce"
+                        )
+
+                        df = df.dropna(subset=["CODIGO"])
+                        df["CODIGO"] = df["CODIGO"].astype(int)
+
+                    if df.empty:
+                        continue
+
+                    # Primero EAN, después departamento y dep
                     df = completar_ean(df)
-                    df = completar_departamento(df)
-                    df = completar_dep(df)
 
                     for col in ["departamento", "dep"]:
                         if col in df.columns:
-                            df[col] = df[col].replace(["None", "none", "nan", "NaN", None], "")
+                            df[col] = df[col].replace(
+                                ["None", "none", "nan", "NaN", None],
+                                ""
+                            )
 
                     df = completar_departamento(df)
                     df = completar_dep(df)
 
-                    
-                     
+                    print(
+                        df[["CODIGO", "EAN", "departamento", "dep"]]
+                        .head(20)
+                        .to_string(),
+                        flush=True
+                    )
+
                     df["desde"] = f_desde
                     df["hasta"] = f_hasta
 
@@ -360,24 +389,27 @@ def diario():
 
                         df = df[
                             df["cenefa"].notna()
-                            & (~df["cenefa"].astype(str).str.lower().str.contains("ya esta activo", na=False))
+                            & (
+                                ~df["cenefa"]
+                                .astype(str)
+                                .str.lower()
+                                .str.contains("ya esta activo", na=False)
+                            )
                         ]
 
                     if df.empty:
                         continue
 
-                    columnas_validas = [col for col in HEADERS_DIARIO if col in df.columns]
-                    df = df[columnas_validas]
-
-                    if "CODIGO" in df.columns:
-                        df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
-                        df = df.dropna(subset=["CODIGO"])
-                        df["CODIGO"] = df["CODIGO"].astype(int)
-
                     for col in ["Normal", "Oferta"]:
                         if col in df.columns:
                             df[col] = df[col].apply(limpiar_precio)
-                    
+
+                    columnas_validas = [
+                        col for col in HEADERS_DIARIO
+                        if col in df.columns
+                    ]
+
+                    df = df[columnas_validas]
 
                     df = df.fillna("")
 
@@ -411,8 +443,7 @@ def diario():
         cache_id=cache_id,
         mensaje_error=mensaje_error
     )
-
-
+    
 @diarios_bp.route("/descargar/<hoja>")
 def descargar_diario(hoja):
     cache_id = request.args.get("cache_id")
