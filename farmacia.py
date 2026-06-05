@@ -5,7 +5,7 @@ from flask import session, request
 from datetime import datetime
 import uuid
 from flask import Blueprint, render_template, request, send_file
-from db import get_db_connection
+from database.db import get_db_connection
 
 
 farmacia_bp = Blueprint("farmacia", __name__)
