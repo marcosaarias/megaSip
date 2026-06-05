@@ -182,7 +182,7 @@ def diario():
 
             try:
                 df = pd.read_json(StringIO(data), orient="records")
-
+                
                 df = completar_departamento(df)
                 df = completar_dep(df)
 
@@ -302,9 +302,13 @@ def diario():
                             .str.replace(".0", "", regex=False)
                             .str.lstrip("0")
                         )
-
+                    
                     df = completar_ean(df)
+                    df = completar_departamento(df)
+                    df = completar_dep(df)
 
+                    
+                     
                     df["desde"] = f_desde
                     df["hasta"] = f_hasta
 
