@@ -543,6 +543,25 @@ def transmitir_diario(hoja):
         sobrescribir=sobrescribir
     )
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT codigo, ean, dep, departamento
+        FROM cenefas
+        WHERE tipo_cenefa = %s
+        ORDER BY fecha_carga DESC
+        LIMIT 10
+    """, ("diario",))
+
+    print(
+        "ULTIMOS GUARDADOS:",
+        cursor.fetchall(),
+        flush=True
+    )
+
+    conn.close()
+
     redis_client.delete(f"diario:{cache_id}:{hoja}")
 
     flash(f"{hoja} transmitido correctamente", "success")
