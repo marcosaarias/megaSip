@@ -22,7 +22,8 @@ def medir_ingreso_farmacia():
 
         conn = get_db_connection()
         try:
-            conn.execute("""
+            cur = conn.cursor()
+            cur.execute("""
                 INSERT INTO farmacia_metricas (
                     session_id, ruta, metodo, fecha_ingreso,
                     ultima_actividad, duracion_segundos, ip, user_agent
@@ -57,7 +58,8 @@ def actualizar_tiempo_farmacia(response):
 
         conn = get_db_connection()
         try:
-            conn.execute("""
+            cur = conn.cursor()
+            cur.execute("""
                 UPDATE farmacia_metricas
                 SET ultima_actividad = %s,
                     duracion_segundos = %s,
@@ -81,10 +83,12 @@ ARCHIVO_TEMP = os.path.join(os.path.dirname(__file__), "temp_procesado_farmacia.
 #medir tiempo de conexion
 def crear_tabla_metricas():
     conn = get_db_connection()
+    cur = conn.cursor()
+
     try:
-        conn.execute("""
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS farmacia_metricas (
-                id SERIAL PRIMARY KEY
+                id SERIAL PRIMARY KEY,
                 session_id TEXT,
                 ruta TEXT,
                 metodo TEXT,
@@ -97,6 +101,7 @@ def crear_tabla_metricas():
         """)
         conn.commit()
     finally:
+        cur.close()
         conn.close()
 
 
@@ -674,7 +679,8 @@ def obtener_vigencia_super():
             ORDER BY fecha_carga DESC
             LIMIT 1
         """
-        row = conn.execute(consulta).fetchone()
+        row = cur = conn.cursor()
+              cur.execute(consulta).fetchone()
     finally:
         conn.close()
 
