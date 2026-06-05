@@ -134,6 +134,7 @@ def diario():
 
     HEADERS_DIARIO = [
         "CODIGO", "DESCRIPCION", "EAN",
+        "departamento", "dep",
         "Normal", "Oferta",
         "desde", "hasta",
         "sucursales", "cenefa"
