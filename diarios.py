@@ -16,7 +16,7 @@ from compras import (
     normalizar_texto,
     guardar_cenefas_en_db,
     existen_cenefas_repetidas,
-    limpiar_precio,
+    limpiar_precio
 )
 
 
