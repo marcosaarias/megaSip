@@ -3,6 +3,7 @@ import uuid
 import traceback
 import pandas as pd
 from io import StringIO
+from flask import session
 import io
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
@@ -443,7 +444,7 @@ def diario():
         cache_id=cache_id,
         mensaje_error=mensaje_error
     )
-    
+
 @diarios_bp.route("/descargar/<hoja>")
 def descargar_diario(hoja):
     cache_id = request.args.get("cache_id")
@@ -474,9 +475,6 @@ def descargar_diario(hoja):
 
 @diarios_bp.route("/transmitir/<hoja>", methods=["POST"])
 def transmitir_diario(hoja):
-    from flask import session
-    from compras import guardar_cenefas_en_db, existen_cenefas_repetidas
-
     cache_id = request.form.get("cache_id")
 
     if not cache_id:
@@ -491,34 +489,28 @@ def transmitir_diario(hoja):
 
     df = pd.read_json(StringIO(data), orient="records")
 
-    print("===== DEBUG DIARIO TRANSMITIR =====", flush=True)
-    print("CACHE_ID:", cache_id, flush=True)
-    print("HOJA:", hoja, flush=True)
-    print("REGISTROS EN CACHE:", len(df), flush=True)
-    print("COLUMNAS:", df.columns.tolist(), flush=True)
-    print(df.head(5).to_string(), flush=True)
+    df = completar_ean(df)
 
-    def limpiar_precio(valor):
-        if valor in ["", None]:
-            return None
+    for col in ["departamento", "dep"]:
+        if col in df.columns:
+            df[col] = df[col].replace(["None", "none", "nan", "NaN", None], "")
 
-        valor = str(valor).strip()
-
-        # Convierte formato argentino: 1.234,56 -> 1234.56
-        valor = valor.replace(".", "").replace(",", ".")
-
-        try:
-            return float(valor)
-        except:
-            return None
+    df = completar_departamento(df)
+    df = completar_dep(df)
 
     for col in ["Normal", "Oferta"]:
         if col in df.columns:
             df[col] = df[col].apply(limpiar_precio)
 
+    print(
+        df[["CODIGO", "EAN", "departamento", "dep"]]
+        .head(20)
+        .to_string(),
+        flush=True
+    )
+
     usuario = session.get("usuario_nombre", "desconocido")
     tipo_cenefa = "diario"
-
     sobrescribir = request.form.get("sobrescribir") == "1"
 
     repetidos = existen_cenefas_repetidas(df, tipo_cenefa)
@@ -550,36 +542,6 @@ def transmitir_diario(hoja):
         usuario=usuario,
         sobrescribir=sobrescribir
     )
-
-    from compras import get_db_connection
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT COUNT(*)
-        FROM cenefas
-        WHERE tipo_cenefa = %s
-    """, ("diario",))
-
-    cantidad_diario = cursor.fetchone()[0]
-
-    cursor.execute("""
-        SELECT Codigo, descripcion, desde, hasta, sucursales, tipo_cenefa, fecha_carga
-        FROM cenefas
-        WHERE tipo_cenefa = %s
-        ORDER BY fecha_carga DESC
-        LIMIT 5
-    """, ("diario",))
-
-    ultimos = cursor.fetchall()
-
-    conn.close()
-
-    print("TOTAL EN DB tipo_cenefa=diario:", cantidad_diario, flush=True)
-    print("ULTIMOS DIARIO EN DB:", ultimos, flush=True)
-
-    print("DIARIO GUARDADO:", len(df), "registros", flush=True)
 
     redis_client.delete(f"diario:{cache_id}:{hoja}")
 
