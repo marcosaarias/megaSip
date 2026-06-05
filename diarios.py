@@ -140,29 +140,127 @@ def diario():
     ]
 
     if request.method == "POST":
+
+        accion = request.form.get("accion")
+
+        # ================= TRANSMITIR =================
+        if accion == "transmitir":
+            from flask import session
+            from compras import (
+                guardar_cenefas_en_db,
+                existen_cenefas_repetidas,
+                completar_departamento,
+                completar_dep
+            )
+
+            cache_id = request.form.get("cache_id")
+            hoja = request.form.get("hoja")
+
+            if not cache_id or not hoja:
+                mensaje_error = "Cache u hoja inválida."
+                return render_template(
+                    "diario.html",
+                    preview=preview,
+                    total_registros=total_registros,
+                    hojas_orden=hojas_orden,
+                    cache_id=None,
+                    mensaje_error=mensaje_error
+                )
+
+            data = redis_client.get(f"diario:{cache_id}:{hoja}")
+
+            if not data:
+                mensaje_error = "No hay datos para transmitir. Volvé a procesar el archivo."
+                return render_template(
+                    "diario.html",
+                    preview=preview,
+                    total_registros=total_registros,
+                    hojas_orden=hojas_orden,
+                    cache_id=None,
+                    mensaje_error=mensaje_error
+                )
+
+            try:
+                df = pd.read_json(StringIO(data), orient="records")
+
+                df = completar_departamento(df)
+                df = completar_dep(df)
+
+                if "dep" not in df.columns:
+                    df["dep"] = ""
+
+                if "departamento" not in df.columns:
+                    df["departamento"] = ""
+
+                repetidos = existen_cenefas_repetidas(df, "diario")
+
+                if repetidos:
+                    mensaje_error = f"Ya existen {len(repetidos)} registros de Diario para este período."
+
+                    preview = {
+                        hoja: df.to_html(
+                            classes="table table-sm table-striped",
+                            index=False
+                        )
+                    }
+
+                    return render_template(
+                        "diario.html",
+                        preview=preview,
+                        total_registros={hoja: len(df)},
+                        hojas_orden=[hoja],
+                        cache_id=cache_id,
+                        mensaje_error=mensaje_error
+                    )
+
+                guardar_cenefas_en_db(
+                    df,
+                    "diario",
+                    usuario=session.get("usuario_nombre", "desconocido")
+                )
+
+                redis_client.delete(f"diario:{cache_id}:{hoja}")
+
+                preview = {
+                    hoja: "<div class='alert alert-success'>Diario transmitido correctamente a sucursales.</div>"
+                }
+
+                return render_template(
+                    "diario.html",
+                    preview=preview,
+                    total_registros={},
+                    hojas_orden=[hoja],
+                    cache_id=None,
+                    mensaje_error=None
+                )
+
+            except Exception as e:
+                mensaje_error = f"Error transmitiendo Diario: {e}"
+                return render_template(
+                    "diario.html",
+                    preview=preview,
+                    total_registros=total_registros,
+                    hojas_orden=hojas_orden,
+                    cache_id=cache_id,
+                    mensaje_error=mensaje_error
+                )
+
+        # ================= PROCESAR ARCHIVO =================
         archivo = request.files.get("archivo")
         fecha_desde_raw = request.form.get("fecha_desde")
         fecha_hasta_raw = request.form.get("fecha_hasta")
 
         if archivo:
             try:
-                print("ENTRO A DIARIO NUEVO", flush=True)
-
                 cache_id = str(uuid.uuid4())
 
                 f_desde = pd.to_datetime(fecha_desde_raw).strftime("%d/%m/%Y") if fecha_desde_raw else ""
                 f_hasta = pd.to_datetime(fecha_hasta_raw).strftime("%d/%m/%Y") if fecha_hasta_raw else ""
 
-                #xls = pd.read_excel(archivo, sheet_name=None)
-                #for nombre_hoja, df in xls.items():
-
                 xls = pd.read_excel(archivo, sheet_name=None, header=None)
 
                 for nombre_hoja, df in xls.items():
 
-                    print("HOJA:", nombre_hoja, flush=True)
-
-                    # 🔥 detectar fila header (como en cenefas)
                     fila_header = None
                     for i, row in df.iterrows():
                         valores = [normalizar_texto(x) for x in row.values]
@@ -171,13 +269,9 @@ def diario():
                             break
 
                     if fila_header is None:
-                        print("NO HEADER EN:", nombre_hoja, flush=True)
                         continue
 
-                    # 🔥 volver a leer la hoja con header correcto
                     df = pd.read_excel(archivo, sheet_name=nombre_hoja, header=fila_header)
-
-                    print("COLUMNAS DETECTADAS:", list(df.columns), flush=True)
 
                     df_check = df.replace(r"^\s*$", pd.NA, regex=True)
                     if df_check.dropna(how="all").empty:
@@ -196,13 +290,6 @@ def diario():
                             if col == header_norm or col in posibles_norm:
                                 column_mapping[col] = header
                                 break
-
-                    if not column_mapping:
-                        print("SIN MAPPING EN:", nombre_hoja, flush=True)
-                        print("COLUMNAS:", df.columns.tolist(), flush=True)
-
-                        df.columns = [col.upper() for col in df.columns]
-                        column_mapping = {col: col for col in df.columns}
 
                     df = df.rename(columns=column_mapping)
 
@@ -261,13 +348,6 @@ def diario():
 
                     df = df.fillna("")
 
-                    for col in ["Normal", "Oferta"]:
-                        if col in df.columns:
-                            df[col] = df[col].apply(formatear_moneda)
-
-                    if df.empty:
-                        continue
-
                     redis_client.set(
                         f"diario:{cache_id}:{nombre_hoja}",
                         df.to_json(orient="records"),
@@ -284,11 +364,10 @@ def diario():
                 hojas_orden = list(preview.keys())
 
                 if not preview:
-                    mensaje_error = "No se encontraron hojas válidas para Diario. Revisá que el archivo tenga columnas como CODIGO, DESCRIPCION, Normal, Oferta o cenefa."
+                    mensaje_error = "No se encontraron hojas válidas para Diario."
 
             except Exception as e:
                 mensaje_error = f"Error procesando diario: {repr(e)}"
-                print("ERROR REAL EN DIARIO:", repr(e), flush=True)
                 traceback.print_exc()
 
     return render_template(
