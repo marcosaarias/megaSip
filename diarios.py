@@ -235,7 +235,8 @@ def diario():
                 )
 
             except Exception as e:
-                mensaje_error = f"Error transmitiendo Diario: {e}"
+                traceback.print_exc()
+                mensaje_error = f"Error transmitiendo Diario: {repr(e)}"
                 return render_template(
                     "diario.html",
                     preview=preview,
@@ -427,6 +428,13 @@ def transmitir_diario(hoja):
 
     df = pd.read_json(StringIO(data), orient="records")
 
+    print("===== DEBUG DIARIO TRANSMITIR =====", flush=True)
+    print("CACHE_ID:", cache_id, flush=True)
+    print("HOJA:", hoja, flush=True)
+    print("REGISTROS EN CACHE:", len(df), flush=True)
+    print("COLUMNAS:", df.columns.tolist(), flush=True)
+    print(df.head(5).to_string(), flush=True)
+
     def limpiar_precio(valor):
         if valor in ["", None]:
             return None
@@ -479,6 +487,34 @@ def transmitir_diario(hoja):
         usuario=usuario,
         sobrescribir=sobrescribir
     )
+
+    from compras import get_db_connection
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM cenefas
+        WHERE tipo_cenefa = %s
+    """, ("diario",))
+
+    cantidad_diario = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT Codigo, descripcion, desde, hasta, sucursales, tipo_cenefa, fecha_carga
+        FROM cenefas
+        WHERE tipo_cenefa = %s
+        ORDER BY fecha_carga DESC
+        LIMIT 5
+    """, ("diario",))
+
+    ultimos = cursor.fetchall()
+
+    conn.close()
+
+    print("TOTAL EN DB tipo_cenefa=diario:", cantidad_diario, flush=True)
+    print("ULTIMOS DIARIO EN DB:", ultimos, flush=True)
 
     print("DIARIO GUARDADO:", len(df), "registros", flush=True)
 

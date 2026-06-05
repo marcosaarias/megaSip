@@ -6,6 +6,16 @@
 
     <h2 class="mb-4">Carga Diario</h2>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
     <!-- 🔹 Carga archivo -->
     <div class="card p-4 shadow-sm mb-4">
         <form method="POST" enctype="multipart/form-data">
@@ -61,13 +71,11 @@
                       </a>
 
                         <!-- 🚀 Transmitir -->
-                       <form method="POST"
-                            action="{{ url_for('diarios.diario') }}"
+                        <form method="POST"
+                            action="{{ url_for('diarios.transmitir_diario', hoja=hoja) }}"
                             onsubmit="return confirm('¿Está seguro que desea transmitir Diario a las sucursales?');">
 
-                            <input type="hidden" name="accion" value="transmitir">
                             <input type="hidden" name="cache_id" value="{{ cache_id }}">
-                            <input type="hidden" name="hoja" value="{{ hoja }}">
 
                             <button type="submit" class="btn btn-primary btn-sm">
                                 Transmitir
