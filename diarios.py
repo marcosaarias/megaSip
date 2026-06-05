@@ -15,8 +15,7 @@ from compras import (
     completar_dep,
     normalizar_texto,
     guardar_cenefas_en_db,
-    existen_cenefas_repetidas,
-    limpiar_precio
+    existen_cenefas_repetidas
 )
 
 
@@ -37,6 +36,26 @@ def formatear_moneda(valor):
 
     except (ValueError, TypeError):
         return valor
+
+
+def limpiar_precio(valor):
+    if pd.isna(valor):
+        return None
+
+    valor = str(valor).strip()
+
+    if valor.lower() in ["", "none", "nan"]:
+        return None
+
+    if "," in valor and "." in valor:
+        valor = valor.replace(".", "").replace(",", ".")
+    elif "," in valor:
+        valor = valor.replace(",", ".")
+
+    try:
+        return float(valor)
+    except:
+        return None
 
 def detectar_sucursales(nombre_hoja):
     hoja = normalizar_texto(nombre_hoja)
@@ -354,6 +373,11 @@ def diario():
                         df["CODIGO"] = pd.to_numeric(df["CODIGO"], errors="coerce")
                         df = df.dropna(subset=["CODIGO"])
                         df["CODIGO"] = df["CODIGO"].astype(int)
+
+                    for col in ["Normal", "Oferta"]:
+                        if col in df.columns:
+                            df[col] = df[col].apply(limpiar_precio)
+                    
 
                     df = df.fillna("")
 
