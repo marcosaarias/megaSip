@@ -26,7 +26,8 @@ def index():
                 fecha_hasta=fecha_hasta
             )
 
-            return "Guardado OK"
+            #return "Guardado OK"
+            return redirect(url_for("farmacia_folder.index"))
 
     return render_template("farmacia_folder.html")
 

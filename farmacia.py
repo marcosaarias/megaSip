@@ -1,11 +1,11 @@
 import os
 import pandas as pd
 import numpy as np
-import sqlite3
-from flask import session, request, g
+from flask import session, request
 from datetime import datetime
 import uuid
 from flask import Blueprint, render_template, request, send_file
+from db import get_db_connection
 
 
 farmacia_bp = Blueprint("farmacia", __name__)
@@ -20,14 +20,14 @@ def medir_ingreso_farmacia():
         session["farmacia_session_id"] = str(uuid.uuid4())
         session["farmacia_inicio"] = ahora.isoformat()
 
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         try:
             conn.execute("""
                 INSERT INTO farmacia_metricas (
                     session_id, ruta, metodo, fecha_ingreso,
                     ultima_actividad, duracion_segundos, ip, user_agent
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 session["farmacia_session_id"],
                 request.path,
@@ -55,14 +55,14 @@ def actualizar_tiempo_farmacia(response):
         inicio_dt = datetime.fromisoformat(inicio)
         duracion = int((ahora - inicio_dt).total_seconds())
 
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         try:
             conn.execute("""
                 UPDATE farmacia_metricas
-                SET ultima_actividad = ?,
-                    duracion_segundos = ?,
-                    ruta = ?
-                WHERE session_id = ?
+                SET ultima_actividad = %s,
+                    duracion_segundos = %s,
+                    ruta = %s
+                WHERE session_id = %s
             """, (
                 ahora.isoformat(),
                 duracion,
@@ -76,19 +76,15 @@ def actualizar_tiempo_farmacia(response):
     return response
 
 
-
-DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
-
-
 ARCHIVO_TEMP = os.path.join(os.path.dirname(__file__), "temp_procesado_farmacia.xlsx")
 
 #medir tiempo de conexion
 def crear_tabla_metricas():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     try:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS farmacia_metricas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY
                 session_id TEXT,
                 ruta TEXT,
                 metodo TEXT,
@@ -182,7 +178,7 @@ def autocompletar_super_desde_cenefas(df):
     if "Troquel" not in df.columns:
         return df
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
 
     try:
         consulta = """
@@ -523,7 +519,7 @@ def autocompletar_farmacia_desde_folder(df):
     print(debug_troquel_excel.dropna().unique()[:30], flush=True)
     print("=========================================\n", flush=True)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
 
     try:
         consulta = """
@@ -645,7 +641,7 @@ def autocompletar_farmacia_desde_folder(df):
 #===============================================
 
 def obtener_vigencia_farmacia():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
 
     try:
         consulta = """
@@ -666,7 +662,7 @@ def obtener_vigencia_farmacia():
 
 
 def obtener_vigencia_super():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
 
     try:
         consulta = """
@@ -704,7 +700,7 @@ def obtener_vigencia_super():
 @farmacia_bp.route("/informes-uso")
 def informes_uso_farmacia():
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
 
     try:
         query = """
