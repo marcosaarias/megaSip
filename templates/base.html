@@ -327,7 +327,7 @@
   </div>
 
   <!-- OTRAS CENEFAS -->
-  <div class="menu-section {% if request.args.get('tipo') in ['diarios', 'saltarefrescos'] %}active{% endif %}">
+  <div class="menu-section {% if request.args.get('tipo') in ['diario', 'saltarefrescos'] %}active{% endif %}">
 
     <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
       Otras Cenefas <i class="bi bi-chevron-down arrow"></i>
@@ -335,8 +335,8 @@
 
     <div class="submenu" id="submenu-otras">
 
-      <a href="{{ url_for('compras.sucursal', tipo='diarios') }}"
-        class="submenu-item {% if request.args.get('tipo') == 'diarios' %}active-link{% endif %}">
+      <a href="{{ url_for('compras.sucursal', tipo='diario') }}"
+        class="submenu-item {% if request.args.get('tipo') == 'diario' %}active-link{% endif %}">
         Diarios
       </a>
 
