@@ -464,17 +464,26 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
         df = df.rename(columns=column_mapping)
 
-        if "sucursales" in df.columns:
-            df["sucursales"] = df["sucursales"].ffill()
+        #if "sucursales" in df.columns:
+        #    df["sucursales"] = df["sucursales"].ffill()
 
-        if "cenefa" in df.columns:
-            df["cenefa"] = df["cenefa"].ffill()
+        #if "cenefa" in df.columns:
+        #    df["cenefa"] = df["cenefa"].ffill()
 
-        if "Oferta" in df.columns:
-            df["Oferta"] = df["Oferta"].ffill()
+        #if "Oferta" in df.columns:
+        #    df["Oferta"] = df["Oferta"].ffill()
 
-        if "Normal" in df.columns:
-            df["Normal"] = df["Normal"].ffill()
+        #if "Normal" in df.columns:
+        #    df["Normal"] = df["Normal"].ffill()
+
+        for col in ["sucursales", "cenefa", "Oferta", "Normal"]:
+            if col in df.columns:
+                df[col] = (
+                    df[col]
+                    .replace(r"^\s*$", pd.NA, regex=True)
+                    .replace(["nan", "NaN", "None", "none"], pd.NA)
+                    .ffill()
+                )
 
         if tipo in SUCURSAL_MAP:
 
