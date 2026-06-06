@@ -485,14 +485,15 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                     .ffill()
                 )
 
-            if "cenefa" in df.columns:
-                df["cenefa"] = (
-                    df["cenefa"]
-                    .replace(r"^\s*$", pd.NA, regex=True)
-                    .replace(["nan", "NaN", "None", "none"], pd.NA)
-                )
-
-                df["cenefa"] = df["cenefa"].fillna("OFERTA")
+        if "cenefa" in df.columns:
+            df["cenefa"] = (
+                df["cenefa"]
+                .replace(r"^\s*$", pd.NA, regex=True)
+                .replace(["nan", "NaN", "None", "none"], pd.NA)
+                .ffill()
+            )
+        else:
+            df["cenefa"] = "OFERTA"
 
         if tipo in SUCURSAL_MAP:
 
