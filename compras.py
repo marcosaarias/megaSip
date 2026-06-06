@@ -476,7 +476,7 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
         #if "Normal" in df.columns:
         #    df["Normal"] = df["Normal"].ffill()
 
-        for col in ["sucursales", "cenefa", "Oferta", "Normal"]:
+        for col in ["sucursales", "Oferta", "Normal"]:
             if col in df.columns:
                 df[col] = (
                     df[col]
@@ -484,6 +484,15 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                     .replace(["nan", "NaN", "None", "none"], pd.NA)
                     .ffill()
                 )
+
+            if "cenefa" in df.columns:
+                df["cenefa"] = (
+                    df["cenefa"]
+                    .replace(r"^\s*$", pd.NA, regex=True)
+                    .replace(["nan", "NaN", "None", "none"], pd.NA)
+                )
+
+                df["cenefa"] = df["cenefa"].fillna("OFERTA")
 
         if tipo in SUCURSAL_MAP:
 
