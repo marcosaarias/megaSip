@@ -4,7 +4,7 @@ import numpy as np
 from flask import session, request
 from datetime import datetime
 import uuid
-from flask import Blueprint, render_template, request, send_file
+from flask import Blueprint, render_template, request, send_file, g
 from database.db import get_db_connection
 
 
