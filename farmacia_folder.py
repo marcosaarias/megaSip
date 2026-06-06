@@ -1,7 +1,7 @@
 import pandas as pd
 import uuid
 from datetime import datetime
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, url_for
 from database.db import get_db_connection
 farmacia_folder_bp = Blueprint("farmacia_folder", __name__)
 
