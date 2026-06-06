@@ -652,16 +652,38 @@ def obtener_vigencia_farmacia():
         consulta = """
             SELECT fecha_desde, fecha_hasta
             FROM farmacia_folder
+            WHERE fecha_desde IS NOT NULL
+              AND fecha_hasta IS NOT NULL
+              AND fecha_desde <> 'fecha_desde'
+              AND fecha_hasta <> 'fecha_hasta'
         """
         folder_df = pd.read_sql_query(consulta, conn)
     finally:
         conn.close()
 
-    desde = folder_df["fecha_desde"].dropna().min()
-    hasta = folder_df["fecha_hasta"].dropna().max()
+    if folder_df.empty:
+        return "-", "-"
 
-    desde = pd.to_datetime(desde).strftime("%d/%m/%Y") if pd.notna(desde) else "-"
-    hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y") if pd.notna(hasta) else "-"
+    folder_df["fecha_desde"] = pd.to_datetime(
+        folder_df["fecha_desde"],
+        errors="coerce"
+    )
+
+    folder_df["fecha_hasta"] = pd.to_datetime(
+        folder_df["fecha_hasta"],
+        errors="coerce"
+    )
+
+    folder_df = folder_df.dropna(subset=["fecha_desde", "fecha_hasta"])
+
+    if folder_df.empty:
+        return "-", "-"
+
+    desde = folder_df["fecha_desde"].min()
+    hasta = folder_df["fecha_hasta"].max()
+
+    desde = desde.strftime("%d/%m/%Y")
+    hasta = hasta.strftime("%d/%m/%Y")
 
     return desde, hasta
 
