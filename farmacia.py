@@ -187,7 +187,7 @@ def autocompletar_super_desde_cenefas(df):
 
     try:
         consulta = """
-            SELECT Codigo, descripcion, cenefa
+            SELECT codigo, descripcion, cenefa
             FROM cenefas
         """
         cenefas_df = pd.read_sql_query(consulta, conn)
@@ -196,7 +196,7 @@ def autocompletar_super_desde_cenefas(df):
 
     # Normalizar Codigo de BD
     cenefas_df["Codigo_match"] = (
-        cenefas_df["Codigo"]
+        cenefas_df["codigo"]
         .astype(str)
         .str.strip()
         .str.replace(".0", "", regex=False)
