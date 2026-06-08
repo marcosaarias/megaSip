@@ -645,87 +645,43 @@ def autocompletar_farmacia_desde_folder(df):
 # Obtener vigencias de folder farmacias
 #===============================================
 
-def obtener_vigencia_farmacia():
+def obtener_vigencia_super():
     conn = get_db_connection()
-
+    cur = conn.cursor()
     try:
         consulta = """
-            SELECT fecha_desde, fecha_hasta
-            FROM farmacia_folder
-            WHERE fecha_desde IS NOT NULL
-              AND fecha_hasta IS NOT NULL
-              AND fecha_desde <> 'fecha_desde'
-              AND fecha_hasta <> 'fecha_hasta'
+            SELECT desde, hasta
+            FROM cenefas
+            WHERE tipo_cenefa IN ('minorista')
+              AND desde IS NOT NULL
+              AND hasta IS NOT NULL
+            ORDER BY fecha_carga DESC
+            LIMIT 1
         """
-        folder_df = pd.read_sql_query(consulta, conn)
+
+        cur.execute(consulta)
+        row = cur.fetchone()
+
     finally:
+        cur.close()
         conn.close()
 
-    if folder_df.empty:
+    if not row:
         return "-", "-"
 
-    folder_df["fecha_desde"] = pd.to_datetime(
-        folder_df["fecha_desde"],
-        errors="coerce"
-    )
+    desde, hasta = row
 
-    folder_df["fecha_hasta"] = pd.to_datetime(
-        folder_df["fecha_hasta"],
-        errors="coerce"
-    )
+    try:
+        desde = pd.to_datetime(desde).strftime("%d/%m/%Y")
+    except:
+        desde = desde or "-"
 
-    folder_df = folder_df.dropna(subset=["fecha_desde", "fecha_hasta"])
-
-    if folder_df.empty:
-        return "-", "-"
-
-    desde = folder_df["fecha_desde"].min()
-    hasta = folder_df["fecha_hasta"].max()
-
-    desde = desde.strftime("%d/%m/%Y")
-    hasta = hasta.strftime("%d/%m/%Y")
+    try:
+        hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y")
+    except:
+        hasta = hasta or "-"
 
     return desde, hasta
-
-
-#def obtener_vigencia_super():
-#    conn = get_db_connection()
-#    cur = conn.cursor()
-
-#    try:
-#        consulta = """
-#            SELECT desde, hasta
-#            FROM cenefas
-#            WHERE tipo_cenefa IN ('minorista')
-#              AND desde IS NOT NULL
-#              AND hasta IS NOT NULL
-#            ORDER BY fecha_carga DESC
-#            LIMIT 1
-#        """
-
-#        cur.execute(consulta)
-#        row = cur.fetchone()
-
-#    finally:
-#        cur.close()
-#        conn.close()
-
-#    if not row:
-#        return "-", "-"
-
-#    desde, hasta = row
-
-#    try:
-#        desde = pd.to_datetime(desde).strftime("%d/%m/%Y")
-#    except:
-#        desde = desde or "-"
-
-#    try:
-#        hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y")
-#    except:
-#        hasta = hasta or "-"
-
-#    return desde, hasta
 
 
 def obtener_vigencia_farmacia():
