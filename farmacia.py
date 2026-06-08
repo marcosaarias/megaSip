@@ -126,10 +126,6 @@ def generar_archivo_maestro():
 
 
 def limpiar_numero(serie):
-    print(f"\nDEBUG LIMPIEZA - dtype inicial: {serie.dtype}")
-    print("ANTES:")
-    print(serie.head(10))
-
     if not pd.api.types.is_object_dtype(serie):
         out = pd.to_numeric(serie, errors="coerce")
     else:
@@ -171,11 +167,6 @@ def limpiar_numero(serie):
                 return np.nan
 
         out = s.apply(convertir_valor)
-
-    print("DESPUES:")
-    print(out.head(10))
-    print("NaN count:", out.isna().sum())
-    print("---------\n")
     return out
 
 
@@ -257,11 +248,6 @@ def index():
                 if "Estado" in df.columns:
                     df = df[df["Estado"].notna()]
 
-                print("\n========== COLUMNAS DEL EXCEL ==========")
-                for i, c in enumerate(df.columns):
-                    print(f"{i}: '{c}'")
-                print("========================================\n")
-
                 col_precio_mi = None
                 col_codigo = None
                 col_costo = None
@@ -295,13 +281,6 @@ def index():
                         if nueva not in df.columns:
                             df.insert(idx_codigo + i, nueva, None)
 
-                    print("\n========== DEBUG COLUMNAS DETECTADAS ==========")
-                    print("Costo Neto:", col_costo_neto)
-                    print("Costo:", col_costo)
-                    print("Precio MI:", col_precio_mi)
-                    print("Precio:", col_precio)
-                    print("==============================================\n")
-
                     # Guardar originales sin tocar
                     df_debug = pd.DataFrame(index=df.index)
                     if col_costo_neto:
@@ -312,14 +291,6 @@ def index():
                         df_debug["Precio Mi ORIGINAL"] = df[col_precio_mi]
                     if col_precio:
                         df_debug["Precio ORIGINAL"] = df[col_precio]
-
-                    print("\n========== MUESTRA ORIGINAL ==========")
-                    cols_print = [c for c in [
-                        "Costo Neto ORIGINAL", "Costo ORIGINAL",
-                        "Precio Mi ORIGINAL", "Precio ORIGINAL"
-                    ] if c in df_debug.columns]
-                    print(df_debug[cols_print].head(30).to_string())
-                    print("======================================\n")
 
                     # Limpiar
                     for col in [col_costo, col_precio, col_costo_neto, col_precio_mi]:
@@ -335,22 +306,6 @@ def index():
                         df_debug["Precio Mi LIMPIO"] = df[col_precio_mi]
                     if col_precio:
                         df_debug["Precio LIMPIO"] = df[col_precio]
-
-                    print("\n========== COMPARATIVO ==========")
-                    cols_print = [c for c in [
-                        "Costo Neto ORIGINAL", "Costo Neto LIMPIO",
-                        "Costo ORIGINAL", "Costo LIMPIO",
-                        "Precio Mi ORIGINAL", "Precio Mi LIMPIO",
-                        "Precio ORIGINAL", "Precio LIMPIO"
-                    ] if c in df_debug.columns]
-                    print(df_debug[cols_print].head(40).to_string())
-                    print("=================================\n")
-
-                    print("\n========== NULOS ==========")
-                    cols_debug = [c for c in [col_costo_neto, col_costo, col_precio_mi, col_precio] if c]
-                    print(df[cols_debug].isna().sum())
-                    print("===========================\n")
-
                     if col_costo:
                         df["Costo_tmp"] = df[col_costo]
                     if col_precio:
@@ -389,12 +344,6 @@ def index():
                     }, inplace=True)
 
                     df = df[df["diferencia"].notna()]
-
-                    print("\n========== MUESTRA FINAL ==========")
-                    mostrar = [c for c in ["Costo Neto", "Costo", "Col3"] if c in df.columns]
-                    print(df[mostrar].head(50).to_string())
-                    print("===================================\n")
-
                     cols_a_borrar = [c for c in [col_costo, col_precio] if c]
                     df.drop(columns=cols_a_borrar, inplace=True, errors="ignore")
 
@@ -501,17 +450,6 @@ def autocompletar_farmacia_desde_folder(df):
         df["A-Farmacia"] = "#N/D"
         return df
 
-    print("Columna troquel usada para farmacia:", col_troquel, flush=True)
-
-    print("\n========== DEBUG TROQUEL EXCEL ==========", flush=True)
-    print("Nombre exacto columna:", repr(col_troquel), flush=True)
-    print("Tipo columna:", df[col_troquel].dtype, flush=True)
-    print("Cantidad filas:", len(df), flush=True)
-    print("Nulos:", df[col_troquel].isna().sum(), flush=True)
-
-    print("\nPrimeros 20 valores CRUDOS:", flush=True)
-    print(df[col_troquel].head(20).apply(repr).to_string(), flush=True)
-
     debug_troquel_excel = (
         df[col_troquel]
         .astype(str)
@@ -520,13 +458,6 @@ def autocompletar_farmacia_desde_folder(df):
         .str.lstrip("0")
         .replace({"": np.nan, "nan": np.nan, "None": np.nan})
     )
-
-    print("\nPrimeros 20 valores NORMALIZADOS:", flush=True)
-    print(debug_troquel_excel.head(20).apply(repr).to_string(), flush=True)
-
-    print("\nValores únicos normalizados, primeros 30:", flush=True)
-    print(debug_troquel_excel.dropna().unique()[:30], flush=True)
-    print("=========================================\n", flush=True)
 
     conn = get_db_connection()
 
@@ -539,16 +470,6 @@ def autocompletar_farmacia_desde_folder(df):
     finally:
         conn.close()
 
-    print("\n========== DEBUG BD ORIGINAL ==========", flush=True)
-    print("Filas traídas de farmacia_folder:", len(folder_df), flush=True)
-    print("Columnas BD:", folder_df.columns.tolist(), flush=True)
-    print("Tipos BD:", flush=True)
-    print(folder_df.dtypes, flush=True)
-
-    print("\nPrimeras 20 filas BD:", flush=True)
-    print(folder_df.head(20).to_string(), flush=True)
-    print("=======================================\n", flush=True)
-
     folder_df["troquel_match"] = (
         folder_df["troquel"]
         .astype(str)
@@ -557,19 +478,6 @@ def autocompletar_farmacia_desde_folder(df):
         .str.lstrip("0")
         .replace({"": np.nan, "nan": np.nan, "None": np.nan})
     )
-
-    print("\n========== DEBUG TROQUEL BD ==========", flush=True)
-    print("Tipo troquel BD:", folder_df["troquel"].dtype, flush=True)
-
-    print("\nPrimeros 20 troqueles BD CRUDOS:", flush=True)
-    print(folder_df["troquel"].head(20).apply(repr).to_string(), flush=True)
-
-    print("\nPrimeros 20 troqueles BD NORMALIZADOS:", flush=True)
-    print(folder_df["troquel_match"].head(20).apply(repr).to_string(), flush=True)
-
-    print("\nValores únicos BD normalizados, primeros 30:", flush=True)
-    print(folder_df["troquel_match"].dropna().unique()[:30], flush=True)
-    print("======================================\n", flush=True)
 
     folder_df["descripcion"] = folder_df["descripcion"].replace(
         {"": np.nan, "nan": np.nan, "None": np.nan}
@@ -599,31 +507,8 @@ def autocompletar_farmacia_desde_folder(df):
 
     interseccion = troqueles_excel.intersection(troqueles_bd)
 
-    print("\n========== DEBUG MATCH TROQUEL ==========", flush=True)
-    print("Total troqueles Excel:", len(troqueles_excel), flush=True)
-    print("Total troqueles BD:", len(troqueles_bd), flush=True)
-    print("Coincidencias:", len(interseccion), flush=True)
-
-    print("\nEjemplos Excel:", flush=True)
-    print(list(troqueles_excel)[:20], flush=True)
-
-    print("\nEjemplos BD:", flush=True)
-    print(list(troqueles_bd)[:20], flush=True)
-
-    print("\nEjemplos coincidencias:", flush=True)
-    print(list(interseccion)[:20], flush=True)
-    print("=========================================\n", flush=True)
-
     df["F-Farmacia"] = troquel_match.map(mapa_descripcion)
     df["A-Farmacia"] = troquel_match.map(mapa_promo)
-
-    print("\n========== DEBUG RESULTADO MAP ==========", flush=True)
-    print("F-Farmacia encontrados antes fillna:", df["F-Farmacia"].notna().sum(), flush=True)
-    print("A-Farmacia encontrados antes fillna:", df["A-Farmacia"].notna().sum(), flush=True)
-
-    print("\nMuestra resultado antes fillna:", flush=True)
-    print(df[[col_troquel, "F-Farmacia", "A-Farmacia"]].head(30).to_string(), flush=True)
-    print("========================================\n", flush=True)
 
     df["F-Farmacia"] = df["F-Farmacia"].replace(
         {"": np.nan, "nan": np.nan, "None": np.nan}
@@ -633,13 +518,6 @@ def autocompletar_farmacia_desde_folder(df):
         {"": np.nan, "nan": np.nan, "None": np.nan}
     ).fillna("#N/D")
 
-    print("\n========== DEBUG RESULTADO FINAL ==========", flush=True)
-    print("F-Farmacia distintos de #N/D:", (df["F-Farmacia"] != "#N/D").sum(), flush=True)
-    print("A-Farmacia distintos de #N/D:", (df["A-Farmacia"] != "#N/D").sum(), flush=True)
-
-    print("\nMuestra resultado final:", flush=True)
-    print(df[[col_troquel, "F-Farmacia", "A-Farmacia"]].head(30).to_string(), flush=True)
-    print("==========================================\n", flush=True)
 
     return df
 
@@ -686,44 +564,79 @@ def obtener_vigencia_super():
         pd.to_datetime(hasta).strftime("%d/%m/%Y")
     )
 
+
 def obtener_vigencia_farmacia():
     conn = get_db_connection()
+    cur = conn.cursor()
 
     try:
-        consulta = """
-            SELECT fecha_desde, fecha_hasta
+        cur.execute("""
+            SELECT
+                MIN(fecha_desde) AS desde_min,
+                MAX(fecha_hasta) AS hasta_max
             FROM farmacia_folder
             WHERE fecha_desde IS NOT NULL
               AND fecha_hasta IS NOT NULL
               AND fecha_desde <> 'fecha_desde'
               AND fecha_hasta <> 'fecha_hasta'
-        """
-        folder_df = pd.read_sql_query(consulta, conn)
+              AND fecha_desde <> ''
+              AND fecha_hasta <> ''
+        """)
+
+        row = cur.fetchone()
+
+        print("================================", flush=True)
+        print("DEBUG VIGENCIA FARMACIA", flush=True)
+        print("ROW:", row, flush=True)
+        print("TIPO:", type(row), flush=True)
+
+        if row:
+            try:
+                print("KEYS:", list(row.keys()), flush=True)
+            except Exception as e:
+                print("NO TIENE KEYS():", e, flush=True)
+
     finally:
+        cur.close()
         conn.close()
 
-    if folder_df.empty:
+    if not row:
+        print("SIN RESULTADOS", flush=True)
         return "-", "-"
 
-    folder_df["fecha_desde"] = pd.to_datetime(
-        folder_df["fecha_desde"],
-        errors="coerce"
-    )
+    try:
+        desde = row["desde_min"]
+        hasta = row["hasta_max"]
+    except Exception as e:
+        print("ERROR ACCEDIENDO POR NOMBRE:", e, flush=True)
 
-    folder_df["fecha_hasta"] = pd.to_datetime(
-        folder_df["fecha_hasta"],
-        errors="coerce"
-    )
+        try:
+            desde = row[0]
+            hasta = row[1]
+            print("ACCESO POR INDICE OK", flush=True)
+        except Exception as e2:
+            print("ERROR ACCEDIENDO POR INDICE:", e2, flush=True)
+            return "-", "-"
 
-    folder_df = folder_df.dropna(subset=["fecha_desde", "fecha_hasta"])
+    print("DESDE RAW:", desde, flush=True)
+    print("HASTA RAW:", hasta, flush=True)
 
-    if folder_df.empty:
+    if not desde or not hasta:
+        print("DESDE/HASTA VACIOS", flush=True)
         return "-", "-"
 
-    desde = folder_df["fecha_desde"].min()
-    hasta = folder_df["fecha_hasta"].max()
+    try:
+        desde_fmt = pd.to_datetime(desde).strftime("%d/%m/%Y")
+        hasta_fmt = pd.to_datetime(hasta).strftime("%d/%m/%Y")
 
-    return desde.strftime("%d/%m/%Y"), hasta.strftime("%d/%m/%Y")
+        print("DESDE FORMATEADO:", desde_fmt, flush=True)
+        print("HASTA FORMATEADO:", hasta_fmt, flush=True)
+
+        return desde_fmt, hasta_fmt
+
+    except Exception as e:
+        print("ERROR FORMATEANDO FECHAS:", e, flush=True)
+        return "-", "-"
 
 @farmacia_bp.route("/informes-uso")
 def informes_uso_farmacia():
