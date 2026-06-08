@@ -170,8 +170,55 @@ def limpiar_numero(serie):
     return out
 
 
+#def autocompletar_super_desde_cenefas(df):
+#    if "Troquel" not in df.columns:
+#        return df
+
+#    conn = get_db_connection()
+
+#    try:
+#        consulta = """
+#            SELECT codigo, descripcion, cenefa
+#            FROM cenefas
+#        """
+#        cenefas_df = pd.read_sql_query(consulta, conn)
+#    finally:
+#        conn.close()
+
+    # Normalizar Codigo de BD
+#    cenefas_df["Codigo_match"] = (
+#        cenefas_df["codigo"]
+#        .astype(str)
+#        .str.strip()
+#        .str.replace(".0", "", regex=False)
+#        .str.lstrip("0")
+#    )
+
+    # Evitar duplicados de código; si hay varios, toma el último
+#    cenefas_df = cenefas_df.dropna(subset=["Codigo_match"])
+#    cenefas_df = cenefas_df.drop_duplicates(subset=["Codigo_match"], keep="last")
+
+#    mapa_descripcion = dict(zip(cenefas_df["Codigo_match"], cenefas_df["descripcion"]))
+#    mapa_cenefa = dict(zip(cenefas_df["Codigo_match"], cenefas_df["cenefa"]))
+
+    # Normalizar Troquel del Excel
+#    troquel_match = (
+#        df["Troquel"]
+#        .astype(str)
+#        .str.strip()
+#        .str.replace(".0", "", regex=False)
+#        .str.lstrip("0")
+#        .replace({"": np.nan, "nan": np.nan, "None": np.nan})
+#    )
+
+#    df["F-Super"] = troquel_match.map(mapa_descripcion).fillna("")
+#    df["A-Super"] = troquel_match.map(mapa_cenefa).fillna("#N/D")
+
+#    return df
+
 def autocompletar_super_desde_cenefas(df):
     if "Troquel" not in df.columns:
+        print("SUPER DEBUG: no existe columna Troquel en el Excel", flush=True)
         return df
 
     conn = get_db_connection()
@@ -185,23 +232,25 @@ def autocompletar_super_desde_cenefas(df):
     finally:
         conn.close()
 
-    # Normalizar Codigo de BD
+    print("========== DEBUG SUPER ==========", flush=True)
+    print("Filas BD cenefas:", len(cenefas_df), flush=True)
+    print("Columnas BD cenefas:", cenefas_df.columns.tolist(), flush=True)
+
     cenefas_df["Codigo_match"] = (
         cenefas_df["codigo"]
         .astype(str)
         .str.strip()
         .str.replace(".0", "", regex=False)
         .str.lstrip("0")
+        .replace({"": np.nan, "nan": np.nan, "None": np.nan})
     )
 
-    # Evitar duplicados de código; si hay varios, toma el último
     cenefas_df = cenefas_df.dropna(subset=["Codigo_match"])
     cenefas_df = cenefas_df.drop_duplicates(subset=["Codigo_match"], keep="last")
 
     mapa_descripcion = dict(zip(cenefas_df["Codigo_match"], cenefas_df["descripcion"]))
     mapa_cenefa = dict(zip(cenefas_df["Codigo_match"], cenefas_df["cenefa"]))
 
-    # Normalizar Troquel del Excel
     troquel_match = (
         df["Troquel"]
         .astype(str)
@@ -211,8 +260,27 @@ def autocompletar_super_desde_cenefas(df):
         .replace({"": np.nan, "nan": np.nan, "None": np.nan})
     )
 
-    df["F-Super"] = troquel_match.map(mapa_descripcion).fillna("")
-    df["A-Super"] = troquel_match.map(mapa_cenefa).fillna("#N/D")
+    troqueles_excel = set(troquel_match.dropna().unique())
+    troqueles_bd = set(cenefas_df["Codigo_match"].dropna().unique())
+    interseccion = troqueles_excel.intersection(troqueles_bd)
+
+    print("TOTAL TROQUELES EXCEL:", len(troqueles_excel), flush=True)
+    print("TOTAL CODIGOS BD:", len(troqueles_bd), flush=True)
+    print("COINCIDENCIAS SUPER:", len(interseccion), flush=True)
+    print("EJEMPLOS EXCEL:", list(troqueles_excel)[:10], flush=True)
+    print("EJEMPLOS BD:", list(troqueles_bd)[:10], flush=True)
+    print("EJEMPLOS MATCH:", list(interseccion)[:10], flush=True)
+
+    df["F-Super"] = troquel_match.map(mapa_descripcion)
+    df["A-Super"] = troquel_match.map(mapa_cenefa)
+
+    print("F-Super encontrados:", df["F-Super"].notna().sum(), flush=True)
+    print("A-Super encontrados:", df["A-Super"].notna().sum(), flush=True)
+
+    df["F-Super"] = df["F-Super"].fillna("")
+    df["A-Super"] = df["A-Super"].fillna("#N/D")
+
+    print("========== FIN DEBUG SUPER ==========", flush=True)
 
     return df
 
