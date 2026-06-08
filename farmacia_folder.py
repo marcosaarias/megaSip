@@ -78,8 +78,14 @@ def index():
             if faltantes:
                 return f"Error: faltan columnas requeridas: {', '.join(faltantes)}", 400
 
+            df = df[
+            df["troquel"].notna()
+            & (df["troquel"].astype(str).str.strip() != "")
+            & (df["troquel"].astype(str).str.strip().str.lower() != "troquel")
+            ].copy()
+
             print("COLUMNAS FINALES:", df.columns.tolist(), flush=True)
-            print(df[["troquel", "descripcion", "promo"]].head(10).to_string(), flush=True)
+            print(df[["troquel", "descripcion", "promo"]].head(10).to_string(), flush=True) 
 
             guardar_farmacia_folder_en_db(
                 df,
