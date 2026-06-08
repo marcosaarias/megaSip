@@ -728,45 +728,44 @@ def obtener_vigencia_farmacia():
 #    return desde, hasta
 
 
-def obtener_vigencia_super():
+def obtener_vigencia_farmacia():
     conn = get_db_connection()
-    cur = conn.cursor()
 
     try:
         consulta = """
-            SELECT MIN(desde), MAX(hasta)
-            FROM cenefas
-            WHERE tipo_cenefa IN ('minorista')
-              AND desde IS NOT NULL
-              AND hasta IS NOT NULL
-              AND desde <> 'desde'
-              AND hasta <> 'hasta'
+            SELECT fecha_desde, fecha_hasta
+            FROM farmacia_folder
+            WHERE fecha_desde IS NOT NULL
+              AND fecha_hasta IS NOT NULL
+              AND fecha_desde <> 'fecha_desde'
+              AND fecha_hasta <> 'fecha_hasta'
         """
-
-        cur.execute(consulta)
-        row = cur.fetchone()
-
+        folder_df = pd.read_sql_query(consulta, conn)
     finally:
-        cur.close()
         conn.close()
 
-    if not row or not row[0] or not row[1]:
+    if folder_df.empty:
         return "-", "-"
 
-    desde, hasta = row
+    folder_df["fecha_desde"] = pd.to_datetime(
+        folder_df["fecha_desde"],
+        errors="coerce"
+    )
 
-    try:
-        desde = pd.to_datetime(desde).strftime("%d/%m/%Y")
-    except:
-        desde = desde or "-"
+    folder_df["fecha_hasta"] = pd.to_datetime(
+        folder_df["fecha_hasta"],
+        errors="coerce"
+    )
 
-    try:
-        hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y")
-    except:
-        hasta = hasta or "-"
+    folder_df = folder_df.dropna(subset=["fecha_desde", "fecha_hasta"])
 
-    return desde, hasta
+    if folder_df.empty:
+        return "-", "-"
 
+    desde = folder_df["fecha_desde"].min()
+    hasta = folder_df["fecha_hasta"].max()
+
+    return desde.strftime("%d/%m/%Y"), hasta.strftime("%d/%m/%Y")
 
 @farmacia_bp.route("/informes-uso")
 def informes_uso_farmacia():
