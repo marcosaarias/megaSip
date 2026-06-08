@@ -688,19 +688,59 @@ def obtener_vigencia_farmacia():
     return desde, hasta
 
 
+#def obtener_vigencia_super():
+#    conn = get_db_connection()
+#    cur = conn.cursor()
+
+#    try:
+#        consulta = """
+#            SELECT desde, hasta
+#            FROM cenefas
+#            WHERE tipo_cenefa IN ('minorista')
+#              AND desde IS NOT NULL
+#              AND hasta IS NOT NULL
+#            ORDER BY fecha_carga DESC
+#            LIMIT 1
+#        """
+
+#        cur.execute(consulta)
+#        row = cur.fetchone()
+
+#    finally:
+#        cur.close()
+#        conn.close()
+
+#    if not row:
+#        return "-", "-"
+
+#    desde, hasta = row
+
+#    try:
+#        desde = pd.to_datetime(desde).strftime("%d/%m/%Y")
+#    except:
+#        desde = desde or "-"
+
+#    try:
+#        hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y")
+#    except:
+#        hasta = hasta or "-"
+
+#    return desde, hasta
+
+
 def obtener_vigencia_super():
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
         consulta = """
-            SELECT desde, hasta
+            SELECT MIN(desde), MAX(hasta)
             FROM cenefas
             WHERE tipo_cenefa IN ('minorista')
               AND desde IS NOT NULL
               AND hasta IS NOT NULL
-            ORDER BY fecha_carga DESC
-            LIMIT 1
+              AND desde <> 'desde'
+              AND hasta <> 'hasta'
         """
 
         cur.execute(consulta)
@@ -710,7 +750,7 @@ def obtener_vigencia_super():
         cur.close()
         conn.close()
 
-    if not row:
+    if not row or not row[0] or not row[1]:
         return "-", "-"
 
     desde, hasta = row
