@@ -12,43 +12,38 @@
     {% endif %}
 
     <div class="card p-4 shadow-sm mb-4">
-        <div class="row">
-            <div class="col-md-3">
-                <label><strong>Desde:</strong></label>
-                <input type="date"
-                       id="fecha_desde"
-                       class="form-control"
-                       value="{{ fecha_desde or '' }}"
-                       required>
+        <h4>Cargar Folder Farmacia</h4>
+
+        <form method="POST"
+              enctype="multipart/form-data"
+              action="{{ url_for('farmacia_folder.index') }}">
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label><strong>Desde:</strong></label>
+                    <input type="date"
+                           name="fecha_desde"
+                           class="form-control"
+                           value="{{ fecha_desde or '' }}"
+                           required>
+                </div>
+
+                <div class="col-md-3">
+                    <label><strong>Hasta:</strong></label>
+                    <input type="date"
+                           name="fecha_hasta"
+                           class="form-control"
+                           value="{{ fecha_hasta or '' }}"
+                           required>
+                </div>
             </div>
 
-            <div class="col-md-3">
-                <label><strong>Hasta:</strong></label>
-                <input type="date"
-                       id="fecha_hasta"
-                       class="form-control"
-                       value="{{ fecha_hasta or '' }}"
-                       required>
-            </div>
-        </div>
-    </div>
+            <input type="file" name="archivo" class="form-control mb-3" required>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card p-4 shadow-sm">
-                <h4>Cargar Folder Farmacia</h4>
-                <form method="POST" enctype="multipart/form-data" class="farmacia-form" action="{{ url_for('farmacia_folder.index') }}">
-                    <input type="hidden" name="fecha_desde">
-                    <input type="hidden" name="fecha_hasta">
-
-                    <input type="file" name="archivo" class="form-control mb-3" required>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Actualizar
-                    </button>
-                </form>
-            </div>
-        </div>
+            <button type="submit" class="btn btn-primary w-100">
+                Actualizar
+            </button>
+        </form>
     </div>
 
     {% if preview %}
@@ -72,24 +67,4 @@
     </div>
     {% endif %}
 </div>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll(".farmacia-form").forEach(form => {
-        form.addEventListener("submit", function(event) {
-            const desde = document.getElementById("fecha_desde").value;
-            const hasta = document.getElementById("fecha_hasta").value;
-
-            if (!desde || !hasta) {
-                alert("Debe seleccionar las fechas Desde y Hasta.");
-                event.preventDefault();
-                return;
-            }
-
-            form.querySelector("input[name='fecha_desde']").value = desde;
-            form.querySelector("input[name='fecha_hasta']").value = hasta;
-        });
-    });
-});
-</script>
 {% endblock %}
