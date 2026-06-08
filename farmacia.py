@@ -466,6 +466,9 @@ def index():
             except Exception as e:
                 error = f"Error procesando archivo: {e}"
 
+    vigencia_farmacia_desde, vigencia_farmacia_hasta = obtener_vigencia_farmacia()
+    vigencia_super_desde, vigencia_super_hasta = obtener_vigencia_super()
+
     return render_template(
         "farmacia.html",
         preview=preview,
@@ -648,15 +651,18 @@ def autocompletar_farmacia_desde_folder(df):
 def obtener_vigencia_super():
     conn = get_db_connection()
     cur = conn.cursor()
+
     try:
         consulta = """
-            SELECT desde, hasta
+            SELECT MIN(desde), MAX(hasta)
             FROM cenefas
-            WHERE tipo_cenefa IN ('minorista')
+            WHERE tipo_cenefa = 'minorista'
               AND desde IS NOT NULL
               AND hasta IS NOT NULL
-            ORDER BY fecha_carga DESC
-            LIMIT 1
+              AND desde <> 'desde'
+              AND hasta <> 'hasta'
+              AND desde <> ''
+              AND hasta <> ''
         """
 
         cur.execute(consulta)
@@ -666,23 +672,15 @@ def obtener_vigencia_super():
         cur.close()
         conn.close()
 
-    if not row:
+    if not row or not row[0] or not row[1]:
         return "-", "-"
 
     desde, hasta = row
 
-    try:
-        desde = pd.to_datetime(desde).strftime("%d/%m/%Y")
-    except:
-        desde = desde or "-"
-
-    try:
-        hasta = pd.to_datetime(hasta).strftime("%d/%m/%Y")
-    except:
-        hasta = hasta or "-"
-
-    return desde, hasta
-
+    return (
+        pd.to_datetime(desde).strftime("%d/%m/%Y"),
+        pd.to_datetime(hasta).strftime("%d/%m/%Y")
+    )
 
 def obtener_vigencia_farmacia():
     conn = get_db_connection()
