@@ -471,6 +471,7 @@ def index():
 
     return render_template(
         "farmacia.html",
+
         preview=preview,
         error=error,
         vigencia_farmacia_desde=vigencia_farmacia_desde,
@@ -654,7 +655,9 @@ def obtener_vigencia_super():
 
     try:
         consulta = """
-            SELECT MIN(desde), MAX(hasta)
+            SELECT
+                MIN(desde) AS desde_min,
+                MAX(hasta) AS hasta_max
             FROM cenefas
             WHERE tipo_cenefa = 'minorista'
               AND desde IS NOT NULL
@@ -672,10 +675,11 @@ def obtener_vigencia_super():
         cur.close()
         conn.close()
 
-    if not row or not row[0] or not row[1]:
+    if not row or not row["desde_min"] or not row["hasta_max"]:
         return "-", "-"
 
-    desde, hasta = row
+    desde = row["desde_min"]
+    hasta = row["hasta_max"]
 
     return (
         pd.to_datetime(desde).strftime("%d/%m/%Y"),
