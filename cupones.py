@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 import pandas as pd
+from database.db import get_db_connection
 
 cupones_bp = Blueprint("cupones", __name__, url_prefix="/cupones")
 
