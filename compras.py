@@ -657,80 +657,177 @@ def existen_cenefas_repetidas(df, tipo_cenefa):
     return repetidos
 
 
+#def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, sobrescribir=False):
+#    conn = get_db_connection()
+#    cursor = conn.cursor()
+
+#    if lote_carga is None:
+#        lote_carga = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + str(uuid.uuid4())[:8]
+
+#    fecha_carga = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+#    if "CODIGO" in df.columns:
+#        df = df[
+#            df["CODIGO"].notna()
+#            & (df["CODIGO"].astype(str).str.strip() != "")
+#            & (df["CODIGO"].astype(str).str.strip().str.lower() != "codigo")
+#        ].copy()
+    
+#    if df.empty:
+#        conn.close()
+#        raise ValueError(
+#            f"No hay registros válidos para guardar en cenefas ({tipo_cenefa})"
+#        )
+
+#    if sobrescribir:
+#        for _, row in df.iterrows():
+#            desde = row.get("desde") or row.get("desde")
+#            hasta = row.get("hasta") or row.get("hasta")
+
+#            cursor.execute("""
+#                DELETE FROM cenefas
+#                WHERE Codigo = %s
+#                  AND tipo_cenefa = %s
+#                  AND desde = %s
+#                  AND hasta = %s
+#            """, (
+#                row.get("CODIGO"),
+#                tipo_cenefa,
+#                desde,
+#                hasta
+#            ))
+
+#    for _, row in df.iterrows():
+#        desde = row.get("desde") or row.get("desde")
+#        hasta = row.get("hasta") or row.get("hasta")
+
+#        cursor.execute("""
+#            INSERT INTO cenefas
+#            (
+#                Codigo, ean, dep, departamento, descripcion, Normal, Oferta, cenefa,
+#                desde, hasta, sucursales, tipo_cenefa,
+#                fecha_carga, lote_carga, usuario_carga
+#            )
+#            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+#        """, (
+#            row.get("CODIGO"),
+#            row.get("EAN"),
+#            row.get("dep"),
+#            row.get("departamento"),
+#            row.get("DESCRIPCION"),
+#            row.get("Normal"),
+#            row.get("Oferta"),
+#            row.get("cenefa"),
+#            desde,
+#            hasta,
+#            row.get("sucursales"),
+#            tipo_cenefa,
+#            fecha_carga,
+#            lote_carga,
+#            usuario
+#        ))
+
+#    conn.commit()
+#    conn.close()
+
+#    return lote_carga, fecha_carga
+
+
 def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, sobrescribir=False):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if lote_carga is None:
-        lote_carga = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + str(uuid.uuid4())[:8]
+    try:
+        if lote_carga is None:
+            lote_carga = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + str(uuid.uuid4())[:8]
 
-    fecha_carga = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        fecha_carga = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if "CODIGO" in df.columns:
+        col_codigo = None
+        for col in df.columns:
+            if str(col).strip().lower() == "codigo":
+                col_codigo = col
+                break
+
+        if not col_codigo:
+            raise ValueError("No se encontró columna CODIGO para guardar cenefas.")
+
         df = df[
-            df["CODIGO"].notna()
-            & (df["CODIGO"].astype(str).str.strip() != "")
-            & (df["CODIGO"].astype(str).str.strip().str.lower() != "codigo")
+            df[col_codigo].notna()
+            & (df[col_codigo].astype(str).str.strip() != "")
+            & (df[col_codigo].astype(str).str.strip().str.lower() != "codigo")
         ].copy()
-    
-    if df.empty:
-        conn.close()
-        raise ValueError(
-            f"No hay registros válidos para guardar en cenefas ({tipo_cenefa})"
-        )
 
-    if sobrescribir:
+        if df.empty:
+            raise ValueError(
+                f"No hay registros válidos para guardar en cenefas ({tipo_cenefa})"
+            )
+
+        if sobrescribir:
+            for _, row in df.iterrows():
+                desde = row.get("desde")
+                hasta = row.get("hasta")
+
+                cursor.execute("""
+                    DELETE FROM cenefas
+                    WHERE Codigo = %s
+                      AND tipo_cenefa = %s
+                      AND desde = %s
+                      AND hasta = %s
+                """, (
+                    row.get(col_codigo),
+                    tipo_cenefa,
+                    desde,
+                    hasta
+                ))
+
         for _, row in df.iterrows():
-            desde = row.get("desde") or row.get("desde")
-            hasta = row.get("hasta") or row.get("hasta")
+            desde = row.get("desde")
+            hasta = row.get("hasta")
 
             cursor.execute("""
-                DELETE FROM cenefas
-                WHERE Codigo = %s
-                  AND tipo_cenefa = %s
-                  AND desde = %s
-                  AND hasta = %s
+                INSERT INTO cenefas
+                (
+                    Codigo, ean, dep, departamento, descripcion, Normal, Oferta, cenefa,
+                    desde, hasta, sucursales, tipo_cenefa,
+                    fecha_carga, lote_carga, usuario_carga
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                row.get("CODIGO"),
-                tipo_cenefa,
+                row.get(col_codigo),
+                row.get("EAN"),
+                row.get("dep"),
+                row.get("departamento"),
+                row.get("DESCRIPCION"),
+                row.get("Normal"),
+                row.get("Oferta"),
+                row.get("cenefa"),
                 desde,
-                hasta
+                hasta,
+                row.get("sucursales"),
+                tipo_cenefa,
+                fecha_carga,
+                lote_carga,
+                usuario
             ))
 
-    for _, row in df.iterrows():
-        desde = row.get("desde") or row.get("desde")
-        hasta = row.get("hasta") or row.get("hasta")
+        conn.commit()
+        return lote_carga, fecha_carga
 
-        cursor.execute("""
-            INSERT INTO cenefas
-            (
-                Codigo, ean, dep, departamento, descripcion, Normal, Oferta, cenefa,
-                desde, hasta, sucursales, tipo_cenefa,
-                fecha_carga, lote_carga, usuario_carga
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            row.get("CODIGO"),
-            row.get("EAN"),
-            row.get("dep"),
-            row.get("departamento"),
-            row.get("DESCRIPCION"),
-            row.get("Normal"),
-            row.get("Oferta"),
-            row.get("cenefa"),
-            desde,
-            hasta,
-            row.get("sucursales"),
-            tipo_cenefa,
-            fecha_carga,
-            lote_carga,
-            usuario
-        ))
+    except Exception:
+        conn.rollback()
+        raise
 
-    conn.commit()
-    conn.close()
+    finally:
+        cursor.close()
+        conn.close()
 
-    return lote_carga, fecha_carga
+
+
+
+
+
+
 
 # ---------------- ROUTES ----------------
 
