@@ -744,19 +744,48 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
         fecha_carga = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         col_codigo = None
+        col_cenefa = None
+        col_descripcion = None
+
         for col in df.columns:
-            if str(col).strip().lower() == "codigo":
+            col_norm = str(col).strip().lower()
+
+            if col_norm == "codigo":
                 col_codigo = col
-                break
+
+            elif col_norm in ["cenefa", "cenefas"]:
+                col_cenefa = col
+
+            elif col_norm in ["descripcion", "descripción"]:
+                col_descripcion = col
 
         if not col_codigo:
             raise ValueError("No se encontró columna CODIGO para guardar cenefas.")
+
+        if not col_cenefa:
+            df["cenefa"] = ""
+            col_cenefa = "cenefa"
 
         df = df[
             df[col_codigo].notna()
             & (df[col_codigo].astype(str).str.strip() != "")
             & (df[col_codigo].astype(str).str.strip().str.lower() != "codigo")
         ].copy()
+
+        columnas_control = {
+            col_codigo: "codigo",
+            col_cenefa: "cenefa",
+        }
+
+        if col_descripcion:
+            columnas_control[col_descripcion] = "descripcion"
+
+        for col, valor_header in columnas_control.items():
+            if col in df.columns:
+                df = df[
+                    df[col].isna()
+                    | (df[col].astype(str).str.strip().str.lower() != valor_header)
+                ].copy()
 
         if df.empty:
             raise ValueError(
@@ -798,10 +827,10 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
                 row.get("EAN"),
                 row.get("dep"),
                 row.get("departamento"),
-                row.get("DESCRIPCION"),
+                row.get(col_descripcion) if col_descripcion else row.get("DESCRIPCION"),
                 row.get("Normal"),
                 row.get("Oferta"),
-                row.get("cenefa"),
+                row.get(col_cenefa),
                 desde,
                 hasta,
                 row.get("sucursales"),
