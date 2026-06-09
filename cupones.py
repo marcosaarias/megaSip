@@ -43,3 +43,34 @@ def index():
         total_filas=total_filas,
         total_cupones=total_cupones
     )
+
+
+@cupones_bp.route("/sucursal")
+def cupones_sucursal():
+    sucursal = session.get("usuario_nombre")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT codigo, titulo, descripcion, descuento, desde, hasta
+        FROM cupones
+        WHERE sucursales ILIKE %s
+        ORDER BY fecha_carga DESC
+    """, (f"%{sucursal}%",))
+
+    cupones = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    desde = cupones[0]["desde"] if cupones else "-"
+    hasta = cupones[0]["hasta"] if cupones else "-"
+
+    return render_template(
+        "sucursales_cupones.html",
+        cupones=cupones,
+        sucursal=sucursal,
+        desde=desde,
+        hasta=hasta
+    )

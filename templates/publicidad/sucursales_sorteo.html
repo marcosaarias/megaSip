@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Cupones Sucursal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <button onclick="window.print()" class="btn-imprimir">
+        IMPRIMIR
+    </button>
+
+    <div class="cuadro-texto">
+        <h4>Cupones disponibles</h4>
+        <p>
+            Sucursal: <strong>{{ sucursal }}</strong><br>
+            Vigencia: <strong>{{ desde }}</strong> al <strong>{{ hasta }}</strong>
+        </p>
+    </div>
+
+    <div class="cupones-grid">
+        {% for cupon in cupones %}
+        <div class="cupon-card">
+            <h5>{{ cupon.titulo }}</h5>
+            <p>{{ cupon.descripcion }}</p>
+
+            {% if cupon.descuento %}
+                <div class="descuento">{{ cupon.descuento }}</div>
+            {% endif %}
+
+            {% if cupon.codigo %}
+                <small>Código: {{ cupon.codigo }}</small>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<style>
+.btn-imprimir {
+    width: 260px;
+    height: 80px;
+    border: 2px solid #222;
+    background: white;
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 35px;
+    border-radius: 8px;
+}
+
+.cuadro-texto {
+    border: 2px solid #222;
+    padding: 25px;
+    margin-bottom: 30px;
+    min-height: 130px;
+    background: #fff;
+}
+
+.cupones-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 2px solid #222;
+}
+
+.cupon-card {
+    min-height: 170px;
+    border: 1px solid #222;
+    padding: 18px;
+    background: #fff;
+}
+
+.cupon-card h5 {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.descuento {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+@media print {
+    .sidebar,
+    .navbar,
+    .btn-imprimir {
+        display: none !important;
+    }
+
+    .container {
+        width: 960px;
+        max-width: 960px;
+    }
+
+    .cupones-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+</style>
+{% endblock %}
