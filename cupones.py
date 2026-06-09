@@ -46,32 +46,34 @@ def index():
     )
 
 
-@cupones_bp.route("/sucursal")
-def cupones_sucursal():
-    sucursal = session.get("usuario_nombre")
+#@cupones_bp.route("/sucursal")
+#def cupones_sucursal():
+#    if session.get("usuario_rol") != "sucursal":
+#        return redirect(url_for("sistemas.login"))
 
-    conn = get_db_connection()
-    cur = conn.cursor()
+#    sucursal = session.get("usuario_nombre", "").strip().upper()
 
-    cur.execute("""
-        SELECT codigo, titulo, descripcion, descuento, desde, hasta
-        FROM cupones
-        WHERE sucursales ILIKE %s
-        ORDER BY fecha_carga DESC
-    """, (f"%{sucursal}%",))
+#    conn = get_db_connection()
+#    cur = conn.cursor()
 
-    cupones = cur.fetchall()
+#    try:
+#        cur.execute("""
+#            SELECT nombre, dni, telefono, sucursal, estado
+#            FROM cupones
+#            WHERE UPPER(TRIM(sucursal)) = %s
+#            ORDER BY id DESC
+#        """, (sucursal,))
 
-    cur.close()
-    conn.close()
+#        cupones = cur.fetchall()
 
-    desde = cupones[0]["desde"] if cupones else "-"
-    hasta = cupones[0]["hasta"] if cupones else "-"
+#    finally:
+#        cur.close()
+#        conn.close()
 
-    return render_template(
-        "sucursales_cupones.html",
-        cupones=cupones,
-        sucursal=sucursal,
-        desde=desde,
-        hasta=hasta
-    )
+#    return render_template(
+#        "sucursales_cupones.html",
+#        cupones=cupones,
+#        sucursal=sucursal,
+#        desde="-",
+#        hasta="-"
+#    )
