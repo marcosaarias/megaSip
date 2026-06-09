@@ -17,20 +17,24 @@
     </div>
 
     <div class="cupones-grid">
-        {% for cupon in cupones %}
-        <div class="cupon-card">
-            <h5>{{ cupon.titulo }}</h5>
-            <p>{{ cupon.descripcion }}</p>
+      
+        {% if cupones %}
+            {% for cupon in cupones %}
 
-            {% if cupon.descuento %}
-                <div class="descuento">{{ cupon.descuento }}</div>
-            {% endif %}
-
-            {% if cupon.codigo %}
-                <small>Código: {{ cupon.codigo }}</small>
-            {% endif %}
-        </div>
-        {% endfor %}
+            <div class="cupon-card">
+                <h5>{{ cupon.nombre }}</h5>
+                <p>DNI: {{ cupon.dni }}</p>
+                <p>Teléfono: {{ cupon.telefono }}</p>
+                <p>Estado: {{ cupon.estado }}</p>
+            </div>
+            
+            {% endfor %}
+            
+        {% else %}
+            <div class="alert alert-info">
+                No hay cupones disponibles para esta sucursal.
+            </div>
+        {% endif %}
     </div>
 
 </div>
