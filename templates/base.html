@@ -364,6 +364,25 @@
 
   </div>
 
+<!-- SUPER PROMO DEL AÑO -->
+ 
+<div class="menu-section {% if request.endpoint == 'cupones.sucursal_cupones' %}active{% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+        Super Promo del Año <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu" id="submenu-super-promo">
+
+        <a href="{{ url_for('cupones.sucursal_cupones') }}"
+           class="submenu-item {% if request.endpoint == 'cupones.sucursal_cupones' %}active-link{% endif %}">
+            Cupones
+        </a>
+
+    </div>
+
+</div>
+
 {% endif %}
 
 
