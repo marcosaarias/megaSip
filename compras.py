@@ -666,6 +666,19 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
 
     fecha_carga = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    if "CODIGO" in df.columns:
+        df = df[
+            df["CODIGO"].notna()
+            & (df["CODIGO"].astype(str).str.strip() != "")
+            & (df["CODIGO"].astype(str).str.strip().str.lower() != "codigo")
+        ].copy()
+    
+    if df.empty:
+        conn.close()
+        raise ValueError(
+            f"No hay registros válidos para guardar en cenefas ({tipo_cenefa})"
+        )
+
     if sobrescribir:
         for _, row in df.iterrows():
             desde = row.get("desde") or row.get("desde")
@@ -687,14 +700,6 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
     for _, row in df.iterrows():
         desde = row.get("desde") or row.get("desde")
         hasta = row.get("hasta") or row.get("hasta")
-
-        print(
-                "DEBUG GUARDAR =>",
-                "CODIGO:", row.get("CODIGO"),
-                "DESDE:", repr(desde),
-                "HASTA:", repr(hasta),
-                "TIPO:", tipo_cenefa
-            )
 
         cursor.execute("""
             INSERT INTO cenefas
