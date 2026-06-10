@@ -9,7 +9,6 @@ from datetime import datetime
 from datetime import timedelta
 import uuid
 import traceback
-#import sqlite3
 import psycopg2
 import redis
 import json
@@ -961,6 +960,7 @@ def _folder_base(tipo, template_name):
             )
 
         except Exception as e:
+            print(traceback.format_exc())
             mensaje_error = f"Error de backend: {e}"
 
             guardar_log_compras(
