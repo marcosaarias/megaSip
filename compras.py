@@ -578,51 +578,101 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
             df = df[columnas]
 
-        def limpiar_precio(valor):
+    #    def limpiar_precio(valor):
 
-            if pd.isna(valor):
-                return np.nan
+    #        if pd.isna(valor):
+    #            return np.nan
 
-            valor = str(valor).strip()
+    #        valor = str(valor).strip()
 
-            if "," in valor and "." in valor:
-                valor = valor.replace(",", "")
+    #        if "," in valor and "." in valor:
+    #            valor = valor.replace(",", "")
 
-            elif "," in valor:
-                valor = valor.replace(",", ".")
+    #        elif "," in valor:
+    #            valor = valor.replace(",", ".")
 
-            try:
-                return float(valor)
+    #        try:
+    #            return float(valor)
 
-            except:
-                return np.nan
+    #        except:
+    #            return np.nan
+    if df is None:
+        return None, None, mensaje_error, 0
 
-        if "Oferta" in df.columns:
-            df["Oferta"] = df["Oferta"].apply(limpiar_precio)
-            df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
+    if "Oferta" in df.columns:
+        df["Oferta"] = df["Oferta"].apply(limpiar_precio)
+        df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
 
-        if "Normal" in df.columns:
-            df["Normal"] = df["Normal"].apply(limpiar_precio)
-            df["Normal"] = np.floor(df["Normal"] * 100) / 100
+    if "Normal" in df.columns:
+        df["Normal"] = df["Normal"].apply(limpiar_precio)
+        df["Normal"] = np.floor(df["Normal"] * 100) / 100
 
-        if fecha_desde:
-            df["desde"] = fecha_desde
+    if fecha_desde:
+        df["desde"] = fecha_desde
 
-        if fecha_hasta:
-            df["hasta"] = fecha_hasta
+    if fecha_hasta:
+        df["hasta"] = fecha_hasta
 
-        df = df.reset_index(drop=True)
+    df = df.reset_index(drop=True)
 
-        total_registros = len(df)
+    total_registros = len(df)
 
-        df = df.fillna("")
+    #df = df.fillna("")
+    df_preview = df.fillna("")
 
-        preview = df.to_html(
+    preview = df_preview.to_html(
             classes="table table-striped table-bordered",
             index=False
-        )
+    )
 
     return df, preview, mensaje_error, total_registros
+
+
+
+
+#funcion para formatear precios en bd
+def limpiar_precio(valor):
+
+    if pd.isna(valor):
+        return np.nan
+
+    valor = str(valor).strip()
+
+    if valor == "" or valor.lower() in ["nan", "none", "null"]:
+        return np.nan
+
+    # 5.700,00 -> 5700.00
+    if "," in valor and "." in valor:
+        valor = valor.replace(".", "").replace(",", ".")
+
+    # 5700,00 -> 5700.00
+    elif "," in valor:
+        valor = valor.replace(",", ".")
+
+    try:
+        return float(valor)
+    except:
+        return np.nan
+
+
+
+#funcion para formatear precios en vistas
+def formatear_precio_arg(valor):
+
+    if valor is None or valor == "":
+        return ""
+
+    try:
+        valor = float(valor)
+        return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return valor
+
+
+
+
+
+
 
 
 # Controlar cenefas repetidas
@@ -1258,8 +1308,10 @@ def sucursal():
                 "dep": r[2],
                 "departamento": r[3],
                 "descripcion": r[4],
-                "Normal": r[5],
-                "Oferta": r[6],
+                #"Normal": r[5],
+                #"Oferta": r[6],
+                "Normal": formatear_precio_arg(r[5]),
+                "Oferta": formatear_precio_arg(r[6]),
                 "cenefa": r[7],
                 "desde": formatear_fecha(r[8]),
                 "hasta": formatear_fecha(r[9]),
