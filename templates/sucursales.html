@@ -286,12 +286,39 @@ function cantidadUnoTodas() {
     });
 }
 
+//function formatearPrecio(valor) {
+//    const numero = parseFloat(valor);
+
+//    if (isNaN(numero)) return valor;
+
+//    return numero.toLocaleString('es-AR', {
+//        minimumFractionDigits: 2,
+//        maximumFractionDigits: 2
+//    });
+//}
+
+
 function formatearPrecio(valor) {
-    const numero = parseFloat(valor);
+    if (valor === null || valor === undefined || valor === "") {
+        return "";
+    }
+
+    valor = String(valor).trim();
+
+    // Si viene formato argentino: 3.055,00 -> 3055.00
+    if (valor.includes(",") && valor.includes(".")) {
+        valor = valor.replace(/\./g, "").replace(",", ".");
+    }
+    // Si viene con coma decimal: 3055,00 -> 3055.00
+    else if (valor.includes(",")) {
+        valor = valor.replace(",", ".");
+    }
+
+    const numero = Number(valor);
 
     if (isNaN(numero)) return valor;
 
-    return numero.toLocaleString('es-AR', {
+    return numero.toLocaleString("es-AR", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
