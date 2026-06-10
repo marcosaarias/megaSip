@@ -670,6 +670,15 @@ def formatear_precio_arg(valor):
 
 
 
+#funcion para insertar registros vacios a bd
+def valor_db(valor):
+
+    if pd.isna(valor):
+        return None
+    return valor
+
+
+
 
 
 
@@ -853,10 +862,10 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
                       AND desde = %s
                       AND hasta = %s
                 """, (
-                    row.get(col_codigo),
-                    tipo_cenefa,
-                    desde,
-                    hasta
+                    valor_db(row.get(col_codigo)),
+                    valor_db(tipo_cenefa),
+                    valor_db(desde),
+                    valor_db(hasta)
                 ))
 
         for _, row in df.iterrows():
@@ -872,22 +881,22 @@ def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, s
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                row.get(col_codigo),
-                row.get("EAN"),
-                row.get("dep"),
-                row.get("departamento"),
-                row.get(col_descripcion) if col_descripcion else row.get("DESCRIPCION"),
-                row.get("Normal"),
-                row.get("Oferta"),
-                row.get(col_cenefa),
-                desde,
-                hasta,
-                row.get("sucursales"),
-                tipo_cenefa,
-                fecha_carga,
-                lote_carga,
-                usuario
-            ))
+                valor_db(row.get(col_codigo)),
+                valor_db(row.get("EAN")),
+                valor_db(row.get("dep")),
+                valor_db(row.get("departamento")),
+                valor_db(row.get(col_descripcion) if col_descripcion else row.get("DESCRIPCION")),
+                valor_db(row.get("Normal")),
+                valor_db(row.get("Oferta")),
+                valor_db(row.get(col_cenefa)),
+                valor_db(desde),
+                valor_db(hasta),
+                valor_db(row.get("sucursales")),
+                valor_db(tipo_cenefa),
+                valor_db(fecha_carga),
+                valor_db(lote_carga),
+                valor_db(usuario)
+                ))
 
         conn.commit()
         return lote_carga, fecha_carga
