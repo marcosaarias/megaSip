@@ -193,12 +193,12 @@ def cargar_departamento_map():
 
         material_df = material_df[material_df["scaner"] != ""]
 
-        print("DEPARTAMENTO_MAP registros:", len(material_df))
+        #print("DEPARTAMENTO_MAP registros:", len(material_df))
 
         return dict(zip(material_df["scaner"], material_df["departamento"]))
 
     except Exception as e:
-        print("Error cargando departamentos:", e)
+        #print("Error cargando departamentos:", e)
         return {}
 
 
@@ -218,7 +218,7 @@ def cargar_dep_map():
 
         material_df = material_df[material_df["scaner"] != ""]
 
-        print("DEP_MAP registros:", len(material_df))
+        #print("DEP_MAP registros:", len(material_df))
 
         return dict(zip(material_df["scaner"], material_df["dep"]))
 
@@ -233,32 +233,32 @@ DEP_MAP = cargar_dep_map()
 
 def completar_ean(df):
     if "CODIGO" not in df.columns:
-        print("DEBUG EAN: no existe columna CODIGO")
+        #print("DEBUG EAN: no existe columna CODIGO")
         return df
 
-    print("DEBUG columnas antes EAN:", df.columns.tolist())
+    #print("DEBUG columnas antes EAN:", df.columns.tolist())
 
     codigos_str = df["CODIGO"].apply(limpiar_codigo)
     mapped = codigos_str.map(MATERIAL_MAP).fillna("")
 
-    print("DEBUG MATERIAL_MAP size:", len(MATERIAL_MAP))
-    print("DEBUG CODIGOS archivo:", codigos_str.head(10).tolist())
-    print("DEBUG EAN desde MATERIAL_MAP:", mapped.head(10).tolist())
+    #print("DEBUG MATERIAL_MAP size:", len(MATERIAL_MAP))
+    #print("DEBUG CODIGOS archivo:", codigos_str.head(10).tolist())
+    #print("DEBUG EAN desde MATERIAL_MAP:", mapped.head(10).tolist())
 
     if "EAN" in df.columns:
-        print("DEBUG EAN original archivo:", df["EAN"].head(10).tolist())
+        #print("DEBUG EAN original archivo:", df["EAN"].head(10).tolist())
 
         df["EAN"] = df["EAN"].apply(limpiar_ean)
 
-        print("DEBUG EAN limpio archivo:", df["EAN"].head(10).tolist())
+        #print("DEBUG EAN limpio archivo:", df["EAN"].head(10).tolist())
 
         df["EAN"] = df["EAN"].mask(df["EAN"] == "", mapped)
     else:
-        print("DEBUG no vino columna EAN, se inserta desde MATERIAL_MAP")
+        #print("DEBUG no vino columna EAN, se inserta desde MATERIAL_MAP")
         df.insert(df.columns.get_loc("CODIGO") + 1, "EAN", mapped)
 
-    print("DEBUG EAN final:", df["EAN"].head(10).tolist())
-    print("DEBUG EAN vacios:", (df["EAN"] == "").sum())
+    #print("DEBUG EAN final:", df["EAN"].head(10).tolist())
+    #print("DEBUG EAN vacios:", (df["EAN"] == "").sum())
 
     return df
 
