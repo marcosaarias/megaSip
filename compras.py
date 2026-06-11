@@ -408,33 +408,19 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             for col in df.columns
         ]
 
-        # ---------------- MANEJO CENEFA/PROMO ----------------
+        #columnas_cenefa = ["cenefa", "cenefas", "promo", "promos"]
 
-        # si no existe cenefa pero existe promo
-        # promo pasa a llamarse cenefa
-        #if "cenefa" not in df.columns:
+        #col_cenefa_detectada = None
 
-        #    if "promo" in df.columns:
-        #        df = df.rename(columns={"promo": "cenefa"})
+        #for col in df.columns:
+        #    if normalizar_texto(col) in columnas_cenefa:
+        #        col_cenefa_detectada = col
+        #        break
 
-        #    else:
-        #        df["cenefa"] = "OFERTA"
-
-        # ---------------- MANEJO CENEFA / PROMO ----------------
-
-        columnas_cenefa = ["cenefa", "cenefas", "promo", "promos"]
-
-        col_cenefa_detectada = None
-
-        for col in df.columns:
-            if normalizar_texto(col) in columnas_cenefa:
-                col_cenefa_detectada = col
-                break
-
-        if col_cenefa_detectada:
-            df = df.rename(columns={col_cenefa_detectada: "cenefa"})
-        else:
-            df["cenefa"] = "OFERTA"
+        #if col_cenefa_detectada:
+        #    df = df.rename(columns={col_cenefa_detectada: "cenefa"})
+        #else:
+        #    df["cenefa"] = "OFERTA"
 
 
         # -----------------------------------------------------
@@ -463,11 +449,22 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
         df = df.rename(columns=column_mapping)
 
+        if "cenefa" not in df.columns:
+            df["cenefa"] = "OFERTA"
+        else:
+            df["cenefa"] = (
+                df["cenefa"]
+                .replace(r"^\s*$", pd.NA, regex=True)
+                .replace(["nan", "NaN", "None", "none"], pd.NA)
+                .ffill()
+                .fillna("OFERTA")
+            )
+
         if "sucursales" in df.columns:
             df["sucursales"] = df["sucursales"].ffill()
 
-        if "cenefa" in df.columns:
-            df["cenefa"] = df["cenefa"].ffill()
+        #if "cenefa" in df.columns:
+        #    df["cenefa"] = df["cenefa"].ffill()
 
         if "Oferta" in df.columns:
             df["Oferta"] = df["Oferta"].ffill()
