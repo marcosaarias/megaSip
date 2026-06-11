@@ -8,7 +8,7 @@ from logs import guardar_log_compras
 from datetime import datetime
 from datetime import timedelta
 import uuid
-import traceback
+#import traceback
 import psycopg2
 import redis
 import json
@@ -1012,11 +1012,11 @@ def _folder_base(tipo, template_name):
                 detalle=str(e),
                 estado="fallido",
                 total_registros=0,
-                error_trace=traceback.format_exc()
+               #error_trace=traceback.format_exc()
             )
 
         except Exception as e:
-            print(traceback.format_exc())
+            #print(traceback.format_exc())
             mensaje_error = f"Error de backend: {e}"
 
             guardar_log_compras(
@@ -1029,7 +1029,7 @@ def _folder_base(tipo, template_name):
                 detalle=str(e),
                 estado="fallido",
                 total_registros=0,
-                error_trace=traceback.format_exc()
+                #error_trace=traceback.format_exc()
             )
 
     return render_template(
@@ -1222,7 +1222,7 @@ def transmitir_ofertas():
             detalle=str(e),
             estado="fallido",
             total_registros=0,
-            error_trace=traceback.format_exc()
+            #error_trace=traceback.format_exc()
         )
         return f"Error de base de datos: {e}", 500
 
@@ -1236,7 +1236,7 @@ def transmitir_ofertas():
             detalle=str(e),
             estado="fallido",
             total_registros=0,
-            error_trace=traceback.format_exc()
+            #error_trace=traceback.format_exc()
         )
         return f"Error interno: {e}", 500
 
