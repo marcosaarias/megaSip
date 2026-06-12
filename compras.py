@@ -1446,7 +1446,7 @@ def historico_cenefas():
     for r in rows:
         datos.append({
             "id": r["id"],
-            "Codigo": r["Codigo"],
+            "Codigo": r["codigo"],
             "ean": r["ean"],
             "dep": r["dep"],
             "departamento": r["departamento"],
