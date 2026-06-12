@@ -1414,8 +1414,8 @@ def historico_cenefas():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     query = """
-        SELECT id, Codigo, ean, dep, departamento, descripcion,
-            Normal, Oferta, cenefa,
+        SELECT id, codigo, ean, dep, departamento, descripcion,
+            normal, oferta, cenefa,
             desde, hasta, sucursales, tipo_cenefa,
             fecha_carga, lote_carga, usuario_carga
         FROM cenefas
@@ -1446,13 +1446,13 @@ def historico_cenefas():
     for r in rows:
         datos.append({
             "id": r["id"],
-            "Codigo": r["codigo"],
+            "codigo": r["codigo"],
             "ean": r["ean"],
             "dep": r["dep"],
             "departamento": r["departamento"],
             "descripcion": r["descripcion"],
-            "Normal": r["Normal"],
-            "Oferta": r["Oferta"],
+            "Normal": r["normal"],
+            "Oferta": r["oferta"],
             "cenefa": r["cenefa"],
             "desde": r["desde"],
             "hasta": r["hasta"],
