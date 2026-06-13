@@ -237,6 +237,10 @@ def autocompletar_super_desde_cenefas(df):
     print("Columnas BD cenefas:", cenefas_df.columns.tolist(), flush=True)
 
     cenefas_df["Codigo_match"] = (
+
+        print(cenefas_df[["codigo", "Codigo_match"]].head(20).to_string(), flush=True)
+        print("UNIQUE Codigo_match:", cenefas_df["Codigo_match"].nunique(), flush=True)
+        
         cenefas_df["codigo"]
         .astype(str)
         .str.strip()
