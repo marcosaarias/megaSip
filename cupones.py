@@ -51,6 +51,11 @@ def transmitir_sucursales():
     return "Cupones transmitidos a sucursales correctamente"
 
 
+@cupones_bp.route("/sucursales_sorteo")
+def sucursales_sorteo():
+    return render_template("publicidad/sucursales_sorteo.html")
+
+
 #@cupones_bp.route("/sucursal")
 #def cupones_sucursal():
 #    if session.get("usuario_rol") != "sucursal":

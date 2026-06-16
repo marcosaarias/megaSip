@@ -326,6 +326,23 @@
     </div>
   </div>
 
+  <!-- SORTEOS -->
+  <div class="menu-section {% if request.path == url_for('cupones.sucursales_sorteo') %}active{% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+      Sorteos <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu" id="submenu-sorteos">
+      <a href="{{ url_for('cupones.sucursales_sorteo') }}"
+        class="submenu-item {% if request.path == url_for('cupones.sucursales_sorteo') %}active-link{% endif %}">
+        Super Promo del Año
+      </a>
+    </div>
+
+  </div>
+
+
   <!-- OTRAS CENEFAS -->
   <div class="menu-section {% if request.args.get('tipo') in ['diario', 'saltarefrescos'] %}active{% endif %}">
 
