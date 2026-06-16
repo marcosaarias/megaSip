@@ -16,24 +16,36 @@
         border: 1px solid #ddd;
     }
 
-    .card-carga h2 {
-        margin-bottom: 15px;
-    }
-
-    .form-cupones {
+    .form-cupones,
+    .acciones-cupones {
         display: flex;
         gap: 10px;
         align-items: center;
         flex-wrap: wrap;
     }
 
+    .acciones-cupones {
+        margin-bottom: 20px;
+    }
+
+    .acciones-cupones form {
+        margin: 0;
+    }
+
     .btn-procesar,
-    .btn-imprimir {
+    .btn-imprimir,
+    .btn-transmitir {
+        background: #f2b400;
+        color: #111;
         padding: 8px 14px;
         border: none;
         border-radius: 6px;
         cursor: pointer;
         font-weight: bold;
+        font-family: inherit;
+        font-size: 14px;
+        min-width: 190px;
+        height: 38px;
     }
 
     .btn-procesar {
@@ -41,24 +53,9 @@
         color: white;
     }
 
-    .btn-imprimir {
-        background: #f2b400;
-        color: #111;
-        margin-bottom: 20px;
-    }
-
-        .btn-transmitir {
-        background: #198754;
-        color: white;
-        padding: 8px 14px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-    }
-
+    .btn-imprimir:hover,
     .btn-transmitir:hover {
-        background: #157347;
+        background: #d99f00;
     }
 
     .resumen {
@@ -92,7 +89,7 @@
     @media print {
         .sidebar,
         .card-carga,
-        .btn-imprimir {
+        .acciones-cupones {
             display: none !important;
         }
 
@@ -131,15 +128,17 @@
     </div>
 
     {% if cupones %}
-        <button onclick="window.print()" class="btn-imprimir">
-            Imprimir Cupones
-        </button>
-
-        <form method="post" action="{{ url_for('cupones.transmitir_sucursales') }}">
-            <button type="submit" class="btn-transmitir">
-                Transmitir a Sucursales
+        <div class="acciones-cupones">
+            <button onclick="window.print()" class="btn-imprimir">
+                Imprimir Cupones
             </button>
-        </form>
+
+            <form method="post" action="{{ url_for('cupones.transmitir_sucursales') }}">
+                <button type="submit" class="btn-transmitir">
+                    Transmitir a Sucursales
+                </button>
+            </form>
+        </div>
 
         <div class="lista-cupones">
             {% for cupon in cupones %}
