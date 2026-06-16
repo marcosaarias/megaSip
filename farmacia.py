@@ -170,52 +170,6 @@ def limpiar_numero(serie):
     return out
 
 
-#def autocompletar_super_desde_cenefas(df):
-#    if "Troquel" not in df.columns:
-#        return df
-
-#    conn = get_db_connection()
-
-#    try:
-#        consulta = """
-#            SELECT codigo, descripcion, cenefa
-#            FROM cenefas
-#        """
-#        cenefas_df = pd.read_sql_query(consulta, conn)
-#    finally:
-#        conn.close()
-
-    # Normalizar Codigo de BD
-#    cenefas_df["Codigo_match"] = (
-#        cenefas_df["codigo"]
-#        .astype(str)
-#        .str.strip()
-#        .str.replace(".0", "", regex=False)
-#        .str.lstrip("0")
-#    )
-
-    # Evitar duplicados de código; si hay varios, toma el último
-#    cenefas_df = cenefas_df.dropna(subset=["Codigo_match"])
-#    cenefas_df = cenefas_df.drop_duplicates(subset=["Codigo_match"], keep="last")
-
-#    mapa_descripcion = dict(zip(cenefas_df["Codigo_match"], cenefas_df["descripcion"]))
-#    mapa_cenefa = dict(zip(cenefas_df["Codigo_match"], cenefas_df["cenefa"]))
-
-    # Normalizar Troquel del Excel
-#    troquel_match = (
-#        df["Troquel"]
-#        .astype(str)
-#        .str.strip()
-#        .str.replace(".0", "", regex=False)
-#        .str.lstrip("0")
-#        .replace({"": np.nan, "nan": np.nan, "None": np.nan})
-#    )
-
-#    df["F-Super"] = troquel_match.map(mapa_descripcion).fillna("")
-#    df["A-Super"] = troquel_match.map(mapa_cenefa).fillna("#N/D")
-
-#    return df
-
 def autocompletar_super_desde_cenefas(df):
     if "Troquel" not in df.columns:
         print("SUPER DEBUG: no existe columna Troquel en el Excel", flush=True)
@@ -223,10 +177,25 @@ def autocompletar_super_desde_cenefas(df):
 
     conn = get_db_connection()
 
+    #try:
+    #    consulta = """
+    #        SELECT codigo, descripcion, cenefa
+    #        FROM cenefas
+    #    """
+    #    cenefas_df = pd.read_sql_query(consulta, conn)
+    #finally:
+    #    conn.close()
+
     try:
         consulta = """
-            SELECT codigo, descripcion, cenefa
+            SELECT
+                codigo::text AS codigo,
+                descripcion,
+                cenefa
             FROM cenefas
+            WHERE codigo IS NOT NULL
+            AND trim(codigo::text) <> ''
+            AND lower(trim(codigo::text)) <> 'codigo'
         """
         cenefas_df = pd.read_sql_query(consulta, conn)
     finally:
@@ -235,6 +204,8 @@ def autocompletar_super_desde_cenefas(df):
     print("========== DEBUG SUPER ==========", flush=True)
     print("Filas BD cenefas:", len(cenefas_df), flush=True)
     print("Columnas BD cenefas:", cenefas_df.columns.tolist(), flush=True)
+    print(cenefas_df.head(20).to_string(), flush=True)
+    print("CODIGOS RAW BD:", cenefas_df["codigo"].head(20).tolist(), flush=True)
 
     cenefas_df["Codigo_match"] = (
         cenefas_df["codigo"]
