@@ -1,36 +1,38 @@
-import sqlite3
 import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "sip.s3db")
 
-def get_db_connection():
-    conn = sqlite3.connect(
-        DB_PATH,
-        timeout=30,
-        check_same_thread=False
-    )
-    conn.row_factory = sqlite3.Row
-    return conn
+#def get_db_connection():
+#    try:
+#        return psycopg2.connect(
+#            host=os.getenv("DB_HOST"),
+#            port=os.getenv("DB_PORT", "5432"),
+#            dbname=os.getenv("DB_NAME"),
+#            user=os.getenv("DB_USER"),
+#            password=os.getenv("DB_PASSWORD"),
+#            cursor_factory=RealDictCursor
+#        )
 
-def init_cenefas_table():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+#    except Exception as e:
+#        print(f"Error conectando a PostgreSQL: {e}")
+#        raise
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS cenefas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            Codigo TEXT,
-            ean TEXT,
-            descripcion TEXT,
-            Normal REAL,
-            Oferta REAL,
-            cenefa TEXT,
-            desde TEXT,
-            hasta TEXT,
-            sucursales TEXT
+def get_db_connection(real_dict=True):
+    try:
+        params = dict(
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT", "5432"),
+            dbname=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD")
         )
-    """)
 
-    conn.commit()
-    conn.close()
+        if real_dict:
+            params["cursor_factory"] = RealDictCursor
+
+        return psycopg2.connect(**params)
+
+    except Exception as e:
+        print(f"Error conectando a PostgreSQL: {e}")
+        raise

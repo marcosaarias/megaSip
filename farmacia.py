@@ -175,7 +175,8 @@ def autocompletar_super_desde_cenefas(df):
         print("SUPER DEBUG: no existe columna Troquel en el Excel", flush=True)
         return df
 
-    conn = get_db_connection()
+    #conn = get_db_connection()
+    conn = get_db_connection(real_dict=False)
 
     #try:
     #    consulta = """
@@ -498,7 +499,8 @@ def autocompletar_farmacia_desde_folder(df):
         .replace({"": np.nan, "nan": np.nan, "None": np.nan})
     )
 
-    conn = get_db_connection()
+    #conn = get_db_connection()
+    conn = get_db_connection(real_dict=False)
 
     try:
         consulta = """
@@ -680,7 +682,8 @@ def obtener_vigencia_farmacia():
 @farmacia_bp.route("/informes-uso")
 def informes_uso_farmacia():
 
-    conn = get_db_connection()
+    #conn = get_db_connection()
+    conn = get_db_connection(real_dict=False)
 
     try:
         query = """
