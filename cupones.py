@@ -118,6 +118,10 @@ def transmitir_sucursales():
 
     cupones = session.get("cupones_generados", [])
 
+    print("DEBUG TRANSMITIR CUPONES:", flush=True)
+    print("CUPONES EN SESSION:", len(cupones), flush=True)
+    print("ROL:", session.get("usuario_rol"), flush=True)
+
     if not cupones:
         flash("No hay cupones para transmitir")
         return redirect(url_for("cupones.index"))
