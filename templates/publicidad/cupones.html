@@ -47,6 +47,20 @@
         margin-bottom: 20px;
     }
 
+        .btn-transmitir {
+        background: #198754;
+        color: white;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .btn-transmitir:hover {
+        background: #157347;
+    }
+
     .resumen {
         margin-top: 15px;
         font-weight: bold;
@@ -120,6 +134,12 @@
         <button onclick="window.print()" class="btn-imprimir">
             Imprimir Cupones
         </button>
+
+        <form method="post" action="{{ url_for('cupones.transmitir_sucursales') }}">
+            <button type="submit" class="btn-transmitir">
+                Transmitir a Sucursales
+            </button>
+        </form>
 
         <div class="lista-cupones">
             {% for cupon in cupones %}
