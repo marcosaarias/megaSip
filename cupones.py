@@ -46,6 +46,11 @@ def index():
     )
 
 
+@cupones_bp.route("/transmitir_sucursales", methods=["POST"])
+def transmitir_sucursales():
+    return "Cupones transmitidos a sucursales correctamente"
+
+
 #@cupones_bp.route("/sucursal")
 #def cupones_sucursal():
 #    if session.get("usuario_rol") != "sucursal":
