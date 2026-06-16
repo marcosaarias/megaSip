@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 import pandas as pd
+import json
 from database.db import get_db_connection
 
 cupones_bp = Blueprint("cupones", __name__, url_prefix="/cupones")
@@ -101,11 +102,12 @@ def index():
                 })
 
         total_cupones = len(cupones)
-        session["cupones_generados"] = cupones
+        #session["cupones_generados"] = cupones
 
     return render_template(
         "publicidad/cupones.html",
         cupones=cupones,
+        cupones_json=json.dumps(cupones, ensure_ascii=False)
         total_filas=total_filas,
         total_cupones=total_cupones
     )
@@ -116,10 +118,16 @@ def transmitir_sucursales():
     if session.get("usuario_rol") != "publicidad":
         return redirect(url_for("sistemas.login"))
 
-    cupones = session.get("cupones_generados", [])
+    cupones_json = request.form.get("cupones_json", "[]")
+
+    try:
+        cupones = json.loads(cupones_json)
+    except Exception as e:
+        print("ERROR LEYENDO CUPONES JSON:", e, flush=True)
+        cupones = []
 
     print("DEBUG TRANSMITIR CUPONES:", flush=True)
-    print("CUPONES EN SESSION:", len(cupones), flush=True)
+    print("CUPONES RECIBIDOS:", len(cupones), flush=True)
     print("ROL:", session.get("usuario_rol"), flush=True)
 
     if not cupones:
@@ -156,10 +164,14 @@ def transmitir_sucursales():
             ))
 
         conn.commit()
+
+        print("CUPONES INSERTADOS:", len(cupones), flush=True)
+
         flash("Cupones transmitidos correctamente a sucursales")
 
     except Exception as e:
         conn.rollback()
+        print("ERROR TRANSMITIENDO CUPONES:", e, flush=True)
         flash(f"Error transmitiendo cupones: {e}")
 
     finally:

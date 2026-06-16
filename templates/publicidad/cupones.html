@@ -134,6 +134,8 @@
             </button>
 
             <form method="post" action="{{ url_for('cupones.transmitir_sucursales') }}">
+              <input type="hidden" name="cupones_json" value='{{ cupones_json|e }}'>
+              
                 <button type="submit" class="btn-transmitir">
                     Transmitir a Sucursales
                 </button>
