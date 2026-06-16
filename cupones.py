@@ -107,7 +107,7 @@ def index():
     return render_template(
         "publicidad/cupones.html",
         cupones=cupones,
-        cupones_json=json.dumps(cupones, ensure_ascii=False)
+        cupones_json=json.dumps(cupones, ensure_ascii=False),
         total_filas=total_filas,
         total_cupones=total_cupones
     )
