@@ -102,21 +102,48 @@ SUCURSAL_MAP = {
 }
 
 
-def limpiar_codigo(valor):
+#def limpiar_codigo(valor):
+#    if pd.isna(valor):
+#        return ""
+
+#    valor = str(valor).strip()
+
+#    if valor.lower() in ["nan", "none", "null", ""]:
+#        return ""
+
+#    try:
+#        valor = str(int(float(valor)))
+#    except:
+#        valor = valor.replace(".0", "")
+
+#    return valor.lstrip("0")
+
+
+def limpiar_precio(valor):
+
     if pd.isna(valor):
-        return ""
+        return np.nan
 
     valor = str(valor).strip()
 
-    if valor.lower() in ["nan", "none", "null", ""]:
-        return ""
+    if valor == "" or valor.lower() in ["nan", "none", "null"]:
+        return np.nan
+
+    # Formato inglés: 2,700.00
+    if "," in valor and "." in valor:
+        if valor.rfind(".") > valor.rfind(","):
+            valor = valor.replace(",", "")
+        else:
+            valor = valor.replace(".", "").replace(",", ".")
+
+    # Formato argentino: 2700,00
+    elif "," in valor:
+        valor = valor.replace(",", ".")
 
     try:
-        valor = str(int(float(valor)))
+        return float(valor)
     except:
-        valor = valor.replace(".0", "")
-
-    return valor.lstrip("0")
+        return np.nan
 
 
 def limpiar_ean(valor):
