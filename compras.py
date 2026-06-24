@@ -120,7 +120,7 @@ def limpiar_codigo(valor):
 
 
 def limpiar_precio(valor):
-
+    print("ENTRADA:", repr(valor))
     if pd.isna(valor):
         return np.nan
 
@@ -624,6 +624,8 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
         return None, None, mensaje_error, 0
 
     if "Oferta" in df.columns:
+        print("VALORES ORIGINALES OFERTA")
+        print(df["Oferta"].head(20).tolist())
         df["Oferta"] = df["Oferta"].apply(limpiar_precio)
         df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
 
