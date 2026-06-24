@@ -102,21 +102,21 @@ SUCURSAL_MAP = {
 }
 
 
-#def limpiar_codigo(valor):
-#    if pd.isna(valor):
-#        return ""
+def limpiar_codigo(valor):
+    if pd.isna(valor):
+        return ""
 
-#    valor = str(valor).strip()
+    valor = str(valor).strip()
 
-#    if valor.lower() in ["nan", "none", "null", ""]:
-#        return ""
+    if valor.lower() in ["nan", "none", "null", ""]:
+        return ""
 
-#    try:
-#        valor = str(int(float(valor)))
-#    except:
-#        valor = valor.replace(".0", "")
+    try:
+        valor = str(int(float(valor)))
+    except:
+        valor = valor.replace(".0", "")
 
-#    return valor.lstrip("0")
+    return valor.lstrip("0")
 
 
 def limpiar_precio(valor):
@@ -655,28 +655,28 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
 
 #funcion para formatear precios en bd
-def limpiar_precio(valor):
+#def limpiar_precio(valor):
 
-    if pd.isna(valor):
-        return np.nan
+#    if pd.isna(valor):
+#        return np.nan
 
-    valor = str(valor).strip()
+#    valor = str(valor).strip()
 
-    if valor == "" or valor.lower() in ["nan", "none", "null"]:
-        return np.nan
+#    if valor == "" or valor.lower() in ["nan", "none", "null"]:
+#        return np.nan
 
     # 5.700,00 -> 5700.00
-    if "," in valor and "." in valor:
-        valor = valor.replace(".", "").replace(",", ".")
+#    if "," in valor and "." in valor:
+#        valor = valor.replace(".", "").replace(",", ".")
 
     # 5700,00 -> 5700.00
-    elif "," in valor:
-        valor = valor.replace(",", ".")
+#    elif "," in valor:
+#        valor = valor.replace(",", ".")
 
-    try:
-        return float(valor)
-    except:
-        return np.nan
+#    try:
+#        return float(valor)
+#    except:
+#        return np.nan
 
 
 
