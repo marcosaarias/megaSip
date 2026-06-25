@@ -101,6 +101,9 @@ def login():
             elif rol_lower == "farmacia":
                 return redirect(url_for("farmacia.index"))
 
+            elif rol_lower == "adm-farmacia":
+                return redirect(url_for("farmacia.index"))
+
             elif rol_lower == "cm":
                 return redirect(url_for("operadores.index"))
                 

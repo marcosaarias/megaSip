@@ -115,7 +115,7 @@
 
   <!-- ================= FARMACIA ================= -->
 
-    {% if session.get("usuario_rol") == "farmacia" %}
+    {% if session.get("usuario_rol") == "adm-farmacia" %}
 
   <div class="menu-section 
       {% if 'farmacia_folder' in request.path or 'farmacia' in request.path %}active{% endif %}">
@@ -168,7 +168,7 @@
 
   {% endif %}
 
-    {% if session.get("usuario_rol") == "farmacia" %}
+    {% if session.get("usuario_rol") == "adm-farmacia" %}
 
     <div class="menu-section 
       {% if 'archivo_maestro' in request.path %}active{% endif %}">

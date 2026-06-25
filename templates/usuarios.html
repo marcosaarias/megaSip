@@ -34,6 +34,7 @@
             <option value="compras">compras</option>
             <option value="cm">cm</option>
             <option value="farmacia">farmacia</option>
+            <option value="adm-farmacia">adm-farmacia</option>
             <option value="publicidad">publicidad</option>
           </select>
         </div>
@@ -106,6 +107,7 @@
                     <option value="compras" {% if u.rol == 'compras' %}selected{% endif %}>compras</option>
                     <option value="cm" {% if u.rol == 'cm' %}selected{% endif %}>cm</option>
                     <option value="farmacia" {% if u.rol == 'farmacia' %}selected{% endif %}>farmacia</option>
+                    <option value="adm-farmacia" {% if u.rol == 'adm-farmacia' %}selected{% endif %}>adm-farmacia</option>
                     <option value="publicidad" {% if u.rol == 'publicidad' %}selected{% endif %}>publicidad</option>
                   </select>
                 </div>
