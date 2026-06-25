@@ -1390,7 +1390,7 @@ def sucursal():
     # --------------- FARMACIA --------------
 
 @compras_bp.route("/farmacia_folder", methods=["GET", "POST"])
-@login_requerido("farmacia")
+@login_requerido("adm-farmacia")
 def farmacia_folder():
     preview = None
     mensaje_error = None
