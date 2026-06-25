@@ -10,6 +10,50 @@ from database.db import get_db_connection
 
 farmacia_bp = Blueprint("farmacia", __name__)
 
+@farmacia_bp.route("/cenefas-farmacia")
+def cenefas_farmacia():
+    if session.get("usuario_rol") != "farmacia":
+        return "No autorizado", 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                id,
+                troquel AS "Codigo",
+                cod_barra AS ean,
+                '' AS "Dep",
+                '' AS "Departamento",
+                descripcion,
+                normal AS "Normal",
+                oferta AS "Oferta",
+                promo AS cenefa,
+                fecha_desde AS desde,
+                fecha_hasta AS hasta,
+                '' AS sucursales
+            FROM farmacia_folder
+            ORDER BY descripcion
+        """)
+
+        datos = cur.fetchall()
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return render_template(
+        "farmacia/cenefas_farmacia.html",
+        datos=datos
+    )
+
+
+@farmacia_bp.route("/cenefas-farmacia")
+def cenefas_farmacia():
+    return render_template("farmacia/cenefas_farmacia.html")
+
+
 @farmacia_bp.before_request
 def medir_ingreso_farmacia():
     crear_tabla_metricas()
