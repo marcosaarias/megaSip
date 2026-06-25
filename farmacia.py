@@ -49,11 +49,6 @@ def cenefas_farmacia():
     )
 
 
-@farmacia_bp.route("/cenefas-farmacia")
-def cenefas_farmacia():
-    return render_template("farmacia/cenefas_farmacia.html")
-
-
 @farmacia_bp.before_request
 def medir_ingreso_farmacia():
     crear_tabla_metricas()
