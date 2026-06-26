@@ -76,8 +76,6 @@
                             <th style="width: 90px;">Cant.</th>
                             <th>Código</th>
                             <th>EAN</th>
-                            <th>Dep</th>
-                            <th>Departamento</th>
                             <th>Descripción</th>
                             <th>Normal</th>
                             <th>Oferta</th>
@@ -109,8 +107,6 @@
                             </td>
                             <td>{{ item.Codigo }}</td>
                             <td>{{ item.ean }}</td>
-                            <td>{{ item.Dep or item.dep }}</td>
-                            <td>{{ item.Departamento or item.departamento }}</td>
                             <td>{{ item.descripcion }}</td>
                             <td>{{ item.Normal }}</td>
                             <td>{{ item.Oferta }}</td>
@@ -181,18 +177,6 @@ input.chk-imprimir.form-check-input:checked::after {
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
-    const materialesMultiples = document.getElementById("materialesMultiples");
-    const departamentosMultiples = document.getElementById("departamentosMultiples");
-
-    materialesMultiples.addEventListener("input", function () {
-        departamentosMultiples.disabled = this.value.trim() !== "";
-    });
-
-    departamentosMultiples.addEventListener("input", function () {
-        materialesMultiples.disabled = this.value.trim() !== "";
-    });
-
     document.querySelectorAll(".chk-imprimir").forEach(chk => {
         chk.addEventListener("change", function () {
             const index = parseInt(this.dataset.index, 10);
@@ -896,86 +880,77 @@ function imprimirTabla() {
     setTimeout(imprimirIframe, 300);
 }
 
-    function obtenerValoresMultiples(id) {
-        const texto = document.getElementById(id).value || "";
+function obtenerValoresMultiples(id) {
+    const elemento = document.getElementById(id);
 
-        return texto
-            .split(/[\n,;\s]+/)
-            .map(valor => valor.trim().toLowerCase())
-            .filter(valor => valor !== "");
-        }
-
-    function marcarMultiples() {
-        const codigos = obtenerValoresMultiples("materialesMultiples");
-        const departamentos = obtenerValoresMultiples("departamentosMultiples");
-
-        if (codigos.length > 0 && departamentos.length > 0) {
-            alert("No podés buscar materiales y departamentos múltiples al mismo tiempo.");
-            return;
-        }
-
-        if (codigos.length === 0 && departamentos.length === 0) {
-            alert("Ingresá materiales o departamentos.");
-            return;
-        }
-
-        const setCodigos = new Set(codigos);
-        const setDepartamentos = new Set(departamentos);
-
-        let encontrados = 0;
-        const filas = document.querySelectorAll("#areaImpresion tbody tr");
-
-        filas.forEach(fila => {
-            const index = parseInt(fila.dataset.index, 10);
-
-            const codigoFila = fila.cells[2].innerText.trim().toLowerCase();
-            const departamentoFila = fila.cells[4].innerText.trim().toLowerCase();
-
-            const coincide = codigos.length > 0
-                ? setCodigos.has(codigoFila)
-                : setDepartamentos.has(departamentoFila);
-
-            fila.style.display = coincide ? "" : "none";
-
-            const checkbox = fila.querySelector(".chk-imprimir");
-            if (checkbox) checkbox.checked = coincide;
-
-            if (!isNaN(index) && datosCompletos[index]) {
-                datosCompletos[index].seleccionado = coincide;
-                if (coincide) {
-                    datosCompletos[index].cantidad_imprimir =
-                        datosCompletos[index].cantidad_imprimir || 1;
-                }
-            }
-
-            if (coincide) encontrados++;
-        });
-
-        if (encontrados === 0) {
-            alert("No se encontraron registros con los valores ingresados.");
-        }
+    if (!elemento) {
+        return [];
     }
 
+    const texto = elemento.value || "";
 
+    return texto
+        .split(/[\n,;\s]+/)
+        .map(valor => valor.trim().toLowerCase())
+        .filter(valor => valor !== "");
+}
 
-    function limpiarMultiples() {
-        document.getElementById("materialesMultiples").value = "";
-        document.getElementById("departamentosMultiples").value = "";
-        document.getElementById("materialesMultiples").disabled = false;
-        document.getElementById("departamentosMultiples").disabled = false;
+function marcarMultiples() {
+    const codigos = obtenerValoresMultiples("materialesMultiples");
 
-        document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
-            const index = parseInt(fila.dataset.index, 10);
-            const checkbox = fila.querySelector(".chk-imprimir");
-
-            fila.style.display = "";
-            if (checkbox) checkbox.checked = false;
-
-            if (!isNaN(index) && datosCompletos[index]) {
-                datosCompletos[index].seleccionado = false;
-            }
-        });
+    if (codigos.length === 0) {
+        alert("Ingresá materiales.");
+        return;
     }
+
+    const setCodigos = new Set(codigos);
+
+    let encontrados = 0;
+    const filas = document.querySelectorAll("#areaImpresion tbody tr");
+
+    filas.forEach(fila => {
+        const index = parseInt(fila.dataset.index, 10);
+        const codigoFila = fila.cells[2].innerText.trim().toLowerCase();
+
+        const coincide = setCodigos.has(codigoFila);
+
+        fila.style.display = coincide ? "" : "none";
+
+        const checkbox = fila.querySelector(".chk-imprimir");
+        if (checkbox) checkbox.checked = coincide;
+
+        if (!isNaN(index) && datosCompletos[index]) {
+            datosCompletos[index].seleccionado = coincide;
+            datosCompletos[index].cantidad_imprimir =
+                datosCompletos[index].cantidad_imprimir || 1;
+        }
+
+        if (coincide) encontrados++;
+    });
+
+    if (encontrados === 0) {
+        alert("No se encontraron registros con los materiales ingresados.");
+    }
+}
+
+function limpiarMultiples() {
+    document.getElementById("materialesMultiples").value = "";
+
+    document.querySelectorAll("#areaImpresion tbody tr").forEach(fila => {
+        const index = parseInt(fila.dataset.index, 10);
+        const checkbox = fila.querySelector(".chk-imprimir");
+
+        fila.style.display = "";
+
+        if (checkbox) {
+            checkbox.checked = false;
+        }
+
+        if (!isNaN(index) && datosCompletos[index]) {
+            datosCompletos[index].seleccionado = false;
+        }
+    });
+}
 
 </script>
 
