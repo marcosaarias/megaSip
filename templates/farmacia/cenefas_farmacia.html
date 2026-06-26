@@ -346,15 +346,9 @@ function imprimirTabla() {
             partes.push(`
                 <div class="cenefa-cuarto-hoja">
                     <div class="contenido-cuarto-hoja">
+                        <div class="descripcion-cuarto">${descripcion}</div>
                         <div class="cenefa-titulo-cuarto">${cenefa}</div>
-
-                        <div class="descripcion-cuarto">
-                            ${descripcion}
-                        </div>
-
-                        <div class="texto-paga-cuarto">
-                            ${textoPaga}
-                        </div>
+                        <div class="texto-paga-cuarto">${textoPaga}</div>
 
                         <div class="precio-oferta-cuarto">
                             $ ${oferta}
@@ -433,7 +427,7 @@ function imprimirTabla() {
                 }
 
                 .cenefa-titulo-cuarto {
-                    font-size: 34px;
+                    font-size: 40px;
                     font-family: 'Anton', Arial, sans-serif;
                     font-weight: normal;
                     line-height: 1.1;
@@ -457,7 +451,7 @@ function imprimirTabla() {
                 }
 
                 .precio-oferta-cuarto {
-                    font-size: 54px;
+                    font-size: 24px;
                     font-family: 'Anton', Arial, sans-serif;
                     font-weight: normal;
                     line-height: 1;
