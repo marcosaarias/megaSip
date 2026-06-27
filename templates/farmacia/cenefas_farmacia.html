@@ -48,6 +48,9 @@
                         </button>
 
                         <select id="cantidadCenefas" class="form-select form-select-sm" style="width:120px;">
+                            <option value="1">1 por hoja</option>
+                            <option value="2">2 por hoja</option>
+                            <option value="3">3 por hoja</option>
                             <option value="4" selected>4 por hoja</option>
                         </select>
 
@@ -322,50 +325,44 @@ function imprimirTabla() {
         const textoPaga = esOferta ? "" : "Ud paga c/u";
         const etiquetaPrecioNormal = esOferta ? "Precio Normal" : "Precio Unitario";
 
-        if (cantidad === 4) {
-            if (index % 4 === 0) {
-                partes.push(`<div class="hoja-cuatro-cenefas">`);
-            }
+  
 
-            partes.push(`
-                <div class="cenefa-cuarto-hoja">
-                    <div class="contenido-cuarto-hoja">
-                        <div class="descripcion-cuarto">${descripcion}</div>
-                        <div class="cenefa-titulo-cuarto">${cenefa}</div>
-                        <div class="texto-paga-cuarto">${textoPaga}</div>
-
-                        <div class="precio-oferta-cuarto">
-                            $ ${oferta}
-                        </div>
-
-                        <div class="precio-normal-cuarto">
-                            <span class="etiqueta-unitario">${etiquetaPrecioNormal}</span>
-                            $ ${normal}
-                        </div>
-
-                        <div class="datos-finales-cuarto">
-                            <strong>Cod/Scan:</strong> ${codigo} - ${ean}<br>
-                            <strong>Desde:</strong> ${desde}
-                            &nbsp;&nbsp;
-                            <strong>Hasta:</strong> ${hasta}
-                        </div>
-                    </div>
-                </div>
-            `);
-
-            if (index % 4 === 3 || index === totalVisibles - 1) {
-                partes.push(`</div>`);
-            }
+      if (index % cantidad === 0) {
+    partes.push(`<div class="hoja-cuatro-cenefas cantidad-${cantidad}">`);
         }
 
-        if (cantidad === 4) {
-            if ((index + 1) % 4 === 0 && (index + 1) < totalVisibles) {
-                partes.push('<div class="page-break"></div>');
-            }
-        } else {
-            if ((index + 1) % cantidad === 0 && (index + 1) < totalVisibles) {
-                partes.push('<div class="page-break"></div>');
-            }
+        partes.push(`
+            <div class="cenefa-cuarto-hoja">
+                <div class="contenido-cuarto-hoja">
+                    <div class="descripcion-cuarto">${descripcion}</div>
+                    <div class="cenefa-titulo-cuarto">${cenefa}</div>
+                    <div class="texto-paga-cuarto">${textoPaga}</div>
+
+                    <div class="precio-oferta-cuarto">
+                        $ ${oferta}
+                    </div>
+
+                    <div class="precio-normal-cuarto">
+                        <span class="etiqueta-unitario">${etiquetaPrecioNormal}</span>
+                        $ ${normal}
+                    </div>
+
+                    <div class="datos-finales-cuarto">
+                        <strong>Cod/Scan:</strong> ${codigo} - ${ean}<br>
+                        <strong>Desde:</strong> ${desde}
+                        &nbsp;&nbsp;
+                        <strong>Hasta:</strong> ${hasta}
+                    </div>
+                </div>
+            </div>
+        `);
+
+        if ((index + 1) % cantidad === 0 || index === totalVisibles - 1) {
+            partes.push(`</div>`);
+        }
+
+        if ((index + 1) % cantidad === 0 && (index + 1) < totalVisibles) {
+            partes.push('<div class="page-break"></div>');
         }
     });
 
@@ -377,21 +374,21 @@ function imprimirTabla() {
             <title>Impresión Cenefas</title>
             <style>
 
-               .hoja-cuatro-cenefas {
+            .hoja-cuatro-cenefas {
                 width: 100vw;
                 height: 100vh;
                 box-sizing: border-box;
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 150px 150px;
+                justify-items: center;
                 align-content: center;
-                column-gap: 0;
                 row-gap: 320px;
                 page-break-inside: avoid;
             }
 
             .cenefa-cuarto-hoja {
-                width: 50%;
+                width: 100%;
                 height: 150px;
                 box-sizing: border-box;
                 display: flex;
