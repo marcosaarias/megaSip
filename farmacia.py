@@ -11,10 +11,16 @@ from database.db import get_db_connection
 farmacia_bp = Blueprint("farmacia", __name__)
 
 
+#@farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
+#def cenefas_farmacia():
+#    return render_template("farmacia/cenefas_farmacia.html")
+
 @farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
 def cenefas_farmacia():
-    return render_template("farmacia/cenefas_farmacia.html")
-
+    return render_template(
+        "farmacia/cenefas_farmacia.html",
+        datos=[]
+    )
 
 
 @farmacia_bp.before_request
