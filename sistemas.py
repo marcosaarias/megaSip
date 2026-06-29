@@ -99,7 +99,7 @@ def login():
                 return redirect(url_for("compras.folder_mayorista"))
 
             elif rol_lower == "farmacia":
-                return redirect(url_for("farmacia.cenefas_farmacia"))
+                return redirect(url_for("farmacia.index"))
 
             elif rol_lower == "adm-farmacia":
                 return redirect(url_for("farmacia.index"))
