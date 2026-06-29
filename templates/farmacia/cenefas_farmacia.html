@@ -108,14 +108,16 @@
                                     value="1"
                                 >
                             </td>
-                            <td>{{ item.Codigo }}</td>
-                            <td>{{ item.ean }}</td>
+
+                            <td>{{ item.troquel }}</td>
+                            <td>{{ item.cod_barra }}</td>
                             <td>{{ item.descripcion }}</td>
-                            <td>{{ item.Normal }}</td>
-                            <td>{{ item.Oferta }}</td>
-                            <td>{{ item.cenefa }}</td>
-                            <td>{{ item.desde }}</td>
-                            <td>{{ item.hasta }}</td>
+                            <td>{{ item.normal }}</td>
+                            <td>{{ item.oferta }}</td>
+                            <td>{{ item.promo }}</td>
+                            <td>{{ item.fecha_desde }}</td>
+                            <td>{{ item.fecha_hasta }}</td>
+
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -312,14 +314,14 @@ function imprimirTabla() {
     let partes = [];
 
     visibles.forEach((row, index) => {
-        const codigo = row.Codigo ?? "";
-        const ean = row.ean ?? "";
         const descripcion = row.descripcion ?? "";
-        const normal = formatearPrecio(row.Normal);
-        const oferta = formatearPrecio(row.Oferta);
-        const cenefa = row.cenefa ?? "";
-        const desde = row.desde ?? "";
-        const hasta = row.hasta ?? "";
+        const codigo = row.troquel ?? "";
+        const ean = row.cod_barra ?? "";
+        const normal = formatearPrecio(row.normal);
+        const oferta = formatearPrecio(row.oferta);
+        const cenefa = row.promo ?? "";
+        const desde = row.fecha_desde ?? "";
+        const hasta = row.fecha_hasta ?? "";
         const esOferta = String(cenefa).trim().toLowerCase() === "oferta";
         const textoPaga = esOferta ? "" : "Ud paga c/u";
         const etiquetaPrecioNormal = esOferta ? "Precio Normal" : "Precio Unitario";
