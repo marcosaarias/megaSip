@@ -10,17 +10,53 @@ from database.db import get_db_connection
 
 farmacia_bp = Blueprint("farmacia", __name__)
 
-
 #@farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
 #def cenefas_farmacia():
-#    return render_template("farmacia/cenefas_farmacia.html")
+#    return render_template(
+#        "farmacia/cenefas_farmacia.html",
+#        datos=[]
+#    )
+
+
 
 @farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
 def cenefas_farmacia():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                id,
+                troquel,
+                cod_barra,
+                descripcion,
+                normal,
+                oferta,
+                promo,
+                reconocido,
+                observacion,
+                fecha_desde,
+                fecha_hasta
+            FROM farmacia_folder
+            ORDER BY id DESC
+        """)
+
+        datos = cur.fetchall()
+
+    finally:
+        cur.close()
+        conn.close()
+
     return render_template(
         "farmacia/cenefas_farmacia.html",
-        datos=[]
+        datos=datos
     )
+
+
+
+
+
 
 
 @farmacia_bp.before_request
