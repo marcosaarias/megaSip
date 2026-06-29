@@ -34,14 +34,38 @@ ALIAS_FOLDER_FARMACIA = {
 @farmacia_folder_bp.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
+        accion = request.form.get("accion")
+
+        if accion == "transmitir":
+            datos = session.get("farmacia_folder_preview")
+            fecha_desde = session.get("farmacia_folder_fecha_desde")
+            fecha_hasta = session.get("farmacia_folder_fecha_hasta")
+
+            if not datos:
+                return render_template(
+                    "farmacia_folder.html",
+                    mensaje_error="No hay datos procesados para transmitir."
+                )
+
+            df = pd.DataFrame(datos)
+
+            guardar_farmacia_folder_en_db(
+                df,
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta
+            )
+
+            session.pop("farmacia_folder_preview", None)
+            session.pop("farmacia_folder_fecha_desde", None)
+            session.pop("farmacia_folder_fecha_hasta", None)
+
+            return redirect(url_for("farmacia_folder.index"))
+
         archivo = request.files.get("archivo")
 
         if archivo:
             fecha_desde = request.form.get("fecha_desde")
             fecha_hasta = request.form.get("fecha_hasta")
-
-            #df = pd.read_excel(archivo)
-            #df.columns = [str(col).strip() for col in df.columns]
 
             df_raw = pd.read_excel(archivo, header=None)
 
@@ -54,7 +78,10 @@ def index():
                     break
 
             if fila_header is None:
-                return "Error: no se encontró la columna Troquel en el archivo.", 400
+                return render_template(
+                    "farmacia_folder.html",
+                    mensaje_error="No se encontró la columna Troquel en el archivo."
+                )
 
             archivo.seek(0)
 
@@ -76,31 +103,37 @@ def index():
             faltantes = [c for c in requeridas if c not in df.columns]
 
             if faltantes:
-                return f"Error: faltan columnas requeridas: {', '.join(faltantes)}", 400
+                return render_template(
+                    "farmacia_folder.html",
+                    mensaje_error=f"Faltan columnas requeridas: {', '.join(faltantes)}"
+                )
 
             df = df[
-            df["troquel"].notna()
-            & (df["troquel"].astype(str).str.strip() != "")
-            & (df["troquel"].astype(str).str.strip().str.lower() != "troquel")
+                df["troquel"].notna()
+                & (df["troquel"].astype(str).str.strip() != "")
+                & (df["troquel"].astype(str).str.strip().str.lower() != "troquel")
             ].copy()
 
-            print("COLUMNAS FINALES:", df.columns.tolist(), flush=True)
-            print(df[["troquel", "descripcion", "promo"]].head(10).to_string(), flush=True) 
+            df = df.where(pd.notna(df), None)
 
-            print("FECHA DESDE RECIBIDA:", fecha_desde, flush=True)
-            print("FECHA HASTA RECIBIDA:", fecha_hasta, flush=True)
+            session["farmacia_folder_preview"] = df.to_dict(orient="records")
+            session["farmacia_folder_fecha_desde"] = fecha_desde
+            session["farmacia_folder_fecha_hasta"] = fecha_hasta
 
-            guardar_farmacia_folder_en_db(
-                df,
+            preview = df.to_html(
+                classes="table table-striped table-hover table-bordered",
+                index=False
+            )
+
+            return render_template(
+                "farmacia_folder.html",
+                preview=preview,
+                total_registros=len(df),
                 fecha_desde=fecha_desde,
                 fecha_hasta=fecha_hasta
             )
-            
-            #return "Guardado OK"
-            return redirect(url_for("farmacia_folder.index"))
 
     return render_template("farmacia_folder.html")
-
 
 def guardar_farmacia_folder_en_db(
     df,
