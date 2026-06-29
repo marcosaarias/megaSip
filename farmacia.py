@@ -26,14 +26,14 @@ def cenefas_farmacia():
     try:
         cur.execute("""
             SELECT
-                troquel AS codigo,
-                cod_barra AS ean,
+                troquel,
+                cod_barra,
                 descripcion,
                 normal,
                 oferta,
-                promo AS cenefa,
-                fecha_desde AS desde,
-                fecha_hasta AS hasta
+                promo,
+                fecha_desde,
+                fecha_hasta
             FROM farmacia_folder
             ORDER BY id DESC
         """)
