@@ -3,11 +3,18 @@
 
 {% block content %}
 <div class="container-fluid">
+
     <h2 class="mb-4">Folder Farmacia</h2>
 
     {% if mensaje_error %}
     <div class="alert alert-danger">
         {{ mensaje_error }}
+    </div>
+    {% endif %}
+
+    {% if mensaje_ok %}
+    <div class="alert alert-success">
+        {{ mensaje_ok }}
     </div>
     {% endif %}
 
@@ -19,6 +26,7 @@
               action="{{ url_for('farmacia_folder.index') }}">
 
             <div class="row mb-3">
+
                 <div class="col-md-3">
                     <label><strong>Desde:</strong></label>
                     <input type="date"
@@ -36,35 +44,71 @@
                            value="{{ fecha_hasta or '' }}"
                            required>
                 </div>
+
             </div>
 
-            <input type="file" name="archivo" class="form-control mb-3" required>
+            <input
+                type="file"
+                name="archivo"
+                class="form-control mb-3"
+                required
+            >
 
-            <button type="submit" class="btn btn-primary w-100">
-                Actualizar
+            <button
+                type="submit"
+                name="accion"
+                value="procesar"
+                class="btn btn-primary w-100">
+                Procesar
             </button>
+
         </form>
     </div>
 
     {% if preview %}
-    <div class="mt-5">
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">
-                    Previsualización - Folder Farmacia
-                    {% if total_registros %}
-                        | Total: {{ total_registros }}
-                    {% endif %}
-                </h5>
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+
+            <h5 class="mb-0">
+                Previsualización - Folder Farmacia
+
+                {% if total_registros %}
+                    | Total: {{ total_registros }}
+                {% endif %}
+            </h5>
+
+            <form method="POST"
+                  action="{{ url_for('farmacia_folder.index') }}">
+
+                <button
+                    type="submit"
+                    name="accion"
+                    value="transmitir"
+                    class="btn btn-warning">
+
+                    Transmitir a Sucursales
+
+                </button>
+
+            </form>
+
+        </div>
+
+        <div class="card-body p-2">
+
+            <div style="max-height:650px; overflow:auto;">
+
+                {{ preview|safe }}
+
             </div>
 
-            <div class="card-body p-2">
-                <div style="max-height:600px; overflow:auto;">
-                    {{ preview|safe }}
-                </div>
-            </div>
         </div>
+
     </div>
+
     {% endif %}
+
 </div>
 {% endblock %}
