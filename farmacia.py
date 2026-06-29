@@ -18,7 +18,6 @@ farmacia_bp = Blueprint("farmacia", __name__)
 #    )
 
 
-
 @farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
 def cenefas_farmacia():
     conn = get_db_connection()
@@ -27,17 +26,14 @@ def cenefas_farmacia():
     try:
         cur.execute("""
             SELECT
-                id,
-                troquel,
-                cod_barra,
+                troquel AS codigo,
+                cod_barra AS ean,
                 descripcion,
                 normal,
                 oferta,
-                promo,
-                reconocido,
-                observacion,
-                fecha_desde,
-                fecha_hasta
+                promo AS cenefa,
+                fecha_desde AS desde,
+                fecha_hasta AS hasta
             FROM farmacia_folder
             ORDER BY id DESC
         """)
@@ -52,9 +48,6 @@ def cenefas_farmacia():
         "farmacia/cenefas_farmacia.html",
         datos=datos
     )
-
-
-
 
 
 
