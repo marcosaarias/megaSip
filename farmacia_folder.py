@@ -87,12 +87,15 @@ def index():
             print("COLUMNAS FINALES:", df.columns.tolist(), flush=True)
             print(df[["troquel", "descripcion", "promo"]].head(10).to_string(), flush=True) 
 
+            print("FECHA DESDE RECIBIDA:", fecha_desde, flush=True)
+            print("FECHA HASTA RECIBIDA:", fecha_hasta, flush=True)
+
             guardar_farmacia_folder_en_db(
                 df,
                 fecha_desde=fecha_desde,
                 fecha_hasta=fecha_hasta
             )
-
+            
             #return "Guardado OK"
             return redirect(url_for("farmacia_folder.index"))
 
@@ -185,6 +188,33 @@ def guardar_farmacia_folder_en_db(
         conn.rollback()
         print("Error guardando farmacia_folder:", e)
         raise
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+def obtener_datos_farmacia_folder():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                troquel,
+                cod_barra,
+                descripcion,
+                normal,
+                oferta,
+                promo,
+                fecha_desde,
+                fecha_hasta
+            FROM farmacia_folder
+            ORDER BY id DESC
+        """)
+
+        datos = cur.fetchall()
+        return datos
 
     finally:
         cur.close()

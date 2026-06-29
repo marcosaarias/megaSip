@@ -6,6 +6,7 @@ from datetime import datetime
 import uuid
 from flask import Blueprint, render_template, request, send_file, g
 from database.db import get_db_connection
+from farmacia_folder import obtener_datos_farmacia_folder
 
 
 farmacia_bp = Blueprint("farmacia", __name__)
@@ -17,37 +18,46 @@ farmacia_bp = Blueprint("farmacia", __name__)
 #        datos=[]
 #    )
 
-
 @farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
 def cenefas_farmacia():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    try:
-        cur.execute("""
-            SELECT
-                troquel,
-                cod_barra,
-                descripcion,
-                normal,
-                oferta,
-                promo,
-                fecha_desde,
-                fecha_hasta
-            FROM farmacia_folder
-            ORDER BY id DESC
-        """)
-
-        datos = cur.fetchall()
-
-    finally:
-        cur.close()
-        conn.close()
+    datos = obtener_datos_farmacia_folder()
 
     return render_template(
         "farmacia/cenefas_farmacia.html",
         datos=datos
     )
+
+
+#@farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
+#def cenefas_farmacia():
+#    conn = get_db_connection()
+#    cur = conn.cursor()
+
+#    try:
+#        cur.execute("""
+#            SELECT
+#                troquel,
+#                cod_barra,
+#                descripcion,
+#                normal,
+#                oferta,
+#                promo,
+#                fecha_desde,
+#                fecha_hasta
+#            FROM farmacia_folder
+#            ORDER BY id DESC
+#        """)
+
+#        datos = cur.fetchall()
+
+#    finally:
+#        cur.close()
+#        conn.close()
+
+#    return render_template(
+#        "farmacia/cenefas_farmacia.html",
+#        datos=datos
+#    )
 
 
 
