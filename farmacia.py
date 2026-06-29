@@ -18,9 +18,19 @@ farmacia_bp = Blueprint("farmacia", __name__)
 #        datos=[]
 #    )
 
+
+
 @farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
 def cenefas_farmacia():
     datos = obtener_datos_farmacia_folder()
+
+    print("DEBUG CENEFAS FARMACIA - TOTAL:", len(datos), flush=True)
+    if datos:
+        print("DEBUG CENEFAS FARMACIA - PRIMER REGISTRO:", datos[0], flush=True)
+        try:
+            print("DEBUG KEYS:", datos[0].keys(), flush=True)
+        except Exception as e:
+            print("DEBUG SIN KEYS:", e, flush=True)
 
     return render_template(
         "farmacia/cenefas_farmacia.html",
