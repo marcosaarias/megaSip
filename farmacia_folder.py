@@ -1,9 +1,34 @@
+import os
+import redis
+from io import StringIO
 import pandas as pd
 import uuid
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from database.db import get_db_connection
+
 farmacia_folder_bp = Blueprint("farmacia_folder", __name__)
+redis_client = redis.Redis(
+    host=os.getenv("REDIS_HOST", "redis"),
+    port=6379,
+    db=0,
+    decode_responses=True
+)
+
+def guardar_preview_farmacia(lote_id, df):
+    redis_client.setex(
+        lote_id,
+        3600,
+        df.to_json(orient="records")
+    )
+
+def recuperar_preview_farmacia(lote_id):
+    data = redis_client.get(lote_id)
+
+    if not data:
+        return None
+
+    return pd.read_json(StringIO(data), orient="records")
 
 
 def normalizar_col(col):
@@ -46,17 +71,24 @@ def index():
         accion = request.form.get("accion")
 
         if accion == "transmitir":
-            datos = session.get("farmacia_folder_preview")
+            #datos = session.get("farmacia_folder_preview")
+            #fecha_desde = session.get("farmacia_folder_fecha_desde")
+            #fecha_hasta = session.get("farmacia_folder_fecha_hasta")
+
+            #if not datos:
+            lote_id = session.get("farmacia_folder_lote_id")
             fecha_desde = session.get("farmacia_folder_fecha_desde")
             fecha_hasta = session.get("farmacia_folder_fecha_hasta")
 
-            if not datos:
+            df = recuperar_preview_farmacia(lote_id)
+
+            if df is None:
                 return render_template(
                     "farmacia_folder.html",
-                    mensaje_error="No hay datos procesados para transmitir."
+                    mensaje_error="No hay datos procesados para transmitir o expiró la previsualización."
                 )
 
-            df = pd.DataFrame(datos)
+            #df = pd.DataFrame(datos)
             borrar_folder_farmacia_vigente()
             guardar_farmacia_folder_en_db(
                 df,
@@ -64,7 +96,11 @@ def index():
                 fecha_hasta=fecha_hasta
             )
 
-            session.pop("farmacia_folder_preview", None)
+            #session.pop("farmacia_folder_preview", None)
+            if lote_id:
+                redis_client.delete(lote_id)
+
+            session.pop("farmacia_folder_lote_id", None)
             session.pop("farmacia_folder_fecha_desde", None)
             session.pop("farmacia_folder_fecha_hasta", None)
 
@@ -125,7 +161,12 @@ def index():
 
             df = df.where(pd.notna(df), None)
 
-            session["farmacia_folder_preview"] = df.to_dict(orient="records")
+            #session["farmacia_folder_preview"] = df.to_dict(orient="records")
+            
+            lote_id = str(uuid.uuid4())
+            guardar_preview_farmacia(lote_id, df)
+            session["farmacia_folder_lote_id"] = lote_id
+
             session["farmacia_folder_fecha_desde"] = fecha_desde
             session["farmacia_folder_fecha_hasta"] = fecha_hasta
 
