@@ -30,6 +30,15 @@ ALIAS_FOLDER_FARMACIA = {
     "observacion": ["observ", "observacion"],
 }
 
+def formatear_precio_arg(valor):
+    if valor is None or valor == "":
+        return ""
+
+    try:
+        valor = float(valor)
+        return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return valor
 
 @farmacia_folder_bp.route("/", methods=["GET", "POST"])
 def index():
@@ -48,7 +57,7 @@ def index():
                 )
 
             df = pd.DataFrame(datos)
-
+            borrar_folder_farmacia_vigente()
             guardar_farmacia_folder_en_db(
                 df,
                 fecha_desde=fecha_desde,
@@ -120,7 +129,18 @@ def index():
             session["farmacia_folder_fecha_desde"] = fecha_desde
             session["farmacia_folder_fecha_hasta"] = fecha_hasta
 
-            preview = df.to_html(
+            #preview = df.to_html(
+            #    classes="table table-striped table-hover table-bordered",
+            #    index=False
+            #)
+
+            df_preview = df.copy()
+
+            for col in ["normal", "oferta"]:
+                if col in df_preview.columns:
+                    df_preview[col] = df_preview[col].apply(formatear_precio_arg)
+
+            preview = df_preview.to_html(
                 classes="table table-striped table-hover table-bordered",
                 index=False
             )
@@ -134,6 +154,26 @@ def index():
             )
 
     return render_template("farmacia_folder.html")
+
+
+def borrar_folder_farmacia_vigente():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("DELETE FROM farmacia_folder")
+        conn.commit()
+        print("Folder farmacia vigente eliminado correctamente.", flush=True)
+
+    except Exception as e:
+        conn.rollback()
+        print("Error borrando folder farmacia vigente:", e, flush=True)
+        raise
+
+    finally:
+        cur.close()
+        conn.close()
+
 
 def guardar_farmacia_folder_en_db(
     df,
@@ -155,7 +195,7 @@ def guardar_farmacia_folder_en_db(
     cur = conn.cursor()
 
     try:
-        cur.execute("DELETE FROM farmacia_folder")
+        #cur.execute("DELETE FROM farmacia_folder")
 
         for _, row in df.iterrows():
             cur.execute(
