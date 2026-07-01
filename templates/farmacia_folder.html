@@ -23,7 +23,7 @@
 
         <form method="POST"
               enctype="multipart/form-data"
-              action="{{ url_for('farmacia_folder.index') }}">
+              action="{{ url_for('farmacia_folder.index') }}">    
 
             <div class="row mb-3">
 
@@ -79,8 +79,9 @@
                 {% endif %}
             </h5>
 
-            <form method="POST"
-                  action="{{ url_for('farmacia_folder.index') }}">
+        <form method="POST"
+                action="{{ url_for('farmacia_folder.index') }}"
+                onsubmit="return confirm('¿Está seguro de transmitir el Folder Farmacia a todas las sucursales?');">  
 
                 <button
                     type="submit"
