@@ -50,16 +50,25 @@ def limpiar_precio(valor):
 
     valor = str(valor).strip()
 
-    if "," in valor and "." in valor:
+    if valor == "":
+        return None
+
+    # Formato USA: 1,600.00
+    if "," in valor and "." in valor and valor.rfind(".") > valor.rfind(","):
+        valor = valor.replace(",", "")
+
+    # Formato AR: 1.600,00
+    elif "," in valor and "." in valor:
         valor = valor.replace(".", "").replace(",", ".")
 
+    # Formato: 1600,00
     elif "," in valor:
         valor = valor.replace(",", ".")
 
     try:
         return float(valor)
 
-    except:
+    except Exception:
         return None
 
 
