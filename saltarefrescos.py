@@ -448,7 +448,7 @@ def refrescos():
 
                 col_codigo = obtener_columna(df_data, ["cod", "codigo"])
                 col_desc = obtener_columna(df_data, ["descrip", "descripcion"])
-                col_precio = obtener_columna(df_data, ["precio", "normal"])
+                col_precio = obtener_columna(df_data, ["precio", "normal","pvn"])
 
                 validar_columna("CODIGO", col_codigo)
                 validar_columna("DESCRIPCION", col_desc)
