@@ -14,6 +14,12 @@ ecommerce_cenefas_bp = Blueprint(
 )
 
 
+SUCURSALES_ECOM = "CO01,CO02,CO04,CO05,CO06,CO07,CO09,CO10,CO14,CO16,CO18,CO20,CO21,CO24,CO25,CO27"
+SUCURSALES_SALTA = "CO09,CO18,CO21"
+SUCURSALES_JUJUY = "CO01,CO02,CO04,CO05,CO06,CO07,CO09,CO10,CO14,CO16,CO20"
+SUCURSALES_TUCUMAN = "CO24,CO25,CO27"
+
+
 COLUMNAS_SALIDA = [
     "codigo",
     "descripcion",
@@ -24,6 +30,31 @@ COLUMNAS_SALIDA = [
     "hasta",
     "sucursal"
 ]
+
+
+def mapear_sucursal(valor):
+    if pd.isna(valor):
+        return SUCURSALES_ECOM
+
+    texto = str(valor).strip().lower()
+
+    if texto in ["", "nan", "none"]:
+        return SUCURSALES_ECOM
+
+    if "jujuy" in texto and "salta" in texto:
+        sucursales = SUCURSALES_SALTA.split(",") + SUCURSALES_JUJUY.split(",")
+        return ",".join(dict.fromkeys(sucursales))
+
+    if "salta" in texto:
+        return SUCURSALES_SALTA
+
+    if "jujuy" in texto:
+        return SUCURSALES_JUJUY
+
+    if "tucuman" in texto or "tucumán" in texto:
+        return SUCURSALES_TUCUMAN
+
+    return texto.upper()
 
 
 def formatear_precio_arg(valor):
@@ -67,7 +98,8 @@ def normalizar_columnas(df):
     )
 
     df = df.rename(columns={
-        "cenefas": "cenefa"
+        "cenefas": "cenefa",
+        "sap": "sucursal"
     })
 
     return df
@@ -92,7 +124,6 @@ def cenefas():
                 f_hasta = pd.to_datetime(fecha_hasta).strftime("%d/%m/%Y") if fecha_hasta else ""
 
                 excel = pd.ExcelFile(archivo)
-
                 hojas = [h.lower().strip() for h in excel.sheet_names]
 
                 if "cenefas" not in hojas:
@@ -124,7 +155,8 @@ def cenefas():
                     "descripcion",
                     "normal",
                     "oferta",
-                    "cenefa"
+                    "cenefa",
+                    "sucursal"
                 ]
 
                 faltantes = [col for col in columnas_necesarias if col not in df.columns]
@@ -134,7 +166,6 @@ def cenefas():
 
                 df_final = df[columnas_necesarias].copy()
 
-                # Conservar únicamente las filas cuya cenefa sea "Oferta"
                 df_final = df_final[
                     df_final["cenefa"]
                     .astype(str)
@@ -145,7 +176,7 @@ def cenefas():
 
                 df_final["desde"] = f_desde
                 df_final["hasta"] = f_hasta
-                df_final["sucursal"] = ""
+                df_final["sucursal"] = df_final["sucursal"].apply(mapear_sucursal)
 
                 df_final = df_final.dropna(subset=["codigo"])
                 df_final = df_final.fillna("")
@@ -155,7 +186,6 @@ def cenefas():
                 if not df_final.empty:
                     total_registros = len(df_final)
 
-                    # Copia solo para previsualización y descarga
                     df_final_preview = df_final.copy()
 
                     for col in ["normal", "oferta"]:
