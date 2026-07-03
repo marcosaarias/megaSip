@@ -26,6 +26,19 @@ COLUMNAS_SALIDA = [
 ]
 
 
+def formatear_precio_arg(valor):
+    try:
+        if valor == "" or pd.isna(valor):
+            return ""
+
+        num = float(valor)
+
+        return f"{num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    except Exception:
+        return valor
+
+
 def normalizar_texto(valor):
     return str(valor).lower().strip()
 
@@ -121,6 +134,15 @@ def cenefas():
 
                 df_final = df[columnas_necesarias].copy()
 
+                # Conservar únicamente las filas cuya cenefa sea "Oferta"
+                df_final = df_final[
+                    df_final["cenefa"]
+                    .astype(str)
+                    .str.strip()
+                    .str.lower()
+                    .eq("oferta")
+                ]
+
                 df_final["desde"] = f_desde
                 df_final["hasta"] = f_hasta
                 df_final["sucursal"] = ""
@@ -133,19 +155,26 @@ def cenefas():
                 if not df_final.empty:
                     total_registros = len(df_final)
 
+                    # Copia solo para previsualización y descarga
+                    df_final_preview = df_final.copy()
+
+                    for col in ["normal", "oferta"]:
+                        if col in df_final_preview.columns:
+                            df_final_preview[col] = df_final_preview[col].apply(formatear_precio_arg)
+
                     redis_client.set(
                         f"ecommerce_cenefas:{cache_id}",
-                        df_final.to_json(orient="records"),
+                        df_final_preview.to_json(orient="records"),
                         ex=3600
                     )
 
-                    preview = df_final.to_html(
+                    preview = df_final_preview.to_html(
                         classes="table table-sm table-hover table-bordered text-center",
                         index=False,
                         na_rep=""
                     )
                 else:
-                    preview = "<div class='alert alert-warning'>No se encontraron registros válidos.</div>"
+                    preview = "<div class='alert alert-warning'>No se encontraron registros válidos con cenefa OFERTA.</div>"
 
             except Exception as e:
                 preview = f"<div class='alert alert-danger'>Error procesando Cenefas: {e}</div>"
