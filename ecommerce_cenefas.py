@@ -40,6 +40,9 @@ def mapear_sucursal(valor):
 
     if texto in ["", "nan", "none"]:
         return SUCURSALES_ECOM
+    
+    if "interna" in texto:
+        return SUCURSALES_ECOM
 
     if "jujuy" in texto and "salta" in texto:
         sucursales = SUCURSALES_SALTA.split(",") + SUCURSALES_JUJUY.split(",")
