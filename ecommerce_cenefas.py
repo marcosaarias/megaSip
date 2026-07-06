@@ -78,6 +78,10 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
     conn = get_db_connection()
 
     try:
+        print("DEBUG ECOMMERCE => fecha_desde:", fecha_desde)
+        print("DEBUG ECOMMERCE => fecha_hasta:", fecha_hasta)
+        print("DEBUG ECOMMERCE => tipo_origen:", tipo_origen)
+
         query = """
             SELECT
                 codigo::text AS codigo,
@@ -90,12 +94,15 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
                 sucursales AS sucursal,
                 tipo_cenefa
             FROM cenefas
-            WHERE LOWER(TRIM(cenefa)) = 'oferta'
-              AND desde = %s
-              AND hasta = %s
+            WHERE LOWER(TRIM(cenefa)) LIKE '%oferta%'
+              AND TRIM(desde::text) = %s
+              AND TRIM(hasta::text) = %s
         """
 
-        params = [fecha_desde, fecha_hasta]
+        params = [
+            str(fecha_desde).strip(),
+            str(fecha_hasta).strip()
+        ]
 
         if tipo_origen != "todos":
             query += " AND LOWER(TRIM(tipo_cenefa)) = %s"
@@ -105,13 +112,17 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
             ORDER BY descripcion ASC
         """
 
+        print("DEBUG ECOMMERCE QUERY:", query)
+        print("DEBUG ECOMMERCE PARAMS:", params)
+
         df = pd.read_sql(query, conn, params=params)
+
+        print("DEBUG ECOMMERCE REGISTROS:", len(df))
 
         return df
 
     finally:
         conn.close()
-
 
 @ecommerce_cenefas_bp.route("/", methods=["GET", "POST"])
 def cenefas():
