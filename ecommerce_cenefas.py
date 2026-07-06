@@ -78,10 +78,6 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
     conn = get_db_connection()
 
     try:
-        print("DEBUG ECOMMERCE => fecha_desde:", fecha_desde)
-        print("DEBUG ECOMMERCE => fecha_hasta:", fecha_hasta)
-        print("DEBUG ECOMMERCE => tipo_origen:", tipo_origen)
-
         query = """
             SELECT
                 codigo::text AS codigo,
@@ -97,6 +93,9 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
             WHERE LOWER(TRIM(cenefa)) LIKE %s
               AND TRIM(desde::text) = %s
               AND TRIM(hasta::text) = %s
+              AND codigo IS NOT NULL
+              AND LOWER(TRIM(codigo::text)) <> 'codigo'
+              AND LOWER(TRIM(descripcion)) <> 'descripcion'
         """
 
         params = [
@@ -109,15 +108,9 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
             query += " AND LOWER(TRIM(tipo_cenefa)) = %s"
             params.append(tipo_origen.strip().lower())
 
-        query += """
-            ORDER BY descripcion ASC
-        """
-
-        print("DEBUG ECOMMERCE PARAMS:", params)
+        query += " ORDER BY descripcion ASC"
 
         df = pd.read_sql(query, conn, params=params)
-
-        print("DEBUG ECOMMERCE REGISTROS:", len(df))
 
         return df
 
