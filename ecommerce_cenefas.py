@@ -80,10 +80,10 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
     try:
         query = """
             SELECT
-                "Codigo"::text AS codigo,
+                codigo::text AS codigo,
                 descripcion,
-                "Normal" AS normal,
-                "Oferta" AS oferta,
+                normal,
+                oferta,
                 cenefa,
                 desde,
                 hasta,
@@ -99,7 +99,7 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
 
         if tipo_origen != "todos":
             query += " AND LOWER(TRIM(tipo_cenefa)) = %s"
-            params.append(tipo_origen)
+            params.append(tipo_origen.strip().lower())
 
         query += """
             ORDER BY descripcion ASC
