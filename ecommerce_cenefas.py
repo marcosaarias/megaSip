@@ -94,12 +94,13 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
                 sucursales AS sucursal,
                 tipo_cenefa
             FROM cenefas
-            WHERE LOWER(TRIM(cenefa)) LIKE '%oferta%'
+            WHERE LOWER(TRIM(cenefa)) LIKE %s
               AND TRIM(desde::text) = %s
               AND TRIM(hasta::text) = %s
         """
 
         params = [
+            "%oferta%",
             str(fecha_desde).strip(),
             str(fecha_hasta).strip()
         ]
@@ -112,7 +113,6 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
             ORDER BY descripcion ASC
         """
 
-        print("DEBUG ECOMMERCE QUERY:", query)
         print("DEBUG ECOMMERCE PARAMS:", params)
 
         df = pd.read_sql(query, conn, params=params)
