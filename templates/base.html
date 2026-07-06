@@ -451,6 +451,19 @@
 
 </div>
 
+<div class="menu-section {% if request.endpoint == 'ecommerce_cenefas.cenefas' %}active{% endif %}">
+  <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+    Ecommerce <i class="bi bi-chevron-down arrow"></i>
+  </a>
+
+  <div class="submenu">
+    <a href="{{ url_for('ecommerce_cenefas.cenefas') }}"
+       class="submenu-item {% if request.endpoint == 'ecommerce_cenefas.cenefas' %}active-link{% endif %}">
+      Generar Precios Tachados
+    </a>
+  </div>
+</div>
+
 {% endif %}
 
 
