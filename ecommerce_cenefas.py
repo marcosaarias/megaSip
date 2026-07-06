@@ -5,6 +5,7 @@ import pandas as pd
 
 from flask import Blueprint, render_template, request, send_file
 from compras import redis_client
+from database.db import get_db_connection
 
 
 ecommerce_cenefas_bp = Blueprint(
@@ -40,7 +41,7 @@ def mapear_sucursal(valor):
 
     if texto in ["", "nan", "none"]:
         return SUCURSALES_ECOM
-    
+
     if "interna" in texto:
         return SUCURSALES_ECOM
 
@@ -73,39 +74,43 @@ def formatear_precio_arg(valor):
         return valor
 
 
-def normalizar_texto(valor):
-    return str(valor).lower().strip()
+def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
+    conn = get_db_connection()
 
+    try:
+        query = """
+            SELECT
+                "Codigo"::text AS codigo,
+                descripcion,
+                "Normal" AS normal,
+                "Oferta" AS oferta,
+                cenefa,
+                desde,
+                hasta,
+                sucursales AS sucursal,
+                tipo_cenefa
+            FROM cenefas
+            WHERE LOWER(TRIM(cenefa)) = 'oferta'
+              AND desde = %s
+              AND hasta = %s
+        """
 
-def detectar_fila_header(df_raw):
-    for i, row in df_raw.iterrows():
-        valores = [normalizar_texto(x) for x in row.values]
+        params = [fecha_desde, fecha_hasta]
 
-        if (
-            "codigo" in valores
-            and "descripcion" in valores
-            and "normal" in valores
-            and "oferta" in valores
-        ):
-            return i
+        if tipo_origen != "todos":
+            query += " AND LOWER(TRIM(tipo_cenefa)) = %s"
+            params.append(tipo_origen)
 
-    return None
+        query += """
+            ORDER BY descripcion ASC
+        """
 
+        df = pd.read_sql(query, conn, params=params)
 
-def normalizar_columnas(df):
-    df.columns = (
-        df.columns
-        .astype(str)
-        .str.lower()
-        .str.strip()
-    )
+        return df
 
-    df = df.rename(columns={
-        "cenefas": "cenefa",
-        "sap": "sucursal"
-    })
-
-    return df
+    finally:
+        conn.close()
 
 
 @ecommerce_cenefas_bp.route("/", methods=["GET", "POST"])
@@ -115,70 +120,29 @@ def cenefas():
     cache_id = None
 
     if request.method == "POST":
-        archivo = request.files.get("archivo")
         fecha_desde = request.form.get("fecha_desde")
         fecha_hasta = request.form.get("fecha_hasta")
+        tipo_origen = request.form.get("tipo_origen", "todos")
 
-        if archivo:
-            try:
-                cache_id = str(uuid.uuid4())
+        try:
+            cache_id = str(uuid.uuid4())
 
-                f_desde = pd.to_datetime(fecha_desde).strftime("%d/%m/%Y") if fecha_desde else ""
-                f_hasta = pd.to_datetime(fecha_hasta).strftime("%d/%m/%Y") if fecha_hasta else ""
+            f_desde = pd.to_datetime(fecha_desde).strftime("%d/%m/%Y") if fecha_desde else ""
+            f_hasta = pd.to_datetime(fecha_hasta).strftime("%d/%m/%Y") if fecha_hasta else ""
 
-                excel = pd.ExcelFile(archivo)
-                hojas = [h.lower().strip() for h in excel.sheet_names]
+            df_final = obtener_cenefas_desde_db(
+                f_desde,
+                f_hasta,
+                tipo_origen
+            )
 
-                if "cenefas" not in hojas:
-                    raise ValueError("El archivo debe tener una hoja llamada 'cenefas'.")
-
-                nombre_hoja = excel.sheet_names[hojas.index("cenefas")]
-
-                df_raw = pd.read_excel(
-                    excel,
-                    sheet_name=nombre_hoja,
-                    header=None
-                )
-
-                header_idx = detectar_fila_header(df_raw)
-
-                if header_idx is None:
-                    raise ValueError("No se pudo detectar la fila de encabezados.")
-
-                df = pd.read_excel(
-                    excel,
-                    sheet_name=nombre_hoja,
-                    header=header_idx
-                )
-
-                df = normalizar_columnas(df)
-
-                columnas_necesarias = [
-                    "codigo",
-                    "descripcion",
-                    "normal",
-                    "oferta",
-                    "cenefa",
-                    "sucursal"
-                ]
-
-                faltantes = [col for col in columnas_necesarias if col not in df.columns]
-
-                if faltantes:
-                    raise ValueError(f"Faltan columnas requeridas: {', '.join(faltantes)}")
-
-                df_final = df[columnas_necesarias].copy()
-
-                df_final = df_final[
-                    df_final["cenefa"]
-                    .astype(str)
-                    .str.strip()
-                    .str.lower()
-                    .eq("oferta")
-                ]
-
-                df_final["desde"] = f_desde
-                df_final["hasta"] = f_hasta
+            if df_final.empty:
+                preview = """
+                <div class='alert alert-warning'>
+                    No se encontraron cenefas OFERTA para la vigencia seleccionada.
+                </div>
+                """
+            else:
                 df_final["sucursal"] = df_final["sucursal"].apply(mapear_sucursal)
 
                 df_final = df_final.dropna(subset=["codigo"])
@@ -186,31 +150,31 @@ def cenefas():
 
                 df_final = df_final[COLUMNAS_SALIDA]
 
-                if not df_final.empty:
-                    total_registros = len(df_final)
+                total_registros = len(df_final)
 
-                    df_final_preview = df_final.copy()
+                df_preview = df_final.copy()
 
-                    for col in ["normal", "oferta"]:
-                        if col in df_final_preview.columns:
-                            df_final_preview[col] = df_final_preview[col].apply(formatear_precio_arg)
+                for col in ["normal", "oferta"]:
+                    df_preview[col] = df_preview[col].apply(formatear_precio_arg)
 
-                    redis_client.set(
-                        f"ecommerce_cenefas:{cache_id}",
-                        df_final_preview.to_json(orient="records"),
-                        ex=3600
-                    )
+                redis_client.set(
+                    f"ecommerce_cenefas:{cache_id}",
+                    df_preview.to_json(orient="records"),
+                    ex=3600
+                )
 
-                    preview = df_final_preview.to_html(
-                        classes="table table-sm table-hover table-bordered text-center",
-                        index=False,
-                        na_rep=""
-                    )
-                else:
-                    preview = "<div class='alert alert-warning'>No se encontraron registros válidos con cenefa OFERTA.</div>"
+                preview = df_preview.to_html(
+                    classes="table table-sm table-hover table-bordered text-center",
+                    index=False,
+                    na_rep=""
+                )
 
-            except Exception as e:
-                preview = f"<div class='alert alert-danger'>Error procesando Cenefas: {e}</div>"
+        except Exception as e:
+            preview = f"""
+            <div class='alert alert-danger'>
+                Error generando Cenefas Ecommerce: {e}
+            </div>
+            """
 
     return render_template(
         "ecommerce_cenefas.html",
@@ -243,6 +207,6 @@ def descargar_cenefas():
 
     return send_file(
         output,
-        download_name="cenefas.xlsx",
+        download_name="cenefas_ecommerce.xlsx",
         as_attachment=True
     )

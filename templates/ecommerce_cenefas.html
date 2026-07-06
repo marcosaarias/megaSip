@@ -6,28 +6,30 @@
     <h2 class="mb-4">Ecommerce Cenefas</h2>
 
     <div class="card p-4 shadow-sm mb-4">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST">
             <div class="row mb-3">
-                <div class="col-md-12">
-                    <label class="form-label font-weight-bold">Archivo Excel:</label>
-                    <input type="file" name="archivo" class="form-control" accept=".xlsx,.xls" required>
-                    <small class="text-muted">Debe contener una hoja llamada "cenefas".</small>
+                <div class="col-md-4">
+                    <label class="form-label font-weight-bold">Origen:</label>
+                    <select name="tipo_origen" class="form-control" required>
+                        <option value="todos">Todos</option>
+                        <option value="minorista">Minorista</option>
+                        <option value="diario">Diario</option>
+                    </select>
                 </div>
-            </div>
 
-            <div class="row mb-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label font-weight-bold">Vigencia Desde:</label>
                     <input type="date" name="fecha_desde" class="form-control" required>
                 </div>
-                <div class="col-md-6">
+
+                <div class="col-md-4">
                     <label class="form-label font-weight-bold">Vigencia Hasta:</label>
                     <input type="date" name="fecha_hasta" class="form-control" required>
                 </div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-sys w-100">
-                <i class="fas fa-upload"></i> Cargar y Procesar
+                <i class="fas fa-cogs"></i> Generar desde Base de Datos
             </button>
         </form>
     </div>
