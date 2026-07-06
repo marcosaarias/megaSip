@@ -127,8 +127,11 @@ def cenefas():
         try:
             cache_id = str(uuid.uuid4())
 
-            f_desde = pd.to_datetime(fecha_desde).strftime("%d/%m/%Y") if fecha_desde else ""
-            f_hasta = pd.to_datetime(fecha_hasta).strftime("%d/%m/%Y") if fecha_hasta else ""
+            #f_desde = pd.to_datetime(fecha_desde).strftime("%d/%m/%Y") if fecha_desde else ""
+            #f_hasta = pd.to_datetime(fecha_hasta).strftime("%d/%m/%Y") if fecha_hasta else ""
+
+            f_desde = fecha_desde
+            f_hasta = fecha_hasta
 
             df_final = obtener_cenefas_desde_db(
                 f_desde,
