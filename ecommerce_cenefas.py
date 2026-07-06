@@ -87,30 +87,34 @@ def obtener_cenefas_desde_db(fecha_desde, fecha_hasta, tipo_origen):
                 cenefa,
                 desde,
                 hasta,
-                sucursales AS sucursal,
-                tipo_cenefa
+                sucursales AS sucursal
             FROM cenefas
-            WHERE LOWER(TRIM(cenefa)) LIKE %s
-              AND TRIM(desde::text) = %s
-              AND TRIM(hasta::text) = %s
-              AND codigo IS NOT NULL
-              AND LOWER(TRIM(codigo::text)) <> 'codigo'
-              AND LOWER(TRIM(descripcion)) <> 'descripcion'
+            WHERE desde::text = %s
+              AND hasta::text = %s
+              AND LOWER(TRIM(tipo_cenefa)) = %s
+              AND LOWER(TRIM(cenefa)) = 'oferta'
+            ORDER BY descripcion ASC
         """
 
-        params = [
-            "%oferta%",
+        params = (
             str(fecha_desde).strip(),
-            str(fecha_hasta).strip()
-        ]
+            str(fecha_hasta).strip(),
+            str(tipo_origen).strip().lower()
+        )
 
-        if tipo_origen != "todos":
-            query += " AND LOWER(TRIM(tipo_cenefa)) = %s"
-            params.append(tipo_origen.strip().lower())
+        print("DEBUG PARAMS:", params)
 
-        query += " ORDER BY descripcion ASC"
+        cur = conn.cursor()
+        cur.execute(query, params)
 
-        df = pd.read_sql(query, conn, params=params)
+        columnas = [desc[0] for desc in cur.description]
+        filas = cur.fetchall()
+
+        print("DEBUG REGISTROS:", len(filas))
+
+        df = pd.DataFrame(filas, columns=columnas)
+
+        cur.close()
 
         return df
 
