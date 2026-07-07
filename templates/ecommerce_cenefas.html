@@ -69,7 +69,8 @@
 <style>
     .tabla-scroll {
         max-height: 500px;
-        overflow: auto;
+        overflow-y: auto;
+        overflow-x: auto;
         border: 1px solid #ddd;
     }
 
@@ -79,18 +80,24 @@
         border-spacing: 0;
     }
 
+    /* Encabezados fijos */
     .tabla-scroll thead th {
         position: sticky;
         top: 0;
-        z-index: 20;
-        background: #212529;
-        color: white;
+        z-index: 100;
+        background-color: #212529;
+        color: #fff;
+        text-align: center;
+        vertical-align: middle;
         padding: 0.6rem;
+        border-bottom: 2px solid #dee2e6;
     }
 
-    .tabla-scroll td {
-        padding: 0.5rem;
+    /* Celdas */
+    .tabla-scroll tbody td {
+        text-align: center;
         vertical-align: middle;
+        padding: 0.5rem;
     }
 </style>
 {% endblock %}
