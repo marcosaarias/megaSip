@@ -30,6 +30,7 @@
 
   <div class="menu-section 
     {% if '/sistemas/cenefas' in request.path 
+          or /balanza in request.path
           or 'ecommerce/cenefas' in request.path
           or 'vencimientos' in request.path 
           or 'pedidoya' in request.path %}
@@ -45,6 +46,11 @@
       <a href="{{ url_for('cenefas_sistemas.index') }}"
         class="submenu-item {% if '/sistemas/cenefas' in request.path %}active-link{% endif %}">
         Cenefas
+      </a> 
+
+      <a href="{{ url_for('balanza.index') }}"
+        class="submenu-item {% if '/balanza' in request.path %}active-link{% endif %}">
+          Consultar PLU
       </a>
 
       <a href="{{ url_for('ecommerce_cenefas.cenefas') }}"

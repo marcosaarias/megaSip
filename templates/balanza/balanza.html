@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Consulta de Balanza{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-sm mx-auto" style="max-width: 650px;">
+
+        <div class="card-header bg-warning text-dark">
+            <h4 class="mb-0">Consulta de Balanza</h4>
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST">
+
+                <div class="mb-3">
+                    <label for="sucursal" class="form-label">
+                        <strong>Sucursal</strong>
+                    </label>
+
+                    <select
+                        id="sucursal"
+                        name="sucursal"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">Seleccione una sucursal</option>
+
+                        {% for sucursal in sucursales %}
+                            <option
+                                value="{{ sucursal }}"
+                                {% if sucursal == sucursal_seleccionada %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ sucursal }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="nroplu" class="form-label">
+                        <strong>Nro. PLU</strong>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nroplu"
+                        name="nroplu"
+                        class="form-control"
+                        value="{{ nroplu }}"
+                        placeholder="Ejemplo: 008698"
+                        autocomplete="off"
+                        autofocus
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-dark w-100">
+                    Buscar
+                </button>
+
+            </form>
+
+            {% if resultado %}
+
+                <div class="alert alert-success mt-4 text-center">
+
+                    <div class="mb-2">
+                        Nro. PLU consultado:
+                        <strong>{{ resultado.nroplu }}</strong>
+                    </div>
+
+                    <div style="font-size: 32px;">
+                        PLU:
+                        <strong>{{ resultado.plu }}</strong>
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+            {% if error %}
+
+                <div class="alert alert-danger mt-4">
+                    {{ error }}
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
