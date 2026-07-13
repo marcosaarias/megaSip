@@ -72,7 +72,7 @@ def informes():
                 conn.close()
 
     return render_template(
-        "informes_ecommerce.html",
+        "publicidad/informes_ecommerce.html",
         registros=registros,
         total_registros=total_registros,
         fecha_desde=fecha_desde,
