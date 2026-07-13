@@ -1,0 +1,763 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Ecommerce{% endblock %}
+
+{% block content %}
+
+<style>
+    .dashboard-ecommerce {
+        padding-bottom: 40px;
+    }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, #1f1f1f, #383838);
+        color: white;
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 24px;
+        border-left: 7px solid #f2b400;
+        box-shadow: 0 5px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .dashboard-header h2 {
+        margin: 0;
+        font-size: 27px;
+        font-weight: 800;
+    }
+
+    .dashboard-header p {
+        margin: 8px 0 0;
+        color: #dddddd;
+    }
+
+    .filtros-card,
+    .kpi-card,
+    .grafico-card,
+    .tabla-card {
+        background: white;
+        border: 1px solid #e5e5e5;
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .filtros-card {
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .kpi-card {
+        height: 100%;
+        padding: 20px;
+        border-bottom: 5px solid #f2b400;
+    }
+
+    .kpi-label {
+        color: #6c757d;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+        color: #222;
+        font-size: 32px;
+        font-weight: 800;
+        margin-top: 8px;
+    }
+
+    .kpi-detail {
+        margin-top: 5px;
+        color: #777;
+        font-size: 13px;
+    }
+
+    .grafico-card {
+        padding: 20px;
+        height: 100%;
+    }
+
+    .grafico-titulo {
+        font-size: 18px;
+        font-weight: 750;
+        color: #252525;
+        margin-bottom: 18px;
+    }
+
+    .grafico-contenedor {
+        position: relative;
+        width: 100%;
+        height: 340px;
+    }
+
+    .grafico-contenedor-alto {
+        position: relative;
+        width: 100%;
+        height: 420px;
+    }
+
+    .tabla-card {
+        margin-top: 24px;
+        overflow: hidden;
+    }
+
+    .tabla-header {
+        padding: 20px;
+        border-bottom: 1px solid #e8e8e8;
+    }
+
+    .tabla-scroll {
+        max-height: 520px;
+        overflow: auto;
+    }
+
+    .tabla-scroll table {
+        margin-bottom: 0;
+        min-width: 800px;
+    }
+
+    .tabla-scroll thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #222;
+        color: white;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .tabla-scroll tbody td {
+        vertical-align: middle;
+    }
+
+    .btn-dashboard {
+        background: #f2b400;
+        border-color: #f2b400;
+        color: #171717;
+        font-weight: 700;
+    }
+
+    .btn-dashboard:hover {
+        background: #d9a100;
+        border-color: #d9a100;
+        color: #171717;
+    }
+
+    .sin-datos {
+        min-height: 220px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #777;
+        text-align: center;
+    }
+
+    .badge-modalidad {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #fff3cd;
+        color: #664d03;
+        border: 1px solid #ffecb5;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 18px;
+        }
+
+        .dashboard-header h2 {
+            font-size: 22px;
+        }
+
+        .kpi-value {
+            font-size: 26px;
+        }
+
+        .grafico-contenedor,
+        .grafico-contenedor-alto {
+            height: 300px;
+        }
+    }
+</style>
+
+<div class="container-fluid dashboard-ecommerce">
+
+    <div class="dashboard-header">
+        <h2>Dashboard Ecommerce</h2>
+        <p>
+            Seguimiento de pedidos, sucursales, provincias, entregas y medios de pago.
+        </p>
+    </div>
+
+    <div class="filtros-card">
+        <form method="GET"
+              action="{{ url_for('informes_ecommerce.informes') }}">
+
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        <strong>Fecha desde</strong>
+                    </label>
+
+                    <input
+                        type="date"
+                        name="desde"
+                        class="form-control"
+                        value="{{ filtros.desde if filtros else '' }}"
+                    >
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        <strong>Fecha hasta</strong>
+                    </label>
+
+                    <input
+                        type="date"
+                        name="hasta"
+                        class="form-control"
+                        value="{{ filtros.hasta if filtros else '' }}"
+                    >
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        <strong>Provincia</strong>
+                    </label>
+
+                    <select name="provincia" class="form-select">
+                        <option value="">Todas las provincias</option>
+
+                        {% for provincia in provincias_disponibles|default([]) %}
+                            <option
+                                value="{{ provincia }}"
+                                {% if filtros and filtros.provincia == provincia %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ provincia }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        <strong>Sucursal</strong>
+                    </label>
+
+                    <select name="sucursal" class="form-select">
+                        <option value="">Todas las sucursales</option>
+
+                        {% for sucursal in sucursales_disponibles|default([]) %}
+                            <option
+                                value="{{ sucursal }}"
+                                {% if filtros and filtros.sucursal == sucursal %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ sucursal }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-12 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-dashboard">
+                        Aplicar filtros
+                    </button>
+
+                    <a
+                        href="{{ url_for('informes_ecommerce.informes') }}"
+                        class="btn btn-outline-secondary"
+                    >
+                        Limpiar
+                    </a>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card">
+                <div class="kpi-label">
+                    Pedidos del mes
+                </div>
+
+                <div class="kpi-value">
+                    {{ "{:,}".format(resumen.pedidos_mes|default(0)).replace(",", ".") }}
+                </div>
+
+                <div class="kpi-detail">
+                    Total de pedidos registrados en el período.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card">
+                <div class="kpi-label">
+                    Clientes únicos
+                </div>
+
+                <div class="kpi-value">
+                    {{ "{:,}".format(resumen.clientes_unicos|default(0)).replace(",", ".") }}
+                </div>
+
+                <div class="kpi-detail">
+                    Clientes distintos identificados por documento.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card">
+                <div class="kpi-label">
+                    Retiro en tienda
+                </div>
+
+                <div class="kpi-value">
+                    {{ "{:,}".format(resumen.retiro_tienda|default(0)).replace(",", ".") }}
+                </div>
+
+                <div class="kpi-detail">
+                    Pedidos seleccionados para retirar en sucursal.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card">
+                <div class="kpi-label">
+                    Pago online
+                </div>
+
+                <div class="kpi-value">
+                    {{ "{:,}".format(resumen.pago_online|default(0)).replace(",", ".") }}
+                </div>
+
+                <div class="kpi-detail">
+                    Pedidos abonados mediante canales digitales.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4 mt-1">
+
+        <div class="col-12">
+            <div class="grafico-card">
+                <div class="grafico-titulo">
+                    Evolución diaria de pedidos
+                </div>
+
+                {% if pedidos_por_dia|default([]) %}
+                    <div class="grafico-contenedor">
+                        <canvas id="graficoPedidosDia"></canvas>
+                    </div>
+                {% else %}
+                    <div class="sin-datos">
+                        No hay datos diarios para mostrar.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4 mt-1">
+
+        <div class="col-lg-6">
+            <div class="grafico-card">
+                <div class="grafico-titulo">
+                    Pedidos por provincia
+                </div>
+
+                {% if por_provincia|default([]) %}
+                    <div class="grafico-contenedor">
+                        <canvas id="graficoProvincia"></canvas>
+                    </div>
+                {% else %}
+                    <div class="sin-datos">
+                        No hay información por provincia.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="grafico-card">
+                <div class="grafico-titulo">
+                    Pedidos por sucursal
+                </div>
+
+                {% if por_sucursal|default([]) %}
+                    <div class="grafico-contenedor-alto">
+                        <canvas id="graficoSucursal"></canvas>
+                    </div>
+                {% else %}
+                    <div class="sin-datos">
+                        No hay información por sucursal.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4 mt-1">
+
+        <div class="col-lg-6">
+            <div class="grafico-card">
+                <div class="grafico-titulo">
+                    Modalidad de entrega
+                </div>
+
+                {% if por_entrega|default([]) %}
+                    <div class="grafico-contenedor">
+                        <canvas id="graficoEntrega"></canvas>
+                    </div>
+                {% else %}
+                    <div class="sin-datos">
+                        No hay información de modalidades de entrega.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="grafico-card">
+                <div class="grafico-titulo">
+                    Modalidad de pago
+                </div>
+
+                {% if por_pago|default([]) %}
+                    <div class="grafico-contenedor">
+                        <canvas id="graficoPago"></canvas>
+                    </div>
+                {% else %}
+                    <div class="sin-datos">
+                        No hay información de medios de pago.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="tabla-card">
+
+        <div class="tabla-header">
+            <div class="row align-items-center g-3">
+
+                <div class="col-md-7">
+                    <h5 class="mb-1">
+                        Resumen por sucursal
+                    </h5>
+
+                    <small class="text-muted">
+                        Distribución de pedidos según la sucursal asignada.
+                    </small>
+                </div>
+
+                <div class="col-md-5">
+                    <input
+                        type="text"
+                        id="buscadorSucursales"
+                        class="form-control"
+                        placeholder="Buscar sucursal..."
+                    >
+                </div>
+
+            </div>
+        </div>
+
+        {% if por_sucursal|default([]) %}
+
+            <div class="tabla-scroll">
+                <table
+                    class="table table-hover table-striped"
+                    id="tablaSucursales"
+                >
+                    <thead>
+                        <tr>
+                            <th>Sucursal</th>
+                            <th>Total de pedidos</th>
+                            <th>Participación</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% set total_general = resumen.pedidos_mes|default(0) %}
+
+                        {% for fila in por_sucursal %}
+
+                            {% if total_general > 0 %}
+                                {% set participacion =
+                                    (fila.total|default(fila.cantidad|default(0)) * 100)
+                                    / total_general
+                                %}
+                            {% else %}
+                                {% set participacion = 0 %}
+                            {% endif %}
+
+                            <tr>
+                                <td class="text-center">
+                                    <span class="badge-modalidad">
+                                        {{ fila.sucursal }}
+                                    </span>
+                                </td>
+
+                                <td class="text-center fw-bold">
+                                    {{
+                                        "{:,}".format(
+                                            fila.total|default(
+                                                fila.cantidad|default(0)
+                                            )
+                                        ).replace(",", ".")
+                                    }}
+                                </td>
+
+                                <td class="text-center">
+                                    {{ "%.2f"|format(participacion) }}%
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+
+        {% else %}
+
+            <div class="sin-datos">
+                No hay pedidos por sucursal para mostrar.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const colorAmarillo = "#f2b400";
+        const colorNegro = "#242424";
+        const colorGris = "#6c757d";
+        const colorVerde = "#198754";
+        const colorAzul = "#0d6efd";
+
+        const opcionesGenerales = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "bottom"
+                }
+            }
+        };
+
+        const pedidosPorDia = {{ pedidos_por_dia|default([])|tojson }};
+        const datosProvincia = {{ por_provincia|default([])|tojson }};
+        const datosSucursal = {{ por_sucursal|default([])|tojson }};
+        const datosEntrega = {{ por_entrega|default([])|tojson }};
+        const datosPago = {{ por_pago|default([])|tojson }};
+
+        const canvasPedidosDia = document.getElementById("graficoPedidosDia");
+
+        if (canvasPedidosDia && pedidosPorDia.length > 0) {
+            new Chart(canvasPedidosDia, {
+                type: "line",
+                data: {
+                    labels: pedidosPorDia.map(function (fila) {
+                        return fila.fecha;
+                    }),
+                    datasets: [{
+                        label: "Pedidos",
+                        data: pedidosPorDia.map(function (fila) {
+                            return fila.total ?? fila.cantidad ?? 0;
+                        }),
+                        borderColor: colorAmarillo,
+                        backgroundColor: "rgba(242, 180, 0, 0.18)",
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    ...opcionesGenerales,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const canvasProvincia = document.getElementById("graficoProvincia");
+
+        if (canvasProvincia && datosProvincia.length > 0) {
+            new Chart(canvasProvincia, {
+                type: "bar",
+                data: {
+                    labels: datosProvincia.map(function (fila) {
+                        return fila.provincia;
+                    }),
+                    datasets: [{
+                        label: "Pedidos",
+                        data: datosProvincia.map(function (fila) {
+                            return fila.total ?? fila.cantidad ?? 0;
+                        }),
+                        backgroundColor: colorAmarillo,
+                        borderRadius: 7
+                    }]
+                },
+                options: {
+                    ...opcionesGenerales,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const canvasSucursal = document.getElementById("graficoSucursal");
+
+        if (canvasSucursal && datosSucursal.length > 0) {
+            new Chart(canvasSucursal, {
+                type: "bar",
+                data: {
+                    labels: datosSucursal.map(function (fila) {
+                        return fila.sucursal;
+                    }),
+                    datasets: [{
+                        label: "Pedidos",
+                        data: datosSucursal.map(function (fila) {
+                            return fila.total ?? fila.cantidad ?? 0;
+                        }),
+                        backgroundColor: colorNegro,
+                        borderRadius: 7
+                    }]
+                },
+                options: {
+                    indexAxis: "y",
+                    ...opcionesGenerales,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const canvasEntrega = document.getElementById("graficoEntrega");
+
+        if (canvasEntrega && datosEntrega.length > 0) {
+            new Chart(canvasEntrega, {
+                type: "doughnut",
+                data: {
+                    labels: datosEntrega.map(function (fila) {
+                        return fila.modalidad ?? fila.tipo ?? "Sin definir";
+                    }),
+                    datasets: [{
+                        data: datosEntrega.map(function (fila) {
+                            return fila.total ?? fila.cantidad ?? 0;
+                        }),
+                        backgroundColor: [
+                            colorAmarillo,
+                            colorNegro,
+                            colorGris,
+                            colorVerde
+                        ],
+                        borderWidth: 2,
+                        borderColor: "#ffffff"
+                    }]
+                },
+                options: {
+                    ...opcionesGenerales,
+                    cutout: "62%"
+                }
+            });
+        }
+
+        const canvasPago = document.getElementById("graficoPago");
+
+        if (canvasPago && datosPago.length > 0) {
+            new Chart(canvasPago, {
+                type: "doughnut",
+                data: {
+                    labels: datosPago.map(function (fila) {
+                        return fila.modalidad ?? fila.tipo ?? "Sin definir";
+                    }),
+                    datasets: [{
+                        data: datosPago.map(function (fila) {
+                            return fila.total ?? fila.cantidad ?? 0;
+                        }),
+                        backgroundColor: [
+                            colorAzul,
+                            colorAmarillo,
+                            colorNegro,
+                            colorGris
+                        ],
+                        borderWidth: 2,
+                        borderColor: "#ffffff"
+                    }]
+                },
+                options: {
+                    ...opcionesGenerales,
+                    cutout: "62%"
+                }
+            });
+        }
+
+        const buscador = document.getElementById("buscadorSucursales");
+        const tabla = document.getElementById("tablaSucursales");
+
+        if (buscador && tabla) {
+            buscador.addEventListener("input", function () {
+                const texto = buscador.value.toLowerCase().trim();
+                const filas = tabla.querySelectorAll("tbody tr");
+
+                filas.forEach(function (fila) {
+                    const contenido = fila.textContent.toLowerCase();
+
+                    fila.style.display = contenido.includes(texto)
+                        ? ""
+                        : "none";
+                });
+            });
+        }
+    });
+</script>
+
+{% endblock %}
+
