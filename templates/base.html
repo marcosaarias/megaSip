@@ -47,12 +47,7 @@
         class="submenu-item {% if '/sistemas/cenefas' in request.path %}active-link{% endif %}">
         Cenefas
       </a> 
-
-      <a href="{{ url_for('balanza.index') }}"
-        class="submenu-item {% if '/balanza' in request.path %}active-link{% endif %}">
-          Consultar PLU
-      </a>
-
+      
       <a href="{{ url_for('ecommerce_cenefas.cenefas') }}"
         class="submenu-item {% if 'ecommerce/cenefas' in request.path %}active-link{% endif %}">
         Ecommerce
