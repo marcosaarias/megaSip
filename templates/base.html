@@ -448,6 +448,15 @@
        class="submenu-item {% if request.endpoint == 'cupones.index' %}active-link{% endif %}">
       Generar Cupones
     </a>
+    
+    <a href="{{ url_for('informes_ecommerce.informes') }}"
+           class="submenu-item
+           {% if request.endpoint == 'informes_ecommerce.informes' %}
+               active-link
+           {% endif %}">
+        Informes
+    </a>
+
   </div>
 
 </div>
