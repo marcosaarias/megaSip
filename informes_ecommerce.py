@@ -27,26 +27,26 @@ def informes():
     fecha_desde = request.args.get("desde", "").strip()
     fecha_hasta = request.args.get("hasta", "").strip()
     sucursal = request.args.get("sucursal", "").strip().upper()
-    estado = request.args.get("estado", "").strip()
+    provincia = request.args.get("provincia", "").strip()
 
     filtros = []
     parametros = []
 
     if fecha_desde:
-        filtros.append("fecha_transmision::date >= %s")
+        filtros.append("fecha_pedido::date >= %s")
         parametros.append(fecha_desde)
 
     if fecha_hasta:
-        filtros.append("fecha_transmision::date <= %s")
+        filtros.append("fecha_pedido::date <= %s")
         parametros.append(fecha_hasta)
 
     if sucursal:
         filtros.append("UPPER(TRIM(sucursal_codigo)) = %s")
         parametros.append(sucursal)
 
-    if estado:
-        filtros.append("LOWER(TRIM(estado)) = LOWER(%s)")
-        parametros.append(estado)
+    if provincia:
+        filtros.append("LOWER(TRIM(provincia)) = LOWER(%s)")
+        parametros.append(provincia)
 
     where_sql = ""
 
@@ -54,19 +54,19 @@ def informes():
         where_sql = "WHERE " + " AND ".join(filtros)
 
     resumen = {
-        "total_cupones": 0,
-        "participantes_unicos": 0,
-        "total_sucursales": 0,
-        "total_facturados": 0,
-        "total_entregados": 0,
+        "pedidos_mes": 0,
+        "clientes_unicos": 0,
+        "retiro_tienda": 0,
+        "pago_online": 0,
     }
 
+    pedidos_por_dia = []
+    por_provincia = []
     por_sucursal = []
-    por_estado = []
-    por_dia = []
-    ultimos_cupones = []
+    por_entrega = []
+    por_pago = []
     sucursales_disponibles = []
-    estados_disponibles = []
+    provincias_disponibles = []
 
     conn = None
     cur = None
@@ -77,23 +77,38 @@ def informes():
 
         consulta_resumen = f"""
             SELECT
-                COUNT(*) AS total_cupones,
+                COUNT(
+                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                ) AS pedidos_mes,
 
                 COUNT(
                     DISTINCT NULLIF(TRIM(dni), '')
-                ) AS participantes_unicos,
+                ) AS clientes_unicos,
 
                 COUNT(
-                    DISTINCT NULLIF(TRIM(sucursal_codigo), '')
-                ) AS total_sucursales,
+                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                ) FILTER (
+                    WHERE LOWER(TRIM(modalidad_entrega))
+                          IN (
+                              'retiro en tienda',
+                              'retiro en sucursal'
+                          )
+                       OR LOWER(TRIM(modalidad_entrega))
+                          LIKE '%retiro%'
+                       OR LOWER(TRIM(modalidad_entrega))
+                          LIKE '%pickup%'
+                ) AS retiro_tienda,
 
-                COUNT(*) FILTER (
-                    WHERE LOWER(TRIM(estado)) = 'facturado'
-                ) AS total_facturados,
-
-                COUNT(*) FILTER (
-                    WHERE LOWER(TRIM(estado)) = 'entregado'
-                ) AS total_entregados
+                COUNT(
+                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                ) FILTER (
+                    WHERE LOWER(TRIM(modalidad_pago))
+                          = 'pago online'
+                       OR LOWER(TRIM(modalidad_pago))
+                          LIKE '%online%'
+                       OR LOWER(TRIM(modalidad_pago))
+                          LIKE '%mercado pago%'
+                ) AS pago_online
 
             FROM cupones_sorteo
             {where_sql}
@@ -104,22 +119,62 @@ def informes():
 
         if fila_resumen:
             resumen = {
-                "total_cupones": convertir_entero(
-                    fila_resumen["total_cupones"]
+                "pedidos_mes": convertir_entero(
+                    fila_resumen["pedidos_mes"]
                 ),
-                "participantes_unicos": convertir_entero(
-                    fila_resumen["participantes_unicos"]
+                "clientes_unicos": convertir_entero(
+                    fila_resumen["clientes_unicos"]
                 ),
-                "total_sucursales": convertir_entero(
-                    fila_resumen["total_sucursales"]
+                "retiro_tienda": convertir_entero(
+                    fila_resumen["retiro_tienda"]
                 ),
-                "total_facturados": convertir_entero(
-                    fila_resumen["total_facturados"]
-                ),
-                "total_entregados": convertir_entero(
-                    fila_resumen["total_entregados"]
+                "pago_online": convertir_entero(
+                    fila_resumen["pago_online"]
                 ),
             }
+
+        consulta_por_dia = f"""
+            SELECT
+                TO_CHAR(fecha_pedido::date, 'DD/MM') AS fecha,
+                COUNT(
+                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                ) AS total
+
+            FROM cupones_sorteo
+            {where_sql}
+
+            GROUP BY fecha_pedido::date
+            ORDER BY fecha_pedido::date ASC
+        """
+
+        cur.execute(consulta_por_dia, parametros)
+        pedidos_por_dia = cur.fetchall()
+
+        consulta_por_provincia = f"""
+            SELECT
+                COALESCE(
+                    NULLIF(TRIM(provincia), ''),
+                    'Sin provincia'
+                ) AS provincia,
+
+                COUNT(
+                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                ) AS total
+
+            FROM cupones_sorteo
+            {where_sql}
+
+            GROUP BY
+                COALESCE(
+                    NULLIF(TRIM(provincia), ''),
+                    'Sin provincia'
+                )
+
+            ORDER BY total DESC
+        """
+
+        cur.execute(consulta_por_provincia, parametros)
+        por_provincia = cur.fetchall()
 
         consulta_por_sucursal = f"""
             SELECT
@@ -128,11 +183,9 @@ def informes():
                     'SIN SUCURSAL'
                 ) AS sucursal,
 
-                COUNT(*) AS cantidad,
-
                 COUNT(
-                    DISTINCT NULLIF(TRIM(dni), '')
-                ) AS participantes
+                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                ) AS total
 
             FROM cupones_sorteo
             {where_sql}
@@ -143,71 +196,85 @@ def informes():
                     'SIN SUCURSAL'
                 )
 
-            ORDER BY cantidad DESC
+            ORDER BY total DESC
         """
 
         cur.execute(consulta_por_sucursal, parametros)
         por_sucursal = cur.fetchall()
 
-        consulta_por_estado = f"""
+        consulta_por_entrega = f"""
             SELECT
-                COALESCE(
-                    NULLIF(TRIM(estado), ''),
-                    'Sin estado'
-                ) AS estado,
+                CASE
+                    WHEN LOWER(TRIM(modalidad_entrega))
+                         LIKE '%retiro%'
+                      OR LOWER(TRIM(modalidad_entrega))
+                         LIKE '%pickup%'
+                      OR LOWER(TRIM(modalidad_entrega))
+                         LIKE '%tienda%'
+                    THEN 'Retiro en tienda'
 
-                COUNT(*) AS cantidad
+                    WHEN LOWER(TRIM(modalidad_entrega))
+                         LIKE '%envio%'
+                      OR LOWER(TRIM(modalidad_entrega))
+                         LIKE '%envío%'
+                      OR LOWER(TRIM(modalidad_entrega))
+                         LIKE '%domicilio%'
+                      OR LOWER(TRIM(modalidad_entrega))
+                         LIKE '%delivery%'
+                    THEN 'Envío a domicilio'
+
+                    ELSE 'Sin definir'
+                END AS modalidad,
+
+                COUNT(
+                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                ) AS total
 
             FROM cupones_sorteo
             {where_sql}
 
-            GROUP BY
-                COALESCE(
-                    NULLIF(TRIM(estado), ''),
-                    'Sin estado'
-                )
-
-            ORDER BY cantidad DESC
+            GROUP BY modalidad
+            ORDER BY total DESC
         """
 
-        cur.execute(consulta_por_estado, parametros)
-        por_estado = cur.fetchall()
+        cur.execute(consulta_por_entrega, parametros)
+        por_entrega = cur.fetchall()
 
-        consulta_por_dia = f"""
+        consulta_por_pago = f"""
             SELECT
-                fecha_transmision::date AS fecha,
-                COUNT(*) AS cantidad
+                CASE
+                    WHEN LOWER(TRIM(modalidad_pago))
+                         LIKE '%online%'
+                      OR LOWER(TRIM(modalidad_pago))
+                         LIKE '%mercado pago%'
+                      OR LOWER(TRIM(modalidad_pago))
+                         LIKE '%tarjeta%'
+                    THEN 'Pago online'
+
+                    WHEN LOWER(TRIM(modalidad_pago))
+                         LIKE '%tienda%'
+                      OR LOWER(TRIM(modalidad_pago))
+                         LIKE '%efectivo%'
+                      OR LOWER(TRIM(modalidad_pago))
+                         LIKE '%contra entrega%'
+                    THEN 'Pago en tienda'
+
+                    ELSE 'Sin definir'
+                END AS modalidad,
+
+                COUNT(
+                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                ) AS total
 
             FROM cupones_sorteo
             {where_sql}
 
-            GROUP BY fecha_transmision::date
-            ORDER BY fecha_transmision::date ASC
+            GROUP BY modalidad
+            ORDER BY total DESC
         """
 
-        cur.execute(consulta_por_dia, parametros)
-        por_dia = cur.fetchall()
-
-        consulta_ultimos = f"""
-            SELECT
-                id,
-                nombre,
-                dni,
-                telefono,
-                sucursal_origen,
-                sucursal_codigo,
-                estado,
-                fecha_transmision
-
-            FROM cupones_sorteo
-            {where_sql}
-
-            ORDER BY fecha_transmision DESC, id DESC
-            LIMIT 500
-        """
-
-        cur.execute(consulta_ultimos, parametros)
-        ultimos_cupones = cur.fetchall()
+        cur.execute(consulta_por_pago, parametros)
+        por_pago = cur.fetchall()
 
         cur.execute("""
             SELECT DISTINCT
@@ -226,22 +293,29 @@ def informes():
 
         cur.execute("""
             SELECT DISTINCT
-                TRIM(estado) AS estado
+                TRIM(provincia) AS provincia
             FROM cupones_sorteo
-            WHERE estado IS NOT NULL
-              AND TRIM(estado) <> ''
-            ORDER BY estado
+            WHERE provincia IS NOT NULL
+              AND TRIM(provincia) <> ''
+            ORDER BY provincia
         """)
 
-        estados_disponibles = [
-            fila["estado"]
+        provincias_disponibles = [
+            fila["provincia"]
             for fila in cur.fetchall()
-            if fila["estado"]
+            if fila["provincia"]
         ]
+
+        print("DEBUG RESUMEN:", resumen, flush=True)
+        print("DEBUG POR DIA:", pedidos_por_dia, flush=True)
+        print("DEBUG POR PROVINCIA:", por_provincia, flush=True)
+        print("DEBUG POR SUCURSAL:", por_sucursal, flush=True)
+        print("DEBUG POR ENTREGA:", por_entrega, flush=True)
+        print("DEBUG POR PAGO:", por_pago, flush=True)
 
     except Exception as error:
         print(
-            f"ERROR GENERANDO DASHBOARD DE CUPONES: {error}",
+            f"ERROR GENERANDO DASHBOARD ECOMMERCE: {error}",
             flush=True
         )
 
@@ -252,46 +326,20 @@ def informes():
         if conn:
             conn.close()
 
-    max_sucursal = max(
-        [
-            convertir_entero(fila["cantidad"])
-            for fila in por_sucursal
-        ],
-        default=1
-    )
-
-    max_estado = max(
-        [
-            convertir_entero(fila["cantidad"])
-            for fila in por_estado
-        ],
-        default=1
-    )
-
-    max_dia = max(
-        [
-            convertir_entero(fila["cantidad"])
-            for fila in por_dia
-        ],
-        default=1
-    )
-
     return render_template(
         "publicidad/informes_ecommerce.html",
         resumen=resumen,
+        pedidos_por_dia=pedidos_por_dia,
+        por_provincia=por_provincia,
         por_sucursal=por_sucursal,
-        por_estado=por_estado,
-        por_dia=por_dia,
-        ultimos_cupones=ultimos_cupones,
+        por_entrega=por_entrega,
+        por_pago=por_pago,
         sucursales_disponibles=sucursales_disponibles,
-        estados_disponibles=estados_disponibles,
-        max_sucursal=max_sucursal,
-        max_estado=max_estado,
-        max_dia=max_dia,
+        provincias_disponibles=provincias_disponibles,
         filtros={
             "desde": fecha_desde,
             "hasta": fecha_hasta,
             "sucursal": sucursal,
-            "estado": estado,
+            "provincia": provincia,
         }
     )
