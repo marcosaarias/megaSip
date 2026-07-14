@@ -117,6 +117,18 @@ def informes():
         cur.execute(consulta_resumen, parametros)
         fila_resumen = cur.fetchone()
 
+        print("====================================", flush=True)
+        print("CONSULTA RESUMEN", flush=True)
+        print(consulta_resumen, flush=True)
+        print("PARAMETROS:", parametros, flush=True)
+
+        cur.execute(consulta_resumen, parametros)
+
+        fila_resumen = cur.fetchone()
+
+        print("FILA RESUMEN:", fila_resumen, flush=True)
+        print("====================================", flush=True)
+
         if fila_resumen:
             resumen = {
                 "pedidos_mes": convertir_entero(
@@ -132,7 +144,9 @@ def informes():
                     fila_resumen["pago_online"]
                 ),
             }
-
+        
+        print("RESUMEN FINAL:", resumen, flush=True)
+        
         consulta_por_dia = f"""
             SELECT
                 TO_CHAR(fecha_pedido::date, 'DD/MM') AS fecha,
