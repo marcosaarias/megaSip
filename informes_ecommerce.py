@@ -1,4 +1,13 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+import traceback
+
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+)
 from psycopg2.extras import RealDictCursor
 
 from database.db import get_db_connection
@@ -7,7 +16,7 @@ from database.db import get_db_connection
 informes_ecommerce_bp = Blueprint(
     "informes_ecommerce",
     __name__,
-    url_prefix="/ecommerce/informes"
+    url_prefix="/ecommerce/informes",
 )
 
 
@@ -41,11 +50,15 @@ def informes():
         parametros.append(fecha_hasta)
 
     if sucursal:
-        filtros.append("UPPER(TRIM(sucursal_codigo)) = %s")
+        filtros.append(
+            "UPPER(TRIM(COALESCE(sucursal_codigo::text, ''))) = %s"
+        )
         parametros.append(sucursal)
 
     if provincia:
-        filtros.append("LOWER(TRIM(provincia)) = LOWER(%s)")
+        filtros.append(
+            "LOWER(TRIM(COALESCE(provincia::text, ''))) = LOWER(%s)"
+        )
         parametros.append(provincia)
 
     where_sql = ""
@@ -75,47 +88,66 @@ def informes():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        # ==========================================================
+        # INDICADORES PRINCIPALES
+        # ==========================================================
+
         consulta_resumen = f"""
             SELECT
                 COUNT(
-                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                    DISTINCT COALESCE(
+                        NULLIF(TRIM(numero_pedido::text), ''),
+                        id::text
+                    )
                 ) AS pedidos_mes,
 
                 COUNT(
-                    DISTINCT NULLIF(TRIM(dni), '')
+                    DISTINCT NULLIF(TRIM(dni::text), '')
                 ) AS clientes_unicos,
 
                 COUNT(
-                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                    DISTINCT COALESCE(
+                        NULLIF(TRIM(numero_pedido::text), ''),
+                        id::text
+                    )
                 ) FILTER (
-                    WHERE LOWER(TRIM(modalidad_entrega))
-                          IN (
-                              'retiro en tienda',
-                              'retiro en sucursal'
-                          )
-                       OR LOWER(TRIM(modalidad_entrega))
-                          LIKE '%retiro%'
-                       OR LOWER(TRIM(modalidad_entrega))
-                          LIKE '%pickup%'
+                    WHERE
+                        LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%retiro%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%pickup%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%tienda%%'
                 ) AS retiro_tienda,
 
                 COUNT(
-                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                    DISTINCT COALESCE(
+                        NULLIF(TRIM(numero_pedido::text), ''),
+                        id::text
+                    )
                 ) FILTER (
-                    WHERE LOWER(TRIM(modalidad_pago))
-                          = 'pago online'
-                       OR LOWER(TRIM(modalidad_pago))
-                          LIKE '%online%'
-                       OR LOWER(TRIM(modalidad_pago))
-                          LIKE '%mercado pago%'
+                    WHERE
+                        LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%online%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%mercado pago%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%tarjeta%%'
                 ) AS pago_online
 
             FROM cupones_sorteo
             {where_sql}
         """
-
-        cur.execute(consulta_resumen, parametros)
-        fila_resumen = cur.fetchone()
 
         print("====================================", flush=True)
         print("CONSULTA RESUMEN", flush=True)
@@ -123,7 +155,6 @@ def informes():
         print("PARAMETROS:", parametros, flush=True)
 
         cur.execute(consulta_resumen, parametros)
-
         fila_resumen = cur.fetchone()
 
         print("FILA RESUMEN:", fila_resumen, flush=True)
@@ -144,14 +175,22 @@ def informes():
                     fila_resumen["pago_online"]
                 ),
             }
-        
+
         print("RESUMEN FINAL:", resumen, flush=True)
-        
+
+        # ==========================================================
+        # EVOLUCION DIARIA
+        # ==========================================================
+
         consulta_por_dia = f"""
             SELECT
                 TO_CHAR(fecha_pedido::date, 'DD/MM') AS fecha,
+
                 COUNT(
-                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                    DISTINCT COALESCE(
+                        NULLIF(TRIM(numero_pedido::text), ''),
+                        id::text
+                    )
                 ) AS total
 
             FROM cupones_sorteo
@@ -164,138 +203,193 @@ def informes():
         cur.execute(consulta_por_dia, parametros)
         pedidos_por_dia = cur.fetchall()
 
+        # ==========================================================
+        # PEDIDOS POR PROVINCIA
+        # ==========================================================
+
         consulta_por_provincia = f"""
             SELECT
                 COALESCE(
-                    NULLIF(TRIM(provincia), ''),
+                    NULLIF(TRIM(provincia::text), ''),
                     'Sin provincia'
                 ) AS provincia,
 
                 COUNT(
-                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                    DISTINCT COALESCE(
+                        NULLIF(TRIM(numero_pedido::text), ''),
+                        id::text
+                    )
                 ) AS total
 
             FROM cupones_sorteo
             {where_sql}
 
-            GROUP BY
-                COALESCE(
-                    NULLIF(TRIM(provincia), ''),
-                    'Sin provincia'
-                )
-
+            GROUP BY 1
             ORDER BY total DESC
         """
 
         cur.execute(consulta_por_provincia, parametros)
         por_provincia = cur.fetchall()
 
+        # ==========================================================
+        # PEDIDOS POR SUCURSAL
+        # ==========================================================
+
         consulta_por_sucursal = f"""
             SELECT
                 COALESCE(
-                    NULLIF(TRIM(sucursal_codigo), ''),
+                    NULLIF(TRIM(sucursal_codigo::text), ''),
                     'SIN SUCURSAL'
                 ) AS sucursal,
 
                 COUNT(
-                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                    DISTINCT COALESCE(
+                        NULLIF(TRIM(numero_pedido::text), ''),
+                        id::text
+                    )
                 ) AS total
 
             FROM cupones_sorteo
             {where_sql}
 
-            GROUP BY
-                COALESCE(
-                    NULLIF(TRIM(sucursal_codigo), ''),
-                    'SIN SUCURSAL'
-                )
-
+            GROUP BY 1
             ORDER BY total DESC
         """
 
         cur.execute(consulta_por_sucursal, parametros)
         por_sucursal = cur.fetchall()
 
+        # ==========================================================
+        # MODALIDAD DE ENTREGA
+        # ==========================================================
+
         consulta_por_entrega = f"""
             SELECT
                 CASE
-                    WHEN LOWER(TRIM(modalidad_entrega))
-                         LIKE '%retiro%'
-                      OR LOWER(TRIM(modalidad_entrega))
-                         LIKE '%pickup%'
-                      OR LOWER(TRIM(modalidad_entrega))
-                         LIKE '%tienda%'
+                    WHEN
+                        LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%retiro%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%pickup%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%tienda%%'
+
                     THEN 'Retiro en tienda'
 
-                    WHEN LOWER(TRIM(modalidad_entrega))
-                         LIKE '%envio%'
-                      OR LOWER(TRIM(modalidad_entrega))
-                         LIKE '%envío%'
-                      OR LOWER(TRIM(modalidad_entrega))
-                         LIKE '%domicilio%'
-                      OR LOWER(TRIM(modalidad_entrega))
-                         LIKE '%delivery%'
+                    WHEN
+                        LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%envio%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%envío%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%domicilio%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_entrega::text, '')
+                        ) LIKE '%%delivery%%'
+
                     THEN 'Envío a domicilio'
 
                     ELSE 'Sin definir'
                 END AS modalidad,
 
                 COUNT(
-                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                    DISTINCT COALESCE(
+                        NULLIF(TRIM(numero_pedido::text), ''),
+                        id::text
+                    )
                 ) AS total
 
             FROM cupones_sorteo
             {where_sql}
 
-            GROUP BY modalidad
+            GROUP BY 1
             ORDER BY total DESC
         """
 
         cur.execute(consulta_por_entrega, parametros)
         por_entrega = cur.fetchall()
 
+        # ==========================================================
+        # MODALIDAD DE PAGO
+        # ==========================================================
+
         consulta_por_pago = f"""
             SELECT
                 CASE
-                    WHEN LOWER(TRIM(modalidad_pago))
-                         LIKE '%online%'
-                      OR LOWER(TRIM(modalidad_pago))
-                         LIKE '%mercado pago%'
-                      OR LOWER(TRIM(modalidad_pago))
-                         LIKE '%tarjeta%'
+                    WHEN
+                        LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%online%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%mercado pago%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%tarjeta%%'
+
                     THEN 'Pago online'
 
-                    WHEN LOWER(TRIM(modalidad_pago))
-                         LIKE '%tienda%'
-                      OR LOWER(TRIM(modalidad_pago))
-                         LIKE '%efectivo%'
-                      OR LOWER(TRIM(modalidad_pago))
-                         LIKE '%contra entrega%'
+                    WHEN
+                        LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%tienda%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%efectivo%%'
+
+                        OR LOWER(
+                            COALESCE(modalidad_pago::text, '')
+                        ) LIKE '%%contra entrega%%'
+
                     THEN 'Pago en tienda'
 
                     ELSE 'Sin definir'
                 END AS modalidad,
 
                 COUNT(
-                    DISTINCT NULLIF(TRIM(numero_pedido), '')
+                    DISTINCT COALESCE(
+                        NULLIF(TRIM(numero_pedido::text), ''),
+                        id::text
+                    )
                 ) AS total
 
             FROM cupones_sorteo
             {where_sql}
 
-            GROUP BY modalidad
+            GROUP BY 1
             ORDER BY total DESC
         """
 
         cur.execute(consulta_por_pago, parametros)
         por_pago = cur.fetchall()
 
+        # ==========================================================
+        # OPCIONES DE FILTROS
+        # ==========================================================
+
         cur.execute("""
             SELECT DISTINCT
-                UPPER(TRIM(sucursal_codigo)) AS sucursal
+                UPPER(TRIM(sucursal_codigo::text)) AS sucursal
+
             FROM cupones_sorteo
+
             WHERE sucursal_codigo IS NOT NULL
-              AND TRIM(sucursal_codigo) <> ''
+              AND TRIM(sucursal_codigo::text) <> ''
+
             ORDER BY sucursal
         """)
 
@@ -307,10 +401,13 @@ def informes():
 
         cur.execute("""
             SELECT DISTINCT
-                TRIM(provincia) AS provincia
+                TRIM(provincia::text) AS provincia
+
             FROM cupones_sorteo
+
             WHERE provincia IS NOT NULL
-              AND TRIM(provincia) <> ''
+              AND TRIM(provincia::text) <> ''
+
             ORDER BY provincia
         """)
 
@@ -320,18 +417,31 @@ def informes():
             if fila["provincia"]
         ]
 
+        # ==========================================================
+        # DEBUG FINAL
+        # ==========================================================
+
+        print("========== DEBUG DASHBOARD ==========", flush=True)
+        print("WHERE SQL:", where_sql, flush=True)
+        print("PARAMETROS:", parametros, flush=True)
         print("DEBUG RESUMEN:", resumen, flush=True)
         print("DEBUG POR DIA:", pedidos_por_dia, flush=True)
         print("DEBUG POR PROVINCIA:", por_provincia, flush=True)
         print("DEBUG POR SUCURSAL:", por_sucursal, flush=True)
         print("DEBUG POR ENTREGA:", por_entrega, flush=True)
         print("DEBUG POR PAGO:", por_pago, flush=True)
+        print("=====================================", flush=True)
 
     except Exception as error:
+        if conn:
+            conn.rollback()
+
         print(
             f"ERROR GENERANDO DASHBOARD ECOMMERCE: {error}",
-            flush=True
+            flush=True,
         )
+
+        traceback.print_exc()
 
     finally:
         if cur:
@@ -355,5 +465,5 @@ def informes():
             "hasta": fecha_hasta,
             "sucursal": sucursal,
             "provincia": provincia,
-        }
+        },
     )
