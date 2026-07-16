@@ -448,14 +448,6 @@
        class="submenu-item {% if request.endpoint == 'cupones.index' %}active-link{% endif %}">
       Generar Cupones
     </a>
-    
-    <a href="{{ url_for('informes_ecommerce.informes') }}"
-           class="submenu-item
-           {% if request.endpoint == 'informes_ecommerce.informes' %}
-               active-link
-           {% endif %}">
-        Informes
-    </a>
 
   </div>
 
@@ -467,10 +459,20 @@
   </a>
 
   <div class="submenu">
+    
     <a href="{{ url_for('ecommerce_cenefas.cenefas') }}"
        class="submenu-item {% if request.endpoint == 'ecommerce_cenefas.cenefas' %}active-link{% endif %}">
       Generar Precios Tachados
     </a>
+
+    <a href="{{ url_for('informes_ecommerce.informes') }}"
+           class="submenu-item
+           {% if request.endpoint == 'informes_ecommerce.informes' %}
+               active-link
+           {% endif %}">
+        Informes
+    </a>
+
   </div>
 </div>
 
