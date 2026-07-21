@@ -112,7 +112,7 @@ def normalizar_sucursal_sorteo(valor):
         return f"MA{numero:02d}"
 
     return valor
-
+    
 #Funciones Auxiliares
 
 def limpiar_valor(valor, defecto=""):
