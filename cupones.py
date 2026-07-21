@@ -3,7 +3,9 @@ import pandas as pd
 import uuid
 import math
 import json
+
 from database.db import get_db_connection
+from compras import redis_client
 
 cupones_bp = Blueprint("cupones", __name__, url_prefix="/cupones")
 
@@ -164,6 +166,7 @@ def index():
     cupones = []
     total_filas = 0
     total_cupones = 0
+    cache_id = ""
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
@@ -379,42 +382,118 @@ def index():
             cupones.append(registro)
 
         total_cupones = len(cupones)
+    
+        if cupones:
+                cache_id = str(uuid.uuid4())
 
+                redis_client.setex(
+                    f"cupones_sorteo:{cache_id}",
+                    3600,
+                    json.dumps(
+                        cupones,
+                        ensure_ascii=False,
+                        default=str,
+                    ),
+                )
+
+                print(
+                    "CUPONES GUARDADOS EN REDIS:",
+                    total_cupones,
+                    "CACHE ID:",
+                    cache_id,
+                    flush=True,
+                )
     return render_template(
-        "publicidad/cupones.html",
-        cupones=cupones,
-        cupones_json=json.dumps(
-            cupones,
-            ensure_ascii=False,
-        ),
-        total_filas=total_filas,
-        total_cupones=total_cupones,
-    )
+            "publicidad/cupones.html",
+            cupones=cupones,
+            cache_id=cache_id,
+            total_filas=total_filas,
+            total_cupones=total_cupones,
+        )
 
 @cupones_bp.route("/transmitir_sucursales", methods=["POST"])
 def transmitir_sucursales():
     if session.get("usuario_rol") != "publicidad":
         return redirect(url_for("sistemas.login"))
 
-    cupones_json = request.form.get("cupones_json", "[]")
+    # ======================================================
+    # RECUPERAR DATOS DESDE REDIS
+    # ======================================================
 
-    try:
-        cupones = json.loads(cupones_json)
-    except Exception as error:
-        print(
-            "ERROR LEYENDO CUPONES JSON:",
-            error,
-            flush=True,
-        )
-        cupones = []
+    cache_id = request.form.get("cache_id", "").strip()
 
     print("DEBUG TRANSMITIR CUPONES:", flush=True)
-    print("CUPONES RECIBIDOS:", len(cupones), flush=True)
+    print("CACHE ID RECIBIDO:", cache_id, flush=True)
     print("ROL:", session.get("usuario_rol"), flush=True)
 
-    if not cupones:
-        flash("No hay cupones para transmitir")
+    if not cache_id:
+        flash(
+            "No se recibió el identificador de los datos procesados.",
+            "warning",
+        )
         return redirect(url_for("cupones.index"))
+
+    clave_redis = f"cupones_sorteo:{cache_id}"
+
+    try:
+        datos_redis = redis_client.get(clave_redis)
+
+    except Exception as error:
+        print(
+            "ERROR CONSULTANDO REDIS:",
+            repr(error),
+            flush=True,
+        )
+
+        flash(
+            "No se pudieron recuperar los datos procesados.",
+            "danger",
+        )
+        return redirect(url_for("cupones.index"))
+
+    if not datos_redis:
+        flash(
+            "Los datos procesados vencieron o no fueron encontrados. "
+            "Procesá nuevamente el archivo.",
+            "warning",
+        )
+        return redirect(url_for("cupones.index"))
+
+    try:
+        if isinstance(datos_redis, bytes):
+            datos_redis = datos_redis.decode("utf-8")
+
+        cupones = json.loads(datos_redis)
+
+    except Exception as error:
+        print(
+            "ERROR DECODIFICANDO DATOS DE REDIS:",
+            repr(error),
+            flush=True,
+        )
+
+        flash(
+            "Los datos almacenados no tienen un formato válido.",
+            "danger",
+        )
+        return redirect(url_for("cupones.index"))
+
+    print(
+        "CUPONES RECUPERADOS DESDE REDIS:",
+        len(cupones),
+        flush=True,
+    )
+
+    if not cupones:
+        flash(
+            "No hay cupones para transmitir.",
+            "warning",
+        )
+        return redirect(url_for("cupones.index"))
+
+    # ======================================================
+    # PREPARAR BASE DE DATOS
+    # ======================================================
 
     crear_tabla_cupones_sorteo()
 
@@ -434,9 +513,9 @@ def transmitir_sucursales():
                 sucursal_origen
             )
 
-            # ======================================================
+            # ==================================================
             # CUPONES PARA SUCURSALES
-            # ======================================================
+            # ==================================================
 
             cur.execute("""
                 INSERT INTO cupones_sorteo (
@@ -459,9 +538,9 @@ def transmitir_sucursales():
 
             cupones_insertados += 1
 
-            # ======================================================
+            # ==================================================
             # INFORMES ECOMMERCE
-            # ======================================================
+            # ==================================================
 
             id_pedido = limpiar_texto(
                 cupon.get("id_pedido")
@@ -588,18 +667,39 @@ def transmitir_sucursales():
                 limpiar_texto(
                     session.get("usuario_nombre")
                 ),
-                limpiar_texto(cupon.get("lote_carga")),
+                limpiar_texto(
+                    cupon.get("lote_carga")
+                ),
             ))
 
             informes_insertados += 1
 
+        # Confirmar ambas inserciones en una sola transacción
         conn.commit()
+
+        # El caché se elimina solamente cuando PostgreSQL terminó bien
+        try:
+            redis_client.delete(clave_redis)
+
+            print(
+                "CACHE REDIS ELIMINADO:",
+                clave_redis,
+                flush=True,
+            )
+
+        except Exception as error:
+            print(
+                "ADVERTENCIA: NO SE PUDO ELIMINAR EL CACHE REDIS:",
+                repr(error),
+                flush=True,
+            )
 
         print(
             "CUPONES INSERTADOS:",
             cupones_insertados,
             flush=True,
         )
+
         print(
             "INFORMES INSERTADOS/ACTUALIZADOS:",
             informes_insertados,
@@ -609,20 +709,26 @@ def transmitir_sucursales():
         flash(
             f"Proceso completado: "
             f"{cupones_insertados} cupones transmitidos y "
-            f"{informes_insertados} pedidos enviados a informes"
+            f"{informes_insertados} pedidos enviados a informes.",
+            "success",
         )
 
     except Exception as error:
         conn.rollback()
 
+        import traceback
+
         print(
             "ERROR TRANSMITIENDO CUPONES E INFORMES:",
-            error,
+            repr(error),
             flush=True,
         )
 
+        traceback.print_exc()
+
         flash(
-            f"Error transmitiendo cupones e informes: {error}"
+            f"Error transmitiendo cupones e informes: {error}",
+            "danger",
         )
 
     finally:
@@ -630,7 +736,6 @@ def transmitir_sucursales():
         conn.close()
 
     return redirect(url_for("cupones.index"))
-
 
 @cupones_bp.route("/sucursales_sorteo")
 def sucursales_sorteo():

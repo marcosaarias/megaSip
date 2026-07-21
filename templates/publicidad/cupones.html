@@ -112,7 +112,13 @@
 
         <form method="post" enctype="multipart/form-data" class="form-cupones">
             <label><strong>Archivo Excel:</strong></label>
-            <input type="file" name="archivo" accept=".xlsx,.xls" required>
+
+            <input
+                type="file"
+                name="archivo"
+                accept=".xlsx,.xls"
+                required
+            >
 
             <button type="submit" class="btn-procesar">
                 Procesar archivo
@@ -129,13 +135,24 @@
 
     {% if cupones %}
         <div class="acciones-cupones">
-            <button onclick="window.print()" class="btn-imprimir">
+            <button
+                type="button"
+                onclick="window.print()"
+                class="btn-imprimir"
+            >
                 Imprimir Cupones
             </button>
 
-            <form method="post" action="{{ url_for('cupones.transmitir_sucursales') }}">
-              <input type="hidden" name="cupones_json" value='{{ cupones_json|e }}'>
-              
+            <form
+                method="post"
+                action="{{ url_for('cupones.transmitir_sucursales') }}"
+            >
+                <input
+                    type="hidden"
+                    name="cache_id"
+                    value="{{ cache_id }}"
+                >
+
                 <button type="submit" class="btn-transmitir">
                     Transmitir a Sucursales
                 </button>
@@ -146,11 +163,31 @@
             {% for cupon in cupones %}
                 <div class="cupon">
                     <h3>SORTEO PROMO DEL AÑO</h3>
-                    <p><strong>Nombre y apellido:</strong> {{ cupon.nombre }}</p>
-                    <p><strong>DNI:</strong> {{ cupon.dni }}</p>
-                    <p><strong>Teléfono:</strong> {{ cupon.telefono }}</p>
-                    <p><strong>Sucursal:</strong> {{ cupon.sucursal }}</p>
-                    <p><strong>Estado:</strong> {{ cupon.estado }}</p>
+
+                    <p>
+                        <strong>Nombre y apellido:</strong>
+                        {{ cupon.nombre }}
+                    </p>
+
+                    <p>
+                        <strong>DNI:</strong>
+                        {{ cupon.dni }}
+                    </p>
+
+                    <p>
+                        <strong>Teléfono:</strong>
+                        {{ cupon.telefono }}
+                    </p>
+
+                    <p>
+                        <strong>Sucursal:</strong>
+                        {{ cupon.sucursal }}
+                    </p>
+
+                    <p>
+                        <strong>Estado:</strong>
+                        {{ cupon.estado }}
+                    </p>
                 </div>
             {% endfor %}
         </div>
