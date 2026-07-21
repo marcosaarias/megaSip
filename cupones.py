@@ -4,6 +4,8 @@ import uuid
 import math
 import json
 import re
+from datetime import datetime
+
 from database.db import get_db_connection
 from compras import redis_client
 
@@ -173,8 +175,6 @@ def limpiar_fecha(valor):
         return None
 
     try:
-        # Si pandas ya entregó un Timestamp o datetime,
-        # lo convertimos directamente.
         if isinstance(valor, pd.Timestamp):
             return valor.to_pydatetime()
 
@@ -186,7 +186,6 @@ def limpiar_fecha(valor):
         if not valor_texto:
             return None
 
-        # Primero intentamos los formatos exactos utilizados por el Excel.
         formatos = [
             "%d/%m/%Y %H:%M:%S",
             "%d/%m/%Y %H:%M",
@@ -202,7 +201,6 @@ def limpiar_fecha(valor):
             except ValueError:
                 continue
 
-        # Respaldo para cualquier otro formato válido.
         fecha = pd.to_datetime(
             valor_texto,
             errors="coerce",
@@ -650,6 +648,373 @@ def index():
         total_filas=total_filas,
         total_cupones=total_cupones,
     )
+
+
+@cupones_bp.route("/transmitir_sucursales", methods=["POST"])
+def transmitir_sucursales():
+    if session.get("usuario_rol") != "publicidad":
+        return redirect(url_for("sistemas.login"))
+
+    cache_id = request.form.get("cache_id", "").strip()
+
+    if not cache_id:
+        flash(
+            "No se recibió el identificador de los datos procesados.",
+            "warning",
+        )
+        return redirect(url_for("cupones.index"))
+
+    clave_redis = f"cupones_sorteo:{cache_id}"
+
+    try:
+        datos_redis = redis_client.get(clave_redis)
+    except Exception as error:
+        print(
+            "ERROR CONSULTANDO REDIS:",
+            repr(error),
+            flush=True,
+        )
+
+        flash(
+            "No se pudieron recuperar los datos procesados.",
+            "danger",
+        )
+        return redirect(url_for("cupones.index"))
+
+    if not datos_redis:
+        flash(
+            "Los datos procesados expiraron o ya fueron transmitidos.",
+            "warning",
+        )
+        return redirect(url_for("cupones.index"))
+
+    try:
+        if isinstance(datos_redis, bytes):
+            datos_redis = datos_redis.decode("utf-8")
+
+        registros = json.loads(datos_redis)
+
+    except Exception as error:
+        print(
+            "ERROR DECODIFICANDO DATOS DE REDIS:",
+            repr(error),
+            flush=True,
+        )
+
+        flash(
+            "Los datos temporales no tienen un formato válido.",
+            "danger",
+        )
+        return redirect(url_for("cupones.index"))
+
+    if not registros:
+        flash(
+            "No hay pedidos procesados para transmitir.",
+            "warning",
+        )
+        return redirect(url_for("cupones.index"))
+
+    conn = None
+    cur = None
+
+    insertados = 0
+    actualizados = 0
+    omitidos = 0
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        for registro in registros:
+            id_pedido = limpiar_texto(
+                registro.get("id_pedido")
+            )
+
+            if not id_pedido:
+                omitidos += 1
+                continue
+
+            sucursal_origen = limpiar_texto(
+                registro.get("sucursal")
+            )
+
+            sucursal_codigo = normalizar_sucursal_sorteo(
+                registro.get("sucursal_codigo")
+                or sucursal_origen
+            )
+
+            fecha_creacion = limpiar_fecha(
+                registro.get("fecha_creacion")
+            )
+
+            fecha_entrega = limpiar_fecha(
+                registro.get("fecha_entrega")
+            )
+
+            fecha_pickeo = limpiar_fecha(
+                registro.get("fecha_pickeo")
+            )
+
+            limite_entrega = limpiar_fecha(
+                registro.get("limite_entrega")
+            )
+
+            # Comprobamos si el pedido ya existe.
+            cur.execute(
+                """
+                SELECT 1
+                FROM informes
+                WHERE id_pedido = %s
+                LIMIT 1
+                """,
+                (id_pedido,),
+            )
+
+            pedido_existente = cur.fetchone() is not None
+
+            if pedido_existente:
+                cur.execute(
+                    """
+                    UPDATE informes
+                    SET
+                        id_secuencia = %s,
+                        ecommerce_prod_id = %s,
+                        fecha_creacion = %s,
+                        fecha_entrega = %s,
+                        fecha_pickeo = %s,
+                        limite_entrega = %s,
+                        documento_cliente = %s,
+                        cliente = %s,
+                        email_cliente = %s,
+                        telefono = %s,
+                        sucursal_codigo = %s,
+                        sucursal_origen = %s,
+                        estado = %s,
+                        transportadora = %s,
+                        ruta = %s,
+                        persona_recibe = %s,
+                        direccion_entrega = %s,
+                        medio_pago = %s,
+                        banco = %s,
+                        estado_transaccion = %s,
+                        cantidad_productos = %s,
+                        productos_faltantes = %s,
+                        lote_carga = %s
+                    WHERE id_pedido = %s
+                    """,
+                    (
+                        limpiar_texto(
+                            registro.get("id_secuencia")
+                        ),
+                        limpiar_texto(
+                            registro.get("ecommerce_prod_id")
+                        ),
+                        fecha_creacion,
+                        fecha_entrega,
+                        fecha_pickeo,
+                        limite_entrega,
+                        limpiar_texto(
+                            registro.get("dni")
+                        ),
+                        limpiar_texto(
+                            registro.get("nombre")
+                        ),
+                        limpiar_texto(
+                            registro.get("email_cliente")
+                        ),
+                        limpiar_texto(
+                            registro.get("telefono")
+                        ),
+                        sucursal_codigo,
+                        sucursal_origen,
+                        limpiar_texto(
+                            registro.get("estado")
+                        ),
+                        limpiar_texto(
+                            registro.get("transportadora")
+                        ),
+                        limpiar_texto(
+                            registro.get("ruta")
+                        ),
+                        limpiar_texto(
+                            registro.get("persona_recibe")
+                        ),
+                        limpiar_texto(
+                            registro.get("direccion_entrega")
+                        ),
+                        limpiar_texto(
+                            registro.get("medio_pago")
+                        ),
+                        limpiar_texto(
+                            registro.get("banco")
+                        ),
+                        limpiar_texto(
+                            registro.get("estado_transaccion")
+                        ),
+                        limpiar_entero(
+                            registro.get("cantidad_productos")
+                        ),
+                        limpiar_entero(
+                            registro.get("productos_faltantes")
+                        ),
+                        limpiar_texto(
+                            registro.get("lote_carga")
+                        ),
+                        id_pedido,
+                    ),
+                )
+
+                actualizados += 1
+
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO informes (
+                        id_secuencia,
+                        id_pedido,
+                        ecommerce_prod_id,
+                        fecha_creacion,
+                        fecha_entrega,
+                        fecha_pickeo,
+                        limite_entrega,
+                        documento_cliente,
+                        cliente,
+                        email_cliente,
+                        telefono,
+                        sucursal_codigo,
+                        sucursal_origen,
+                        estado,
+                        transportadora,
+                        ruta,
+                        persona_recibe,
+                        direccion_entrega,
+                        medio_pago,
+                        banco,
+                        estado_transaccion,
+                        cantidad_productos,
+                        productos_faltantes,
+                        lote_carga
+                    )
+                    VALUES (
+                        %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s
+                    )
+                    """,
+                    (
+                        limpiar_texto(
+                            registro.get("id_secuencia")
+                        ),
+                        id_pedido,
+                        limpiar_texto(
+                            registro.get("ecommerce_prod_id")
+                        ),
+                        fecha_creacion,
+                        fecha_entrega,
+                        fecha_pickeo,
+                        limite_entrega,
+                        limpiar_texto(
+                            registro.get("dni")
+                        ),
+                        limpiar_texto(
+                            registro.get("nombre")
+                        ),
+                        limpiar_texto(
+                            registro.get("email_cliente")
+                        ),
+                        limpiar_texto(
+                            registro.get("telefono")
+                        ),
+                        sucursal_codigo,
+                        sucursal_origen,
+                        limpiar_texto(
+                            registro.get("estado")
+                        ),
+                        limpiar_texto(
+                            registro.get("transportadora")
+                        ),
+                        limpiar_texto(
+                            registro.get("ruta")
+                        ),
+                        limpiar_texto(
+                            registro.get("persona_recibe")
+                        ),
+                        limpiar_texto(
+                            registro.get("direccion_entrega")
+                        ),
+                        limpiar_texto(
+                            registro.get("medio_pago")
+                        ),
+                        limpiar_texto(
+                            registro.get("banco")
+                        ),
+                        limpiar_texto(
+                            registro.get("estado_transaccion")
+                        ),
+                        limpiar_entero(
+                            registro.get("cantidad_productos")
+                        ),
+                        limpiar_entero(
+                            registro.get("productos_faltantes")
+                        ),
+                        limpiar_texto(
+                            registro.get("lote_carga")
+                        ),
+                    ),
+                )
+
+                insertados += 1
+
+        conn.commit()
+
+        # Se elimina el cache únicamente después del commit.
+        redis_client.delete(clave_redis)
+
+        print(
+            "TRANSMISION FINALIZADA:",
+            "INSERTADOS:",
+            insertados,
+            "| ACTUALIZADOS:",
+            actualizados,
+            "| OMITIDOS:",
+            omitidos,
+            flush=True,
+        )
+
+        flash(
+            (
+                f"Transmisión finalizada. "
+                f"Insertados: {insertados}. "
+                f"Actualizados: {actualizados}. "
+                f"Omitidos: {omitidos}."
+            ),
+            "success",
+        )
+
+    except Exception as error:
+        if conn:
+            conn.rollback()
+
+        print(
+            "ERROR TRANSMITIENDO PEDIDOS:",
+            repr(error),
+            flush=True,
+        )
+
+        flash(
+            f"No se pudieron transmitir los pedidos: {error}",
+            "danger",
+        )
+
+    finally:
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+    return redirect(url_for("cupones.index"))
 
 @cupones_bp.route("/sucursales_sorteo")
 def sucursales_sorteo():
