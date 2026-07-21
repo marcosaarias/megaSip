@@ -3,7 +3,7 @@ import pandas as pd
 import uuid
 import math
 import json
-
+import re
 from database.db import get_db_connection
 from compras import redis_client
 
@@ -112,7 +112,7 @@ def normalizar_sucursal_sorteo(valor):
         return f"MA{numero:02d}"
 
     return valor
-    
+
 #Funciones Auxiliares
 
 def limpiar_valor(valor, defecto=""):
