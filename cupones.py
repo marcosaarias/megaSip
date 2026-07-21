@@ -235,15 +235,37 @@ def index():
         archivo = request.files.get("archivo")
 
         if not archivo or archivo.filename == "":
-            flash("Debe seleccionar un archivo Excel")
+            flash("Debe seleccionar un archivo Excel", "warning")
             return redirect(url_for("cupones.index"))
 
-        df = pd.read_excel(archivo)
-        total_filas = len(df)
+        try:
+            df = pd.read_excel(archivo)
+        except Exception as error:
+            print(
+                "ERROR LEYENDO ARCHIVO EXCEL:",
+                repr(error),
+                flush=True,
+            )
 
+            flash(
+                f"No se pudo leer el archivo Excel: {error}",
+                "danger",
+            )
+            return redirect(url_for("cupones.index"))
+
+        print(
+            "COLUMNAS DEL EXCEL:",
+            [str(columna) for columna in df.columns],
+            flush=True,
+        )
+
+        total_filas = len(df)
         lote_carga = str(uuid.uuid4())
 
-        for _, fila in df.iterrows():
+        for numero_fila, (_, fila) in enumerate(
+            df.iterrows(),
+            start=2,
+        ):
             estado = limpiar_texto(
                 obtener_valor_fila(
                     fila,
@@ -273,16 +295,92 @@ def index():
                     fila,
                     "Id pedido",
                     "ID Pedido",
+                    "Id Pedido",
                     "Pedido",
                     "Nro Pedido",
                     "Número pedido",
                     "Numero pedido",
                     "Order Id",
+                    "Order ID",
+                    "OrderId",
                 )
             )
 
             if not id_pedido:
-                id_pedido = str(uuid.uuid4())
+                print(
+                    "FILA SIN ID DE PEDIDO:",
+                    numero_fila,
+                    flush=True,
+                )
+                continue
+
+            # ==================================================
+            # FECHAS
+            # ==================================================
+
+            fecha_excel = obtener_valor_fila(
+                fila,
+                "Fecha de creacion",
+                "Fecha de creación",
+                "Fecha creación",
+                "Fecha Creacion",
+                "Fecha pedido",
+                "Fecha Pedido",
+                "Fecha de pedido",
+            )
+
+            fecha_creacion = limpiar_fecha(fecha_excel)
+
+            fecha_entrega = limpiar_fecha(
+                obtener_valor_fila(
+                    fila,
+                    "Fecha entrega",
+                    "Fecha Entrega",
+                    "Fecha de entrega",
+                )
+            )
+
+            fecha_pickeo = limpiar_fecha(
+                obtener_valor_fila(
+                    fila,
+                    "Fecha pickeo",
+                    "Fecha Pickeo",
+                    "Fecha de pickeo",
+                )
+            )
+
+            limite_entrega = limpiar_fecha(
+                obtener_valor_fila(
+                    fila,
+                    "Límite entrega",
+                    "Limite entrega",
+                    "Fecha límite entrega",
+                    "Fecha limite entrega",
+                )
+            )
+
+            if numero_fila <= 7:
+                print(
+                    "DEBUG FECHA - FILA:",
+                    numero_fila,
+                    "ORIGINAL:",
+                    repr(fecha_excel),
+                    "TIPO:",
+                    type(fecha_excel).__name__,
+                    "CONVERTIDA:",
+                    fecha_creacion,
+                    flush=True,
+                )
+
+            if fecha_creacion is None:
+                print(
+                    "ADVERTENCIA: FECHA DE CREACION NO RECONOCIDA",
+                    "FILA:",
+                    numero_fila,
+                    "VALOR:",
+                    repr(fecha_excel),
+                    flush=True,
+                )
 
             registro = {
                 "nombre": limpiar_texto(
@@ -291,6 +389,7 @@ def index():
                         "Cliente",
                     )
                 ),
+
                 "dni": limpiar_texto(
                     obtener_valor_fila(
                         fila,
@@ -299,6 +398,7 @@ def index():
                         "DNI",
                     )
                 ),
+
                 "telefono": limpiar_texto(
                     obtener_valor_fila(
                         fila,
@@ -306,6 +406,7 @@ def index():
                         "Telefono",
                     )
                 ),
+
                 "sucursal": sucursal_origen,
                 "sucursal_codigo": sucursal_codigo,
                 "estado": estado,
@@ -318,7 +419,9 @@ def index():
                         "Secuencia",
                     )
                 ),
+
                 "id_pedido": id_pedido,
+
                 "ecommerce_prod_id": limpiar_texto(
                     obtener_valor_fila(
                         fila,
@@ -328,37 +431,10 @@ def index():
                     )
                 ),
 
-                "fecha_creacion": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Fecha creación",
-                        "Fecha Creacion",
-                        "Fecha pedido",
-                        "Fecha Pedido",
-                    )
-                ),
-                "fecha_entrega": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Fecha entrega",
-                        "Fecha Entrega",
-                    )
-                ),
-                "fecha_pickeo": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Fecha pickeo",
-                        "Fecha Pickeo",
-                    )
-                ),
-                "limite_entrega": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Límite entrega",
-                        "Limite entrega",
-                        "Fecha límite entrega",
-                    )
-                ),
+                "fecha_creacion": fecha_creacion,
+                "fecha_entrega": fecha_entrega,
+                "fecha_pickeo": fecha_pickeo,
+                "limite_entrega": limite_entrega,
 
                 "email_cliente": limpiar_texto(
                     obtener_valor_fila(
@@ -378,12 +454,14 @@ def index():
                         "Modalidad entrega",
                     )
                 ),
+
                 "ruta": limpiar_texto(
                     obtener_valor_fila(
                         fila,
                         "Ruta",
                     )
                 ),
+
                 "persona_recibe": limpiar_texto(
                     obtener_valor_fila(
                         fila,
@@ -391,6 +469,7 @@ def index():
                         "Persona que recibe",
                     )
                 ),
+
                 "direccion_entrega": limpiar_texto(
                     obtener_valor_fila(
                         fila,
@@ -409,6 +488,7 @@ def index():
                         "Modalidad pago",
                     )
                 ),
+
                 "banco": limpiar_texto(
                     obtener_valor_fila(
                         fila,
@@ -431,6 +511,7 @@ def index():
                         "Cantidad de productos",
                     )
                 ),
+
                 "productos_faltantes": limpiar_entero(
                     obtener_valor_fila(
                         fila,
@@ -445,10 +526,11 @@ def index():
             cupones.append(registro)
 
         total_cupones = len(cupones)
-    
-        if cupones:
-                cache_id = str(uuid.uuid4())
 
+        if cupones:
+            cache_id = str(uuid.uuid4())
+
+            try:
                 redis_client.setex(
                     f"cupones_sorteo:{cache_id}",
                     3600,
@@ -466,14 +548,35 @@ def index():
                     cache_id,
                     flush=True,
                 )
-    return render_template(
-            "publicidad/cupones.html",
-            cupones=cupones,
-            cache_id=cache_id,
-            total_filas=total_filas,
-            total_cupones=total_cupones,
-        )
 
+            except Exception as error:
+                print(
+                    "ERROR GUARDANDO CUPONES EN REDIS:",
+                    repr(error),
+                    flush=True,
+                )
+
+                flash(
+                    "No se pudieron almacenar temporalmente los cupones.",
+                    "danger",
+                )
+
+                return redirect(url_for("cupones.index"))
+
+        else:
+            flash(
+                "No se encontraron pedidos con estado Facturado o Entregado.",
+                "warning",
+            )
+
+    return render_template(
+        "publicidad/cupones.html",
+        cupones=cupones,
+        cache_id=cache_id,
+        total_filas=total_filas,
+        total_cupones=total_cupones,
+    )
+    
 @cupones_bp.route("/transmitir_sucursales", methods=["POST"])
 def transmitir_sucursales():
     if session.get("usuario_rol") != "publicidad":
