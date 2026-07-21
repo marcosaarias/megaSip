@@ -255,12 +255,15 @@ def index():
 
         print(
             "COLUMNAS DEL EXCEL:",
-            [str(columna) for columna in df.columns],
+            [repr(columna) for columna in df.columns],
             flush=True,
         )
 
         total_filas = len(df)
         lote_carga = str(uuid.uuid4())
+
+        filas_sin_id = 0
+        filas_sin_fecha = 0
 
         for numero_fila, (_, fila) in enumerate(
             df.iterrows(),
@@ -290,43 +293,49 @@ def index():
                 sucursal_origen
             )
 
+            id_secuencia = limpiar_texto(
+                obtener_valor_fila(
+                    fila,
+                    "ID de secuencia",
+                    "Id de secuencia",
+                    "ID Secuencia",
+                    "Id secuencia",
+                    "Secuencia",
+                )
+            )
+
             id_pedido = limpiar_texto(
                 obtener_valor_fila(
                     fila,
-                    "Id pedido",
+                    "ID de pedido",
+                    "Id de pedido",
                     "ID Pedido",
-                    "Id Pedido",
+                    "Id pedido",
                     "Pedido",
                     "Nro Pedido",
                     "Número pedido",
                     "Numero pedido",
-                    "Order Id",
                     "Order ID",
-                    "OrderId",
+                    "Order Id",
                 )
             )
 
-            if not id_pedido:
-                print(
-                    "FILA SIN ID DE PEDIDO:",
-                    numero_fila,
-                    flush=True,
+            ecommerce_prod_id = limpiar_texto(
+                obtener_valor_fila(
+                    fila,
+                    "Ecommerce Prod ID",
+                    "Ecommerce Prod Id",
+                    "Ecommerce prod id",
+                    "ID Ecommerce",
                 )
-                continue
-
-            # ==================================================
-            # FECHAS
-            # ==================================================
+            )
 
             fecha_excel = obtener_valor_fila(
                 fila,
-                "Fecha de creacion",
                 "Fecha de creación",
+                "Fecha de creacion",
                 "Fecha creación",
                 "Fecha Creacion",
-                "Fecha pedido",
-                "Fecha Pedido",
-                "Fecha de pedido",
             )
 
             fecha_creacion = limpiar_fecha(fecha_excel)
@@ -334,24 +343,26 @@ def index():
             fecha_entrega = limpiar_fecha(
                 obtener_valor_fila(
                     fila,
+                    "Fecha de entrega",
                     "Fecha entrega",
                     "Fecha Entrega",
-                    "Fecha de entrega",
                 )
             )
 
             fecha_pickeo = limpiar_fecha(
                 obtener_valor_fila(
                     fila,
+                    "Fecha de pickeo",
                     "Fecha pickeo",
                     "Fecha Pickeo",
-                    "Fecha de pickeo",
                 )
             )
 
             limite_entrega = limpiar_fecha(
                 obtener_valor_fila(
                     fila,
+                    "Límite de entrega",
+                    "Limite de entrega",
                     "Límite entrega",
                     "Limite entrega",
                     "Fecha límite entrega",
@@ -361,26 +372,43 @@ def index():
 
             if numero_fila <= 7:
                 print(
-                    "DEBUG FECHA - FILA:",
+                    "DEBUG FILA:",
                     numero_fila,
-                    "ORIGINAL:",
+                    "| ID PEDIDO:",
+                    repr(id_pedido),
+                    "| FECHA ORIGINAL:",
                     repr(fecha_excel),
-                    "TIPO:",
+                    "| TIPO:",
                     type(fecha_excel).__name__,
-                    "CONVERTIDA:",
+                    "| FECHA CONVERTIDA:",
                     fecha_creacion,
                     flush=True,
                 )
 
+            if not id_pedido:
+                filas_sin_id += 1
+
+                if filas_sin_id <= 10:
+                    print(
+                        "FILA OMITIDA POR FALTA DE ID:",
+                        numero_fila,
+                        flush=True,
+                    )
+
+                continue
+
             if fecha_creacion is None:
-                print(
-                    "ADVERTENCIA: FECHA DE CREACION NO RECONOCIDA",
-                    "FILA:",
-                    numero_fila,
-                    "VALOR:",
-                    repr(fecha_excel),
-                    flush=True,
-                )
+                filas_sin_fecha += 1
+
+                if filas_sin_fecha <= 10:
+                    print(
+                        "FECHA DE CREACION NO RECONOCIDA:",
+                        "FILA:",
+                        numero_fila,
+                        "VALOR:",
+                        repr(fecha_excel),
+                        flush=True,
+                    )
 
             registro = {
                 "nombre": limpiar_texto(
@@ -411,25 +439,9 @@ def index():
                 "sucursal_codigo": sucursal_codigo,
                 "estado": estado,
 
-                "id_secuencia": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Id secuencia",
-                        "ID Secuencia",
-                        "Secuencia",
-                    )
-                ),
-
+                "id_secuencia": id_secuencia,
                 "id_pedido": id_pedido,
-
-                "ecommerce_prod_id": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Ecommerce prod id",
-                        "Ecommerce Prod Id",
-                        "ID Ecommerce",
-                    )
-                ),
+                "ecommerce_prod_id": ecommerce_prod_id,
 
                 "fecha_creacion": fecha_creacion,
                 "fecha_entrega": fecha_entrega,
@@ -439,6 +451,7 @@ def index():
                 "email_cliente": limpiar_texto(
                     obtener_valor_fila(
                         fila,
+                        "Email de cliente",
                         "Email cliente",
                         "Email Cliente",
                         "Email",
@@ -465,14 +478,16 @@ def index():
                 "persona_recibe": limpiar_texto(
                     obtener_valor_fila(
                         fila,
-                        "Persona recibe",
                         "Persona que recibe",
+                        "Persona recibe",
                     )
                 ),
 
                 "direccion_entrega": limpiar_texto(
                     obtener_valor_fila(
                         fila,
+                        "Dirección de entrega",
+                        "Direccion de entrega",
                         "Dirección entrega",
                         "Direccion entrega",
                         "Dirección",
@@ -483,8 +498,8 @@ def index():
                 "medio_pago": limpiar_texto(
                     obtener_valor_fila(
                         fila,
-                        "Medio pago",
                         "Medio de pago",
+                        "Medio pago",
                         "Modalidad pago",
                     )
                 ),
@@ -499,6 +514,8 @@ def index():
                 "estado_transaccion": limpiar_texto(
                     obtener_valor_fila(
                         fila,
+                        "Estado de la transacción",
+                        "Estado de la transaccion",
                         "Estado transacción",
                         "Estado transaccion",
                     )
@@ -507,14 +524,17 @@ def index():
                 "cantidad_productos": limpiar_entero(
                     obtener_valor_fila(
                         fila,
-                        "Cantidad productos",
                         "Cantidad de productos",
+                        "Cantidad productos",
+                        "Qty",
                     )
                 ),
 
                 "productos_faltantes": limpiar_entero(
                     obtener_valor_fila(
                         fila,
+                        "Cantidad de productos faltantes",
+                        "Cantidad productos faltantes",
                         "Productos faltantes",
                         "Cantidad faltantes",
                     )
@@ -526,6 +546,19 @@ def index():
             cupones.append(registro)
 
         total_cupones = len(cupones)
+
+        print(
+            "RESUMEN PROCESAMIENTO:",
+            "TOTAL EXCEL:",
+            total_filas,
+            "| PROCESADOS:",
+            total_cupones,
+            "| SIN ID:",
+            filas_sin_id,
+            "| SIN FECHA:",
+            filas_sin_fecha,
+            flush=True,
+        )
 
         if cupones:
             cache_id = str(uuid.uuid4())
@@ -565,7 +598,7 @@ def index():
 
         else:
             flash(
-                "No se encontraron pedidos con estado Facturado o Entregado.",
+                "No se encontraron pedidos Facturados o Entregados con ID válido.",
                 "warning",
             )
 
@@ -576,332 +609,6 @@ def index():
         total_filas=total_filas,
         total_cupones=total_cupones,
     )
-    
-@cupones_bp.route("/transmitir_sucursales", methods=["POST"])
-def transmitir_sucursales():
-    if session.get("usuario_rol") != "publicidad":
-        return redirect(url_for("sistemas.login"))
-
-    # ======================================================
-    # RECUPERAR DATOS DESDE REDIS
-    # ======================================================
-
-    cache_id = request.form.get("cache_id", "").strip()
-
-    print("DEBUG TRANSMITIR CUPONES:", flush=True)
-    print("CACHE ID RECIBIDO:", cache_id, flush=True)
-    print("ROL:", session.get("usuario_rol"), flush=True)
-
-    if not cache_id:
-        flash(
-            "No se recibió el identificador de los datos procesados.",
-            "warning",
-        )
-        return redirect(url_for("cupones.index"))
-
-    clave_redis = f"cupones_sorteo:{cache_id}"
-
-    try:
-        datos_redis = redis_client.get(clave_redis)
-
-    except Exception as error:
-        print(
-            "ERROR CONSULTANDO REDIS:",
-            repr(error),
-            flush=True,
-        )
-
-        flash(
-            "No se pudieron recuperar los datos procesados.",
-            "danger",
-        )
-        return redirect(url_for("cupones.index"))
-
-    if not datos_redis:
-        flash(
-            "Los datos procesados vencieron o no fueron encontrados. "
-            "Procesá nuevamente el archivo.",
-            "warning",
-        )
-        return redirect(url_for("cupones.index"))
-
-    try:
-        if isinstance(datos_redis, bytes):
-            datos_redis = datos_redis.decode("utf-8")
-
-        cupones = json.loads(datos_redis)
-
-    except Exception as error:
-        print(
-            "ERROR DECODIFICANDO DATOS DE REDIS:",
-            repr(error),
-            flush=True,
-        )
-
-        flash(
-            "Los datos almacenados no tienen un formato válido.",
-            "danger",
-        )
-        return redirect(url_for("cupones.index"))
-
-    print(
-        "CUPONES RECUPERADOS DESDE REDIS:",
-        len(cupones),
-        flush=True,
-    )
-
-    if not cupones:
-        flash(
-            "No hay cupones para transmitir.",
-            "warning",
-        )
-        return redirect(url_for("cupones.index"))
-
-    # ======================================================
-    # PREPARAR BASE DE DATOS
-    # ======================================================
-
-    crear_tabla_cupones_sorteo()
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cupones_insertados = 0
-    informes_insertados = 0
-
-    try:
-        for cupon in cupones:
-            sucursal_origen = limpiar_texto(
-                cupon.get("sucursal", "")
-            )
-
-            sucursal_codigo = normalizar_sucursal_sorteo(
-                sucursal_origen
-            )
-
-            # ==================================================
-            # CUPONES PARA SUCURSALES
-            # ==================================================
-
-            cur.execute("""
-                INSERT INTO cupones_sorteo (
-                    nombre,
-                    dni,
-                    telefono,
-                    sucursal_origen,
-                    sucursal_codigo,
-                    estado
-                )
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (
-                limpiar_texto(cupon.get("nombre")),
-                limpiar_texto(cupon.get("dni")),
-                limpiar_texto(cupon.get("telefono")),
-                sucursal_origen,
-                sucursal_codigo,
-                limpiar_texto(cupon.get("estado")),
-            ))
-
-            cupones_insertados += 1
-
-            # ==================================================
-            # INFORMES ECOMMERCE
-            # ==================================================
-
-            id_pedido = limpiar_texto(
-                cupon.get("id_pedido")
-            )
-
-            if not id_pedido:
-                id_pedido = str(uuid.uuid4())
-
-            cur.execute("""
-                INSERT INTO informes (
-                    id_secuencia,
-                    id_pedido,
-                    ecommerce_prod_id,
-
-                    fecha_creacion,
-                    fecha_entrega,
-                    fecha_pickeo,
-                    limite_entrega,
-
-                    sucursal_codigo,
-
-                    documento_cliente,
-                    cliente,
-                    email_cliente,
-                    telefono,
-
-                    transportadora,
-                    ruta,
-                    persona_recibe,
-                    direccion_entrega,
-
-                    medio_pago,
-                    banco,
-
-                    estado,
-                    estado_transaccion,
-
-                    cantidad_productos,
-                    productos_faltantes,
-
-                    usuario_carga,
-                    lote_carga
-                )
-                VALUES (
-                    %s, %s, %s,
-                    %s, %s, %s, %s,
-                    %s,
-                    %s, %s, %s, %s,
-                    %s, %s, %s, %s,
-                    %s, %s,
-                    %s, %s,
-                    %s, %s,
-                    %s, %s
-                )
-
-                ON CONFLICT (id_pedido)
-                DO UPDATE SET
-                    id_secuencia = EXCLUDED.id_secuencia,
-                    ecommerce_prod_id = EXCLUDED.ecommerce_prod_id,
-
-                    fecha_creacion = EXCLUDED.fecha_creacion,
-                    fecha_entrega = EXCLUDED.fecha_entrega,
-                    fecha_pickeo = EXCLUDED.fecha_pickeo,
-                    limite_entrega = EXCLUDED.limite_entrega,
-
-                    sucursal_codigo = EXCLUDED.sucursal_codigo,
-
-                    documento_cliente = EXCLUDED.documento_cliente,
-                    cliente = EXCLUDED.cliente,
-                    email_cliente = EXCLUDED.email_cliente,
-                    telefono = EXCLUDED.telefono,
-
-                    transportadora = EXCLUDED.transportadora,
-                    ruta = EXCLUDED.ruta,
-                    persona_recibe = EXCLUDED.persona_recibe,
-                    direccion_entrega = EXCLUDED.direccion_entrega,
-
-                    medio_pago = EXCLUDED.medio_pago,
-                    banco = EXCLUDED.banco,
-
-                    estado = EXCLUDED.estado,
-                    estado_transaccion = EXCLUDED.estado_transaccion,
-
-                    cantidad_productos = EXCLUDED.cantidad_productos,
-                    productos_faltantes = EXCLUDED.productos_faltantes,
-
-                    usuario_carga = EXCLUDED.usuario_carga,
-                    lote_carga = EXCLUDED.lote_carga
-            """, (
-                limpiar_texto(cupon.get("id_secuencia")),
-                id_pedido,
-                limpiar_texto(cupon.get("ecommerce_prod_id")),
-
-                limpiar_fecha(cupon.get("fecha_creacion")),
-                limpiar_fecha(cupon.get("fecha_entrega")),
-                limpiar_fecha(cupon.get("fecha_pickeo")),
-                limpiar_fecha(cupon.get("limite_entrega")),
-
-                sucursal_codigo or None,
-
-                limpiar_texto(cupon.get("dni")),
-                limpiar_texto(cupon.get("nombre")),
-                limpiar_texto(cupon.get("email_cliente")),
-                limpiar_texto(cupon.get("telefono")),
-
-                limpiar_texto(cupon.get("transportadora")),
-                limpiar_texto(cupon.get("ruta")),
-                limpiar_texto(cupon.get("persona_recibe")),
-                limpiar_texto(cupon.get("direccion_entrega")),
-
-                limpiar_texto(cupon.get("medio_pago")),
-                limpiar_texto(cupon.get("banco")),
-
-                limpiar_texto(cupon.get("estado")),
-                limpiar_texto(cupon.get("estado_transaccion")),
-
-                limpiar_entero(
-                    cupon.get("cantidad_productos")
-                ),
-                limpiar_entero(
-                    cupon.get("productos_faltantes")
-                ),
-
-                limpiar_texto(
-                    session.get("usuario_nombre")
-                ),
-                limpiar_texto(
-                    cupon.get("lote_carga")
-                ),
-            ))
-
-            informes_insertados += 1
-
-        # Confirmar ambas inserciones en una sola transacción
-        conn.commit()
-
-        # El caché se elimina solamente cuando PostgreSQL terminó bien
-        try:
-            redis_client.delete(clave_redis)
-
-            print(
-                "CACHE REDIS ELIMINADO:",
-                clave_redis,
-                flush=True,
-            )
-
-        except Exception as error:
-            print(
-                "ADVERTENCIA: NO SE PUDO ELIMINAR EL CACHE REDIS:",
-                repr(error),
-                flush=True,
-            )
-
-        print(
-            "CUPONES INSERTADOS:",
-            cupones_insertados,
-            flush=True,
-        )
-
-        print(
-            "INFORMES INSERTADOS/ACTUALIZADOS:",
-            informes_insertados,
-            flush=True,
-        )
-
-        flash(
-            f"Proceso completado: "
-            f"{cupones_insertados} cupones transmitidos y "
-            f"{informes_insertados} pedidos enviados a informes.",
-            "success",
-        )
-
-    except Exception as error:
-        conn.rollback()
-
-        import traceback
-
-        print(
-            "ERROR TRANSMITIENDO CUPONES E INFORMES:",
-            repr(error),
-            flush=True,
-        )
-
-        traceback.print_exc()
-
-        flash(
-            f"Error transmitiendo cupones e informes: {error}",
-            "danger",
-        )
-
-    finally:
-        cur.close()
-        conn.close()
-
-    return redirect(url_for("cupones.index"))
 
 @cupones_bp.route("/sucursales_sorteo")
 def sucursales_sorteo():
