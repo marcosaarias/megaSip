@@ -668,6 +668,7 @@ def transmitir_sucursales():
 
     try:
         datos_redis = redis_client.get(clave_redis)
+
     except Exception as error:
         print(
             "ERROR CONSULTANDO REDIS:",
@@ -734,13 +735,9 @@ def transmitir_sucursales():
                 omitidos += 1
                 continue
 
-            sucursal_origen = limpiar_texto(
-                registro.get("sucursal")
-            )
-
             sucursal_codigo = normalizar_sucursal_sorteo(
                 registro.get("sucursal_codigo")
-                or sucursal_origen
+                or registro.get("sucursal")
             )
 
             fecha_creacion = limpiar_fecha(
@@ -759,7 +756,6 @@ def transmitir_sucursales():
                 registro.get("limite_entrega")
             )
 
-            # Comprobamos si el pedido ya existe.
             cur.execute(
                 """
                 SELECT 1
@@ -788,7 +784,6 @@ def transmitir_sucursales():
                         email_cliente = %s,
                         telefono = %s,
                         sucursal_codigo = %s,
-                        sucursal_origen = %s,
                         estado = %s,
                         transportadora = %s,
                         ruta = %s,
@@ -826,7 +821,6 @@ def transmitir_sucursales():
                             registro.get("telefono")
                         ),
                         sucursal_codigo,
-                        sucursal_origen,
                         limpiar_texto(
                             registro.get("estado")
                         ),
@@ -882,7 +876,6 @@ def transmitir_sucursales():
                         email_cliente,
                         telefono,
                         sucursal_codigo,
-                        sucursal_origen,
                         estado,
                         transportadora,
                         ruta,
@@ -899,7 +892,7 @@ def transmitir_sucursales():
                         %s, %s, %s, %s, %s, %s,
                         %s, %s, %s, %s, %s, %s,
                         %s, %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s
                     )
                     """,
                     (
@@ -927,7 +920,6 @@ def transmitir_sucursales():
                             registro.get("telefono")
                         ),
                         sucursal_codigo,
-                        sucursal_origen,
                         limpiar_texto(
                             registro.get("estado")
                         ),
@@ -968,7 +960,6 @@ def transmitir_sucursales():
 
         conn.commit()
 
-        # Se elimina el cache únicamente después del commit.
         redis_client.delete(clave_redis)
 
         print(
