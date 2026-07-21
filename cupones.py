@@ -11,10 +11,25 @@ cupones_bp = Blueprint("cupones", __name__, url_prefix="/cupones")
 
 
 def normalizar_sucursal_sorteo(valor):
-    if not valor:
+    if valor is None:
         return ""
 
     valor = str(valor).strip().upper()
+
+    if not valor:
+        return ""
+
+    # Normalizar acentos y espacios
+    valor = (
+        valor
+        .replace("Í", "I")
+        .replace("Ó", "O")
+        .replace("Á", "A")
+        .replace("É", "E")
+        .replace("Ú", "U")
+    )
+
+    valor = re.sub(r"\s+", " ", valor).strip()
 
     mapa = {
         "ALBERDISA01": "CO01",
@@ -44,11 +59,59 @@ def normalizar_sucursal_sorteo(valor):
         "ALBERDISA27": "CO27",
         "ALBERDISA28": "CO28",
         "ALBERDISA29": "CO29",
+
         "MAYORISTA02": "MA02",
+        "MAYORISTA 02": "MA02",
+        "MAYORISTA 2": "MA02",
         "MA02": "MA02",
     }
 
-    return mapa.get(valor, valor)
+    if valor in mapa:
+        return mapa[valor]
+
+    # ALBERDISA 16 / ALBERDISA16
+    coincidencia = re.fullmatch(r"ALBERDISA\s*0*(\d{1,2})", valor)
+
+    if coincidencia:
+        numero = int(coincidencia.group(1))
+        return f"CO{numero:02d}"
+
+    # COMODIN 16 / COMODÍN 16
+    coincidencia = re.fullmatch(r"COMODIN\s*0*(\d{1,2})", valor)
+
+    if coincidencia:
+        numero = int(coincidencia.group(1))
+        return f"CO{numero:02d}"
+
+    # SUCURSAL 16
+    coincidencia = re.fullmatch(r"SUCURSAL\s*0*(\d{1,2})", valor)
+
+    if coincidencia:
+        numero = int(coincidencia.group(1))
+        return f"CO{numero:02d}"
+
+    # CO16 / CO 16 / CO016
+    coincidencia = re.fullmatch(r"CO\s*0*(\d{1,2})", valor)
+
+    if coincidencia:
+        numero = int(coincidencia.group(1))
+        return f"CO{numero:02d}"
+
+    # MAYORISTA 2 / MAYORISTA02
+    coincidencia = re.fullmatch(r"MAYORISTA\s*0*(\d{1,2})", valor)
+
+    if coincidencia:
+        numero = int(coincidencia.group(1))
+        return f"MA{numero:02d}"
+
+    # MA2 / MA 02
+    coincidencia = re.fullmatch(r"MA\s*0*(\d{1,2})", valor)
+
+    if coincidencia:
+        numero = int(coincidencia.group(1))
+        return f"MA{numero:02d}"
+
+    return valor
 
 #Funciones Auxiliares
 
