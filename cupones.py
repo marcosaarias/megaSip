@@ -173,13 +173,54 @@ def limpiar_fecha(valor):
         return None
 
     try:
-        fecha = pd.to_datetime(valor, errors="coerce")
+        # Si pandas ya entregó un Timestamp o datetime,
+        # lo convertimos directamente.
+        if isinstance(valor, pd.Timestamp):
+            return valor.to_pydatetime()
+
+        if isinstance(valor, datetime):
+            return valor
+
+        valor_texto = str(valor).strip()
+
+        if not valor_texto:
+            return None
+
+        # Primero intentamos los formatos exactos utilizados por el Excel.
+        formatos = [
+            "%d/%m/%Y %H:%M:%S",
+            "%d/%m/%Y %H:%M",
+            "%d/%m/%Y",
+        ]
+
+        for formato in formatos:
+            try:
+                return datetime.strptime(
+                    valor_texto,
+                    formato,
+                )
+            except ValueError:
+                continue
+
+        # Respaldo para cualquier otro formato válido.
+        fecha = pd.to_datetime(
+            valor_texto,
+            errors="coerce",
+            dayfirst=True,
+        )
 
         if pd.isna(fecha):
             return None
 
         return fecha.to_pydatetime()
-    except Exception:
+
+    except Exception as error:
+        print(
+            "ERROR CONVIRTIENDO FECHA:",
+            repr(valor),
+            repr(error),
+            flush=True,
+        )
         return None
 
 
