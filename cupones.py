@@ -187,9 +187,15 @@ def limpiar_fecha(valor):
             return None
 
         formatos = [
+            # Fechas originales del Excel.
             "%d/%m/%Y %H:%M:%S",
             "%d/%m/%Y %H:%M",
             "%d/%m/%Y",
+
+            # Fechas recuperadas desde Redis o PostgreSQL.
+            "%Y-%m-%d %H:%M:%S.%f",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d",
         ]
 
         for formato in formatos:
@@ -208,6 +214,11 @@ def limpiar_fecha(valor):
         )
 
         if pd.isna(fecha):
+            print(
+                "FECHA NO RECONOCIDA:",
+                repr(valor),
+                flush=True,
+            )
             return None
 
         return fecha.to_pydatetime()
@@ -220,7 +231,6 @@ def limpiar_fecha(valor):
             flush=True,
         )
         return None
-
 
 def obtener_valor_fila(fila, *columnas):
     """
