@@ -26,23 +26,24 @@ HEADERS = [
 
 SUCURSAL_MAP = {
     "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02",
-    "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO29,MA02",
+    "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO24,CO29,MA02",
     "Jujuy - Mayorista": "CO05,CO12,CO15,MA02",
     "Salta - Mayorista": "CO09,CO29,CO21",
     "Oran - Mayorista": "CO21",
-    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO24,CO25,CO26,CO27,CO28",
+    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO25,CO26,CO27,CO28",
     "Jujuy - Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
     "Salta - Minoristas": "CO18,CO23",
     "Jujuy, Salta - Minoritas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO28",
     "Jujuy, Salta - Minoritas y Mayoristas": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO28,CO29,MA02",
-    "Tucuman - Minoristas": "CO24,CO25,CO26,CO27",
+    "Tucuman - Minoristas": "CO25,CO26,CO27",
+    "Tucuman - Mayoristas": "CO24"
 }
 
-MAYORISTA = {"05": "CO05", "09": "CO09", "12": "CO12", "15": "CO15", "21": "CO21", "29": "CO29", "MA02": "MA02"}
+MAYORISTA = {"05": "CO05", "09": "CO09", "12": "CO12", "15": "CO15", "21": "CO21","24": "CO24", "29": "CO29", "MA02": "MA02"}
 MINORISTA = {
     "01": "CO01", "02": "CO02", "04": "CO04", "06": "CO06", "07": "CO07", "08": "CO08",
     "10": "CO10", "11": "CO11", "14": "CO14", "16": "CO16", "17": "CO17", "18": "CO18",
-    "19": "CO19", "20": "CO20", "22": "CO22", "23": "CO23", "24": "CO24", "25": "CO25",
+    "19": "CO19", "20": "CO20", "22": "CO22", "23": "CO23", "25": "CO25",
     "26": "CO26", "27": "CO27","28":"CO28"
 }
 
