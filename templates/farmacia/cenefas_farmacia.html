@@ -375,14 +375,6 @@ function imprimirTabla() {
             <title>Impresión Cenefas</title>
             <style>
 
-            .hoja-cuatro-cenefas > .cenefa-cuarto-hoja:nth-child(-n+2) {
-                transform: translateY(-8px);
-            }
-            
-            .hoja-cuatro-cenefas > .cenefa-cuarto-hoja:nth-child(n+3) {
-                margin-top: 40px;
-            }
-
             .hoja-cuatro-cenefas {
                 width: 100vw;
                 height: 100vh;
@@ -392,7 +384,7 @@ function imprimirTabla() {
                 grid-template-rows: 150px 150px;
                 justify-items: center;
                 align-content: center;
-                row-gap: 340px;
+                row-gap: 320px;
                 page-break-inside: avoid;
             }
 
@@ -420,14 +412,14 @@ function imprimirTabla() {
             }
 
             .descripcion-cuarto {
-                font-size: 15px;
+                font-size: 12px;
                 font-weight: bold;
                 line-height: 1.05;
                 margin: 0 0 2px 0;
             }
 
             .cenefa-titulo-cuarto {
-                font-size: 51px;
+                font-size: 45px;
                 font-family: 'Anton', Arial, sans-serif;
                 font-weight: normal;
                 line-height: 0.95;
@@ -440,12 +432,12 @@ function imprimirTabla() {
             }
 
             .texto-paga-cuarto {
-                font-size: 16px;
+                font-size: 12px;
                 margin: 2px 0 0 0;
             }
 
             .precio-oferta-cuarto {
-                font-size: 32px;
+                font-size: 24px;
                 font-family: 'Anton', Arial, sans-serif;
                 font-weight: normal;
                 line-height: 1;
@@ -456,14 +448,14 @@ function imprimirTabla() {
             }
 
             .precio-normal-cuarto {
-                font-size: 24px;
+                font-size: 18px;
                 font-weight: bold;
                 margin: 2px 0 0 0;
                 line-height: 1;
             }
 
             .datos-finales-cuarto {
-                font-size: 14px;
+                font-size: 10px;
                 line-height: 1.1;
                 margin-top: 4px;
                 text-align: center;
