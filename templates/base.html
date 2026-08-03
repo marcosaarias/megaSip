@@ -113,9 +113,6 @@
 
   {% endif %}
 
-
-  <!-- ================= FARMACIA ================= -->
-
   <!-- ================= FARMACIA ================= -->
 
 {% if session.get("usuario_rol") == "adm-farmacia" %}
@@ -214,22 +211,22 @@
             Folder Farmacia
         </a>
 
-        <a href="{{ url_for('diarios.index') }}"
-           class="submenu-item
-           {% if 'diarios' in request.path %}
-           active-link
-           {% endif %}">
+       <a href="{{ url_for('farmacia_diarios.index') }}"
+          class="submenu-item
+          {% if '/farmacia/cenefas/diarios' in request.path %}
+          active-link
+          {% endif %}">
             Diarios
-        </a>
+      </a>
 
-        <a href="{{ url_for('nutricia.index') }}"
-           class="submenu-item
-           {% if 'nutricia' in request.path %}
-           active-link
-           {% endif %}">
+      <a href="{{ url_for('farmacia_nutricia.index') }}"
+          class="submenu-item
+          {% if '/farmacia/cenefas/nutricia' in request.path %}
+          active-link
+          {% endif %}">
             Nutricia
-        </a>
-
+      </a>
+      
     </div>
 </div>
 
