@@ -116,79 +116,150 @@
 
   <!-- ================= FARMACIA ================= -->
 
-    {% if session.get("usuario_rol") == "adm-farmacia" %}
+  <!-- ================= FARMACIA ================= -->
 
-  <div class="menu-section 
-      {% if 'farmacia_folder' in request.path or 'farmacia' in request.path %}active{% endif %}">
+{% if session.get("usuario_rol") == "adm-farmacia" %}
+
+<div class="menu-section
+    {% if request.path == url_for('farmacia.index')
+       or 'rubros' in request.path
+       or 'subrubros' in request.path
+       or 'laboratorios' in request.path %}
+    active
+    {% endif %}">
 
     <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-      Farmacia <i class="bi bi-chevron-down arrow"></i>
+        Farmacia
+        <i class="bi bi-chevron-down arrow"></i>
     </a>
 
     <div class="submenu">
 
-      <a href="{{ url_for('compras.farmacia_folder') }}"
-        class="submenu-item {% if 'farmacia_folder' in request.path %}active-link{% endif %}">
-        Folder Farmacia
-      </a>
-
-      <a href="{{ url_for('farmacia.index') }}"
-        class="submenu-item {% if request.path == url_for('farmacia.index') %}active-link{% endif %}">
-        Variación de Farmacia
-      </a>
-
-      <div class="submenu-group 
-    {% if 'rubros' in request.path or 'subrubros' in request.path or 'laboratorios' in request.path %}open{% endif %}">
-
-      <a href="#" class="submenu-item submenu-toggle" onclick="toggleSubmenu(event)">
-        Tablas Maestras <i class="bi bi-chevron-down arrow"></i>
-      </a>
-
-      <div class="submenu-nested">
-
-          <a href="{{ url_for('rubros.rubros_view') }}"
-            class="submenu-item {% if request.path == url_for('rubros.rubros_view') %}active-link{% endif %}">
-            Rubros
-          </a>
-
-          <a href="{{ url_for('subrubros.subrubros_view') }}"
-            class="submenu-item {% if request.path == url_for('subrubros.subrubros_view') %}active-link{% endif %}">
-            Subrubros
-          </a>
-
-          <a href="{{ url_for('laboratorios.laboratorios_view') }}"
-            class="submenu-item {% if request.path == url_for('laboratorios.laboratorios_view') %}active-link{% endif %}">
-            Laboratorios
-          </a>
-          
-      </div>
-    </div>
-
-    </div>
-  </div>
-
-  {% endif %}
-
-    {% if session.get("usuario_rol") == "adm-farmacia" %}
-
-    <div class="menu-section 
-      {% if 'archivo_maestro' in request.path %}active{% endif %}">
-
-      <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-        Archivo Maestro <i class="bi bi-chevron-down arrow"></i>
-      </a>
-
-      <div class="submenu">
-
-        <a href="{{ url_for('archivo_maestro.index') }}"
-          class="submenu-item {% if request.path == url_for('archivo_maestro.index') %}active-link{% endif %}">
-          Generar Archivo Maestro
+        <a href="{{ url_for('farmacia.index') }}"
+           class="submenu-item
+           {% if request.path == url_for('farmacia.index') %}
+           active-link
+           {% endif %}">
+            Variación de Farmacia
         </a>
 
-      </div>
-    </div>
+        <div class="submenu-group
+            {% if 'rubros' in request.path
+               or 'subrubros' in request.path
+               or 'laboratorios' in request.path %}
+            open
+            {% endif %}">
 
-  {% endif %}
+            <a href="#"
+               class="submenu-item submenu-toggle"
+               onclick="toggleSubmenu(event)">
+                Tablas Maestras
+                <i class="bi bi-chevron-down arrow"></i>
+            </a>
+
+            <div class="submenu-nested">
+
+                <a href="{{ url_for('rubros.rubros_view') }}"
+                   class="submenu-item
+                   {% if request.path == url_for('rubros.rubros_view') %}
+                   active-link
+                   {% endif %}">
+                    Rubros
+                </a>
+
+                <a href="{{ url_for('subrubros.subrubros_view') }}"
+                   class="submenu-item
+                   {% if request.path == url_for('subrubros.subrubros_view') %}
+                   active-link
+                   {% endif %}">
+                    Subrubros
+                </a>
+
+                <a href="{{ url_for('laboratorios.laboratorios_view') }}"
+                   class="submenu-item
+                   {% if request.path == url_for('laboratorios.laboratorios_view') %}
+                   active-link
+                   {% endif %}">
+                    Laboratorios
+                </a>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ================= CENEFAS ================= -->
+
+<div class="menu-section
+    {% if 'farmacia_folder' in request.path
+       or 'diarios' in request.path
+       or 'nutricia' in request.path %}
+    active
+    {% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+        Cenefas
+        <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu">
+
+        <a href="{{ url_for('compras.farmacia_folder') }}"
+           class="submenu-item
+           {% if 'farmacia_folder' in request.path %}
+           active-link
+           {% endif %}">
+            Folder Farmacia
+        </a>
+
+        <a href="{{ url_for('diarios.index') }}"
+           class="submenu-item
+           {% if 'diarios' in request.path %}
+           active-link
+           {% endif %}">
+            Diarios
+        </a>
+
+        <a href="{{ url_for('nutricia.index') }}"
+           class="submenu-item
+           {% if 'nutricia' in request.path %}
+           active-link
+           {% endif %}">
+            Nutricia
+        </a>
+
+    </div>
+</div>
+
+
+<!-- ================= ARCHIVO MAESTRO ================= -->
+
+<div class="menu-section
+    {% if 'archivo_maestro' in request.path %}
+    active
+    {% endif %}">
+
+    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+        Archivo Maestro
+        <i class="bi bi-chevron-down arrow"></i>
+    </a>
+
+    <div class="submenu">
+
+        <a href="{{ url_for('archivo_maestro.index') }}"
+           class="submenu-item
+           {% if request.path == url_for('archivo_maestro.index') %}
+           active-link
+           {% endif %}">
+            Generar Archivo Maestro
+        </a>
+
+    </div>
+</div>
+
+{% endif %}
 
   <!-- ================= COMPRAS ================= -->
   {% if session.get("usuario_rol") == "compras" %}
@@ -553,3 +624,5 @@ function toggleSubmenu(event) {
 
 </body>
 </html>
+
+

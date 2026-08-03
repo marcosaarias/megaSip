@@ -21,10 +21,14 @@ from cenefas_sistemas import cenefas_sistemas_bp
 from operadores import operadores_bp
 from cupones import cupones_bp
 from informes_ecommerce import informes_ecommerce_bp
+from farmacia_diarios import farmacia_diarios_bp
+from farmacia_nutricia import farmacia_nutricia_bp
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta_demo"
 
+app.register_blueprint(farmacia_diarios_bp)
+app.register_blueprint(farmacia_nutricia_bp)
 app.register_blueprint(informes_ecommerce_bp)
 app.register_blueprint(cupones_bp)
 app.register_blueprint(archivo_maestro_bp, url_prefix="/archivo_maestro")
