@@ -226,7 +226,7 @@
           {% endif %}">
             Nutricia
       </a>
-      
+
     </div>
 </div>
 
@@ -552,17 +552,42 @@
 {% if session.get("usuario_rol") == "farmacia" %}
 
 <div class="menu-section
-    {% if 'cenefas-farmacia' in request.path %}active{% endif %}">
+    {% if request.endpoint == 'farmacia.cenefas_farmacia' %}
+        active
+    {% endif %}">
 
     <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-        Cenefas <i class="bi bi-chevron-down arrow"></i>
+        Cenefas
+        <i class="bi bi-chevron-down arrow"></i>
     </a>
 
     <div class="submenu">
 
-        <a href="{{ url_for('farmacia.cenefas_farmacia') }}"
-           class="submenu-item {% if request.endpoint == 'farmacia.cenefas_farmacia' %}active-link{% endif %}">
-            Imprimir Cenefas
+        <a href="{{ url_for('farmacia.cenefas_farmacia', tipo_cenefa='folder') }}"
+           class="submenu-item
+           {% if request.endpoint == 'farmacia.cenefas_farmacia'
+                 and request.args.get('tipo_cenefa') == 'folder' %}
+               active-link
+           {% endif %}">
+            Folder Farmacia
+        </a>
+
+        <a href="{{ url_for('farmacia.cenefas_farmacia', tipo_cenefa='diarios') }}"
+           class="submenu-item
+           {% if request.endpoint == 'farmacia.cenefas_farmacia'
+                 and request.args.get('tipo_cenefa') == 'diarios' %}
+               active-link
+           {% endif %}">
+            Diarios
+        </a>
+
+        <a href="{{ url_for('farmacia.cenefas_farmacia', tipo_cenefa='nutricia') }}"
+           class="submenu-item
+           {% if request.endpoint == 'farmacia.cenefas_farmacia'
+                 and request.args.get('tipo_cenefa') == 'nutricia' %}
+               active-link
+           {% endif %}">
+            Nutricia
         </a>
 
     </div>
@@ -570,15 +595,6 @@
 </div>
 
 {% endif %}
-
-
-
-
-
-
-</div>
-
-  </div>
 
   <!-- ================= LOGOUT ================= -->
 

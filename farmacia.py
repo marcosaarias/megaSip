@@ -22,21 +22,41 @@ farmacia_bp = Blueprint("farmacia", __name__)
 
 @farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
 def cenefas_farmacia():
-    datos = obtener_datos_farmacia_folder()
 
-    print("DEBUG CENEFAS FARMACIA - TOTAL:", len(datos), flush=True)
+    tipo_cenefa = request.args.get(
+        "tipo_cenefa",
+        "folder"
+    ).strip().lower()
+
+    tipos_validos = {
+        "folder",
+        "diarios",
+        "nutricia"
+    }
+
+    if tipo_cenefa not in tipos_validos:
+        tipo_cenefa = "folder"
+
+    datos = obtener_datos_farmacia_folder(tipo_cenefa)
+
+    print(
+        f"DEBUG CENEFAS FARMACIA [{tipo_cenefa}] - TOTAL:",
+        len(datos),
+        flush=True
+    )
+
     if datos:
-        print("DEBUG CENEFAS FARMACIA - PRIMER REGISTRO:", datos[0], flush=True)
-        try:
-            print("DEBUG KEYS:", datos[0].keys(), flush=True)
-        except Exception as e:
-            print("DEBUG SIN KEYS:", e, flush=True)
+        print(
+            "DEBUG PRIMER REGISTRO:",
+            datos[0],
+            flush=True
+        )
 
     return render_template(
         "farmacia/cenefas_farmacia.html",
-        datos=datos
+        datos=datos,
+        tipo_cenefa=tipo_cenefa
     )
-
 
 #@farmacia_bp.route("/cenefas-farmacia", methods=["GET"])
 #def cenefas_farmacia():
@@ -566,8 +586,12 @@ def autocompletar_farmacia_desde_folder(df):
 
     try:
         consulta = """
-            SELECT troquel, descripcion, promo
+            SELECT
+                troquel,
+                descripcion,
+                promo
             FROM farmacia_folder
+            WHERE tipo_cenefa = 'folder'
         """
         folder_df = pd.read_sql_query(consulta, conn)
     finally:
@@ -630,27 +654,30 @@ def autocompletar_farmacia_desde_folder(df):
 # Obtener vigencias de folder farmacias
 #===============================================
 
-def obtener_vigencia_super():
+def obtener_vigencia_farmacia():
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        consulta = """
+        cur.execute("""
             SELECT
-                MIN(desde) AS desde_min,
-                MAX(hasta) AS hasta_max
-            FROM cenefas
-            WHERE tipo_cenefa = 'minorista'
-              AND desde IS NOT NULL
-              AND hasta IS NOT NULL
-              AND desde <> 'desde'
-              AND hasta <> 'hasta'
-              AND desde <> ''
-              AND hasta <> ''
-        """
+                MIN(fecha_desde) AS desde_min,
+                MAX(fecha_hasta) AS hasta_max
+            FROM farmacia_folder
+            WHERE tipo_cenefa = 'folder'
+              AND fecha_desde IS NOT NULL
+              AND fecha_hasta IS NOT NULL
+              AND fecha_desde <> 'fecha_desde'
+              AND fecha_hasta <> 'fecha_hasta'
+              AND fecha_desde <> ''
+              AND fecha_hasta <> ''
+        """)
 
-        cur.execute(consulta)
         row = cur.fetchone()
+
+        print("================================", flush=True)
+        print("DEBUG VIGENCIA FARMACIA", flush=True)
+        print("ROW:", row, flush=True)
 
     finally:
         cur.close()
@@ -659,14 +686,10 @@ def obtener_vigencia_super():
     if not row or not row["desde_min"] or not row["hasta_max"]:
         return "-", "-"
 
-    desde = row["desde_min"]
-    hasta = row["hasta_max"]
-
     return (
-        pd.to_datetime(desde).strftime("%d/%m/%Y"),
-        pd.to_datetime(hasta).strftime("%d/%m/%Y")
+        pd.to_datetime(row["desde_min"]).strftime("%d/%m/%Y"),
+        pd.to_datetime(row["hasta_max"]).strftime("%d/%m/%Y")
     )
-
 
 def obtener_vigencia_farmacia():
     conn = get_db_connection()

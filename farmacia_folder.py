@@ -89,11 +89,13 @@ def index():
                 )
 
             #df = pd.DataFrame(datos)
-            borrar_folder_farmacia_vigente()
+            #borrar_folder_farmacia_vigente()
+            borrar_folder_farmacia_vigente("folder")
             guardar_farmacia_folder_en_db(
                 df,
                 fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta
+                fecha_hasta=fecha_hasta,
+                tipo_cenefa="folder"
             )
 
             #session.pop("farmacia_folder_preview", None)
@@ -197,31 +199,67 @@ def index():
     return render_template("farmacia_folder.html")
 
 
-def borrar_folder_farmacia_vigente():
+#def borrar_folder_farmacia_vigente():
+#    conn = get_db_connection()
+#    cur = conn.cursor()
+
+#    try:
+#        cur.execute("DELETE FROM farmacia_folder")
+#        conn.commit()
+#        print("Folder farmacia vigente eliminado correctamente.", flush=True)
+
+#    except Exception as e:
+#        conn.rollback()
+#        print("Error borrando folder farmacia vigente:", e, flush=True)
+#        raise
+
+#    finally:
+#        cur.close()
+#        conn.close()
+
+
+def borrar_folder_farmacia_vigente(tipo_cenefa):
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        cur.execute("DELETE FROM farmacia_folder")
+        cur.execute(
+            """
+            DELETE FROM farmacia_folder
+            WHERE tipo_cenefa = %s
+            """,
+            (tipo_cenefa,)
+        )
+
         conn.commit()
-        print("Folder farmacia vigente eliminado correctamente.", flush=True)
+
+        print(
+            f"Cenefas tipo '{tipo_cenefa}' eliminadas correctamente.",
+            flush=True
+        )
 
     except Exception as e:
         conn.rollback()
-        print("Error borrando folder farmacia vigente:", e, flush=True)
+
+        print(
+            f"Error borrando cenefas tipo '{tipo_cenefa}':",
+            e,
+            flush=True
+        )
+
         raise
 
     finally:
         cur.close()
         conn.close()
 
-
 def guardar_farmacia_folder_en_db(
     df,
     usuario="sistema",
     lote_carga=None,
     fecha_desde=None,
-    fecha_hasta=None
+    fecha_hasta=None,
+    tipo_cenefa="folder"
 ):
     if lote_carga is None:
         lote_carga = (
@@ -252,12 +290,13 @@ def guardar_farmacia_folder_en_db(
                     observacion,
                     fecha_desde,
                     fecha_hasta,
+                    tipo_cenefa,
                     fecha_carga,
                     lote_carga,
                     usuario_carga
                 )
                 VALUES (
-                    %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s, %s
                 )
                 """,
@@ -286,6 +325,7 @@ def guardar_farmacia_folder_en_db(
                     row.get("observacion"),
                     fecha_desde,
                     fecha_hasta,
+                    tipo_cenefa,
                     fecha_carga,
                     lote_carga,
                     usuario
@@ -308,12 +348,53 @@ def guardar_farmacia_folder_en_db(
         conn.close()
 
 
-def obtener_datos_farmacia_folder():
+#def obtener_datos_farmacia_folder():
+#    conn = get_db_connection()
+#    cur = conn.cursor()
+
+#    try:
+#        cur.execute(
+#            """
+#            SELECT
+#                troquel,
+#                cod_barra,
+#                descripcion,
+#                normal,
+#                oferta,
+#                promo,
+#                fecha_desde,
+#                fecha_hasta
+#            FROM farmacia_folder
+#            WHERE tipo_cenefa = %s
+#            ORDER BY id DESC
+#            """,
+#            ("folder",)
+#        )
+
+#        return cur.fetchall()
+
+#    finally:
+#        cur.close()
+#        conn.close()
+
+def obtener_datos_farmacia_folder(tipo_cenefa="folder"):
+    tipos_validos = {
+        "folder",
+        "diarios",
+        "nutricia",
+    }
+
+    tipo_cenefa = str(tipo_cenefa).strip().lower()
+
+    if tipo_cenefa not in tipos_validos:
+        tipo_cenefa = "folder"
+
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT
                 troquel,
                 cod_barra,
@@ -324,11 +405,13 @@ def obtener_datos_farmacia_folder():
                 fecha_desde,
                 fecha_hasta
             FROM farmacia_folder
+            WHERE tipo_cenefa = %s
             ORDER BY id DESC
-        """)
+            """,
+            (tipo_cenefa,),
+        )
 
-        datos = cur.fetchall()
-        return datos
+        return cur.fetchall()
 
     finally:
         cur.close()
