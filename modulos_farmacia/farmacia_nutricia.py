@@ -360,8 +360,6 @@ def generar_preview(df):
         "normal",
         "oferta",
         "promo",
-        "reconocido",
-        "observacion",
     ]
 
     df_preview = df[columnas_preview].copy()
@@ -374,8 +372,6 @@ def generar_preview(df):
             "normal": "Normal",
             "oferta": "Oferta",
             "promo": "Promoción",
-            "reconocido": "Reconocido",
-            "observacion": "Observación",
         },
         inplace=True,
     )
@@ -389,7 +385,6 @@ def generar_preview(df):
         border=0,
         justify="center",
     )
-
 
 def obtener_cache_id():
     return session.get(
