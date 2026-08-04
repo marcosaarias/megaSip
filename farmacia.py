@@ -764,6 +764,66 @@ def obtener_vigencia_farmacia():
         print("ERROR FORMATEANDO FECHAS:", e, flush=True)
         return "-", "-"
 
+#================================================================
+# obtener vigencia super
+#================================================================
+
+def obtener_vigencia_super():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            """
+            SELECT
+                MIN(desde) AS desde_min,
+                MAX(hasta) AS hasta_max
+            FROM cenefas
+            WHERE tipo_cenefa = 'minorista'
+              AND desde IS NOT NULL
+              AND hasta IS NOT NULL
+              AND desde <> 'desde'
+              AND hasta <> 'hasta'
+              AND desde <> ''
+              AND hasta <> ''
+            """
+        )
+
+        row = cur.fetchone()
+
+    finally:
+        cur.close()
+        conn.close()
+
+    if not row:
+        return "-", "-"
+
+    try:
+        desde = row["desde_min"]
+        hasta = row["hasta_max"]
+    except (TypeError, KeyError):
+        desde = row[0]
+        hasta = row[1]
+
+    if not desde or not hasta:
+        return "-", "-"
+
+    try:
+        return (
+            pd.to_datetime(desde).strftime("%d/%m/%Y"),
+            pd.to_datetime(hasta).strftime("%d/%m/%Y"),
+        )
+
+    except Exception as error:
+        print(
+            "ERROR FORMATEANDO VIGENCIA SUPER:",
+            repr(error),
+            flush=True,
+        )
+
+        return "-", "-"
+
+
 @farmacia_bp.route("/informes-uso")
 def informes_uso_farmacia():
 
