@@ -4,149 +4,250 @@
 {% block content %}
 
 <style>
-
-.contenedor-sorteo{
-    max-width:1200px;
-    margin:auto;
-    padding:20px;
-}
-
-.botonera{
-    margin-bottom:20px;
-}
-
-.btn-imprimir{
-    background:#f2b400;
-    color:#111;
-    border:none;
-    border-radius:8px;
-    padding:14px 30px;
-    font-size:18px;
-    font-weight:bold;
-    cursor:pointer;
-}
-
-.btn-imprimir:hover{
-    background:#d99f00;
-}
-
-.bloque-texto{
-    background:white;
-    border:2px solid #cfcfcf;
-    padding:25px;
-    margin-bottom:20px;
-    border-radius:8px;
-    font-size:18px;
-    line-height:1.6;
-}
-
-.bloque-texto strong{
-    color:#000;
-}
-
-.grilla-cupones{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:0;
-    border:1px solid #000;
-}
-
-.cupon{
-    min-height:220px;
-    border:1px solid #000;
-    padding:15px;
-    background:white;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-}
-
-.cupon-header{
-    text-align:center;
-    font-weight:bold;
-    font-size:18px;
-    border-bottom:1px solid #000;
-    padding-bottom:8px;
-    margin-bottom:12px;
-}
-
-.cupon-body{
-    font-size:15px;
-    line-height:1.8;
-}
-
-.cupon-footer{
-    text-align:center;
-    font-size:12px;
-    margin-top:10px;
-    border-top:1px dashed #999;
-    padding-top:8px;
-}
-
-.sin-cupones{
-    background:#fff3cd;
-    border:1px solid #ffeeba;
-    color:#856404;
-    padding:15px;
-    border-radius:8px;
-}
-
-@media print {
-
-    .sidebar,
-    .navbar,
-    .botonera{
-        display:none !important;
+    .contenedor-sorteo {
+        max-width: 1200px;
+        margin: auto;
+        padding: 20px;
     }
 
-    .main-content{
-        margin:0 !important;
-        padding:0 !important;
-        width:100% !important;
+    .encabezado-pantalla {
+        margin-bottom: 20px;
     }
 
-    .contenedor-sorteo{
-        padding:0;
-        margin:0;
-        max-width:none;
+    .encabezado-pantalla h2 {
+        margin-bottom: 5px;
     }
 
-    .bloque-texto{
-        border:1px solid #000;
-        page-break-inside:avoid;
+    .botonera {
+        margin-bottom: 20px;
     }
 
-    .grilla-cupones{
-        page-break-inside:auto;
+    .btn-imprimir {
+        background: #f2b400;
+        color: #111;
+        border: none;
+        border-radius: 8px;
+        padding: 14px 30px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
     }
 
-    .cupon{
-        page-break-inside:avoid;
+    .btn-imprimir:hover {
+        background: #d99f00;
     }
-}
 
+    .bloque-texto {
+        background: white;
+        border: 2px solid #cfcfcf;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        font-size: 18px;
+        line-height: 1.6;
+    }
+
+    .bloque-texto strong {
+        color: #000;
+    }
+
+    /*
+    Vista en pantalla:
+    dos columnas, igual que en la impresión.
+    */
+    .grilla-cupones {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .cupon {
+        box-sizing: border-box;
+        min-height: 245px;
+        border: 2px dashed #000;
+        padding: 12px 14px;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        font-family: Arial, sans-serif;
+    }
+
+    .titulo-cupon {
+        text-align: center;
+        border-bottom: 1px solid #000;
+        padding-bottom: 7px;
+        margin-bottom: 9px;
+    }
+
+    .titulo-cupon h3 {
+        margin: 0;
+        font-size: 21px;
+        line-height: 1.1;
+        font-weight: normal;
+        white-space: nowrap;
+    }
+
+    .subtitulo-cupon {
+        margin-top: 3px;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .cupon-body {
+        flex: 1;
+        font-size: 13px;
+        line-height: 1.25;
+    }
+
+    .cupon-body p {
+        margin: 6px 0;
+    }
+
+    .cupon-footer {
+        text-align: center;
+        font-size: 11px;
+        margin-top: 8px;
+        border-top: 1px dashed #777;
+        padding-top: 6px;
+    }
+
+    .sin-cupones {
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    /* =====================================================
+       IMPRESIÓN A4: 8 CUPONES POR HOJA, 2 COLUMNAS × 4 FILAS
+       ===================================================== */
+
+    @page {
+        size: A4 portrait;
+        margin: 6mm;
+    }
+
+    @media print {
+        html,
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            background: white !important;
+        }
+
+        .sidebar,
+        .navbar,
+        .botonera,
+        .bloque-texto,
+        .encabezado-pantalla,
+        .logout {
+            display: none !important;
+        }
+
+        .main-content {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        .contenedor-sorteo {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .grilla-cupones {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            grid-auto-rows: 69mm;
+            column-gap: 4mm;
+            row-gap: 2mm;
+            width: 100%;
+        }
+
+        .cupon {
+            width: 100%;
+            height: 69mm;
+            min-height: 69mm;
+            max-height: 69mm;
+            margin: 0;
+            padding: 4mm;
+            overflow: hidden;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        /*
+        Después de cada grupo de 8 cupones comienza una hoja nueva.
+        */
+        .cupon:nth-child(8n + 1):not(:first-child) {
+            break-before: page;
+            page-break-before: always;
+        }
+
+        .titulo-cupon h3 {
+            font-size: 17px;
+        }
+
+        .subtitulo-cupon {
+            font-size: 12px;
+        }
+
+        .cupon-body {
+            font-size: 11px;
+            line-height: 1.15;
+        }
+
+        .cupon-body p {
+            margin: 4px 0;
+        }
+
+        .cupon-footer {
+            font-size: 9px;
+            margin-top: 4px;
+            padding-top: 4px;
+        }
+    }
 </style>
 
 <div class="contenedor-sorteo">
 
+    <div class="encabezado-pantalla">
+        <h2>Super Promo del Año - {{ provincia }}</h2>
+
+        <div>
+            Sucursal responsable:
+            <strong>{{ sucursal }}</strong>
+            |
+            Total de cupones:
+            <strong>{{ total_cupones }}</strong>
+        </div>
+    </div>
+
     <div class="botonera">
-        <button onclick="window.print()" class="btn-imprimir">
-            IMPRIMIR
+        <button
+            type="button"
+            onclick="window.print()"
+            class="btn-imprimir"
+        >
+            IMPRIMIR CUPONES
         </button>
     </div>
 
     <div class="bloque-texto">
-
         <strong>Instrucciones para la sucursal</strong>
 
         <p>
-            Hagan clic en <strong>"IMPRIMIR"</strong>,
+            Hagan clic en <strong>“IMPRIMIR CUPONES”</strong>,
             recorten los cupones una vez impresos y agréguelos
             a la cuponera de la
-            <strong>Super Promo del Año</strong>
-            (sorteo de motos y TVs),
+            <strong>Super Promo del Año</strong>,
             junto con los cupones de las compras realizadas
-            de forma presencial en la sucursal.
+            de forma presencial.
         </p>
 
         <p>
@@ -154,7 +255,6 @@
                 ¡Todos los cupones participan del mismo sorteo!
             </strong>
         </p>
-
     </div>
 
     {% if cupones %}
@@ -165,35 +265,44 @@
 
                 <div class="cupon">
 
-                    <div>
+                    <div class="titulo-cupon">
+                        <h3>SORTEO PROMO DEL AÑO</h3>
 
-                        <div class="cupon-header">
-                            SUPER PROMO DEL AÑO
+                        <div class="subtitulo-cupon">
+                            - Cliente Online -
                         </div>
+                    </div>
 
-                        <div class="cupon-body">
+                    <div class="cupon-body">
 
-                            <p>
-                                <strong>Nombre:</strong><br>
-                                {{ cupon.nombre }}
-                            </p>
+                        <p>
+                            <strong>Nombre y apellido:</strong>
+                            {{ cupon.nombre }}
+                        </p>
 
-                            <p>
-                                <strong>DNI:</strong><br>
-                                {{ cupon.dni }}
-                            </p>
+                        <p>
+                            <strong>DNI:</strong>
+                            {{ cupon.dni }}
+                        </p>
 
-                            <p>
-                                <strong>Teléfono:</strong><br>
-                                {{ cupon.telefono }}
-                            </p>
+                        <p>
+                            <strong>Teléfono:</strong>
+                            {{ cupon.telefono }}
+                        </p>
 
-                            <p>
-                                <strong>Sucursal:</strong><br>
-                                {{ cupon.sucursal }}
-                            </p>
+                        <p>
+                            <strong>Sucursal:</strong>
+                            {{ cupon.sucursal_codigo }}
 
-                        </div>
+                            {% if cupon.sucursal_origen %}
+                                - {{ cupon.sucursal_origen }}
+                            {% endif %}
+                        </p>
+
+                        <p>
+                            <strong>Estado:</strong>
+                            {{ cupon.estado }}
+                        </p>
 
                     </div>
 
