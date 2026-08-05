@@ -353,6 +353,7 @@
 
   {% set suc = session.get("usuario_nombre", "").strip().upper() %}
   {% set sucursales_mayoristas = ['CO05', 'CO09', 'CO12', 'CO15', 'CO21', 'CO29', 'MA02'] %}
+  {% set sucursales_sorteo = ['CO05', 'CO24', 'CO29'] %}
 
   <!-- CENEFAS -->
   <div class="menu-section {% if request.args.get('tipo') in ['mayorista', 'minorista', 'competencia', 'interna', 'vencimientos'] %}active{% endif %}">
@@ -396,20 +397,32 @@
   </div>
 
   <!-- SORTEOS -->
-  <div class="menu-section {% if request.path == url_for('cupones.sucursales_sorteo') %}active{% endif %}">
 
-    <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
-      Sorteos <i class="bi bi-chevron-down arrow"></i>
-    </a>
+  {% if suc in sucursales_sorteo %}
 
-    <div class="submenu" id="submenu-sorteos">
-      <a href="{{ url_for('cupones.sucursales_sorteo') }}"
-        class="submenu-item {% if request.path == url_for('cupones.sucursales_sorteo') %}active-link{% endif %}">
-        Super Promo del Año
+  <div class="menu-section
+      {% if request.path == url_for('cupones.sucursales_sorteo') %}
+          active
+      {% endif %}">
+
+      <a href="#" class="menu-toggle" onclick="toggleMenu(event)">
+          Sorteos
+          <i class="bi bi-chevron-down arrow"></i>
       </a>
-    </div>
 
+      <div class="submenu" id="submenu-sorteos">
+
+          <a href="{{ url_for('cupones.sucursales_sorteo') }}"
+            class="submenu-item
+            {% if request.path == url_for('cupones.sucursales_sorteo') %}
+                active-link
+            {% endif %}">
+              Super Promo del Año
+          </a>
+      </div>
   </div>
+
+  {% endif %}
 
 
   <!-- OTRAS CENEFAS -->

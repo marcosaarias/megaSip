@@ -1,18 +1,161 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-import pandas as pd
-import uuid
-import math
 import json
 import re
-from datetime import datetime
+import uuid
 
-from database.db import get_db_connection
+import pandas as pd
+
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+
 from compras import redis_client
+from database.db import get_db_connection
 
-cupones_bp = Blueprint("cupones", __name__, url_prefix="/cupones")
+
+cupones_bp = Blueprint(
+    "cupones",
+    __name__,
+    url_prefix="/cupones",
+)
+
+
+CACHE_PREFIX = "cupones_sorteo"
+CACHE_TTL = 3600
+
+
+# ============================================================
+# SUCURSALES RESPONSABLES POR PROVINCIA
+# ============================================================
+
+SUCURSALES_SORTEO_POR_PROVINCIA = {
+    "CO05": {
+        "provincia": "Jujuy",
+        "sucursales": [
+            "CO01",
+            "CO02",
+            "CO04",
+            "CO05",
+            "CO06",
+            "CO07",
+            "CO08",
+            "CO10",
+            "CO11",
+            "CO12",
+            "CO14",
+            "CO15",
+            "CO16",
+            "CO17",
+            "CO19",
+            "CO20",
+            "CO22",
+            "CO28",
+            "MA02",
+        ],
+    },
+    "CO24": {
+        "provincia": "Tucumán",
+        "sucursales": [
+            "CO24",
+            "CO25",
+            "CO26",
+            "CO27",
+        ],
+    },
+    "CO29": {
+        "provincia": "Salta",
+        "sucursales": [
+            "CO09",
+            "CO18",
+            "CO21",
+            "CO23",
+            "CO29",
+        ],
+    },
+}
+
+
+SUCURSALES_VALIDAS_SORTEO = {
+    sucursal
+    for configuracion in SUCURSALES_SORTEO_POR_PROVINCIA.values()
+    for sucursal in configuracion["sucursales"]
+}
+
+
+# ============================================================
+# FUNCIONES AUXILIARES
+# ============================================================
+
+def limpiar_valor(valor, defecto=""):
+    if valor is None:
+        return defecto
+
+    try:
+        if pd.isna(valor):
+            return defecto
+    except (TypeError, ValueError):
+        pass
+
+    return valor
+
+
+def limpiar_texto(valor):
+    valor = limpiar_valor(valor, "")
+    return str(valor).strip()
+
+
+def normalizar_texto(valor):
+    """
+    Normaliza texto para comparaciones:
+    - minúsculas;
+    - sin acentos;
+    - espacios internos normalizados.
+    """
+    texto = limpiar_texto(valor).lower()
+
+    texto = (
+        texto
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+    return re.sub(r"\s+", " ", texto).strip()
+
+
+def obtener_valor_fila(fila, *columnas):
+    """
+    Devuelve el primer valor válido encontrado entre varios nombres
+    posibles de columna.
+    """
+    for columna in columnas:
+        if columna not in fila.index:
+            continue
+
+        valor = fila.get(columna)
+
+        try:
+            if pd.isna(valor):
+                continue
+        except (TypeError, ValueError):
+            pass
+
+        return valor
+
+    return ""
 
 
 def normalizar_sucursal_sorteo(valor):
+    """
+    Convierte diferentes denominaciones de sucursal al formato COxx o MAxx.
+    """
     if valor is None:
         return ""
 
@@ -21,7 +164,6 @@ def normalizar_sucursal_sorteo(valor):
     if not valor:
         return ""
 
-    # Normalizar acentos y espacios
     valor = (
         valor
         .replace("Í", "I")
@@ -71,188 +213,39 @@ def normalizar_sucursal_sorteo(valor):
     if valor in mapa:
         return mapa[valor]
 
-    # ALBERDISA 16 / ALBERDISA16
-    coincidencia = re.fullmatch(r"ALBERDISA\s*0*(\d{1,2})", valor)
+    patrones = [
+        (r"ALBERDISA\s*0*(\d{1,2})", "CO"),
+        (r"COMODIN\s*0*(\d{1,2})", "CO"),
+        (r"SUCURSAL\s*0*(\d{1,2})", "CO"),
+        (r"CO\s*0*(\d{1,2})", "CO"),
+        (r"MAYORISTA\s*0*(\d{1,2})", "MA"),
+        (r"MA\s*0*(\d{1,2})", "MA"),
+    ]
 
-    if coincidencia:
-        numero = int(coincidencia.group(1))
-        return f"CO{numero:02d}"
+    for patron, prefijo in patrones:
+        coincidencia = re.fullmatch(
+            patron,
+            valor,
+        )
 
-    # COMODIN 16 / COMODÍN 16
-    coincidencia = re.fullmatch(r"COMODIN\s*0*(\d{1,2})", valor)
-
-    if coincidencia:
-        numero = int(coincidencia.group(1))
-        return f"CO{numero:02d}"
-
-    # SUCURSAL 16
-    coincidencia = re.fullmatch(r"SUCURSAL\s*0*(\d{1,2})", valor)
-
-    if coincidencia:
-        numero = int(coincidencia.group(1))
-        return f"CO{numero:02d}"
-
-    # CO16 / CO 16 / CO016
-    coincidencia = re.fullmatch(r"CO\s*0*(\d{1,2})", valor)
-
-    if coincidencia:
-        numero = int(coincidencia.group(1))
-        return f"CO{numero:02d}"
-
-    # MAYORISTA 2 / MAYORISTA02
-    coincidencia = re.fullmatch(r"MAYORISTA\s*0*(\d{1,2})", valor)
-
-    if coincidencia:
-        numero = int(coincidencia.group(1))
-        return f"MA{numero:02d}"
-
-    # MA2 / MA 02
-    coincidencia = re.fullmatch(r"MA\s*0*(\d{1,2})", valor)
-
-    if coincidencia:
-        numero = int(coincidencia.group(1))
-        return f"MA{numero:02d}"
-
-    return valor
-
-#Funciones Auxiliares
-
-def limpiar_valor(valor, defecto=""):
-    if valor is None:
-        return defecto
-
-    try:
-        if pd.isna(valor):
-            return defecto
-    except Exception:
-        pass
+        if coincidencia:
+            numero = int(coincidencia.group(1))
+            return f"{prefijo}{numero:02d}"
 
     return valor
 
 
-def limpiar_texto(valor):
-    valor = limpiar_valor(valor, "")
-    return str(valor).strip()
-
-
-def limpiar_entero(valor):
-    valor = limpiar_valor(valor, 0)
-
-    try:
-        return int(float(valor))
-    except (TypeError, ValueError):
-        return 0
-
-
-def limpiar_decimal(valor):
-    valor = limpiar_valor(valor, 0)
-
-    if isinstance(valor, str):
-        valor = valor.strip()
-
-        if not valor:
-            return 0
-
-        # Soporta valores como 1.234,56
-        if "," in valor:
-            valor = valor.replace(".", "").replace(",", ".")
-
-    try:
-        numero = float(valor)
-
-        if math.isnan(numero):
-            return 0
-
-        return numero
-    except (TypeError, ValueError):
-        return 0
-
-
-def limpiar_fecha(valor):
-    valor = limpiar_valor(valor, None)
-
-    if valor in (None, ""):
-        return None
-
-    try:
-        if isinstance(valor, pd.Timestamp):
-            return valor.to_pydatetime()
-
-        if isinstance(valor, datetime):
-            return valor
-
-        valor_texto = str(valor).strip()
-
-        if not valor_texto:
-            return None
-
-        formatos = [
-            # Fechas originales del Excel.
-            "%d/%m/%Y %H:%M:%S",
-            "%d/%m/%Y %H:%M",
-            "%d/%m/%Y",
-
-            # Fechas recuperadas desde Redis o PostgreSQL.
-            "%Y-%m-%d %H:%M:%S.%f",
-            "%Y-%m-%d %H:%M:%S",
-            "%Y-%m-%d",
-        ]
-
-        for formato in formatos:
-            try:
-                return datetime.strptime(
-                    valor_texto,
-                    formato,
-                )
-            except ValueError:
-                continue
-
-        fecha = pd.to_datetime(
-            valor_texto,
-            errors="coerce",
-            dayfirst=True,
-        )
-
-        if pd.isna(fecha):
-            print(
-                "FECHA NO RECONOCIDA:",
-                repr(valor),
-                flush=True,
-            )
-            return None
-
-        return fecha.to_pydatetime()
-
-    except Exception as error:
-        print(
-            "ERROR CONVIRTIENDO FECHA:",
-            repr(valor),
-            repr(error),
-            flush=True,
-        )
-        return None
-
-def obtener_valor_fila(fila, *columnas):
-    """
-    Devuelve el primer valor encontrado entre varios nombres posibles
-    de columna.
-    """
-
-    for columna in columnas:
-        if columna in fila.index:
-            valor = fila.get(columna)
-
-            if not pd.isna(valor):
-                return valor
-
-    return ""
+# ============================================================
+# BASE DE DATOS
+# ============================================================
 
 def crear_tabla_cupones_sorteo():
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        cur.execute("""
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS cupones_sorteo (
                 id SERIAL PRIMARY KEY,
                 nombre TEXT,
@@ -263,32 +256,56 @@ def crear_tabla_cupones_sorteo():
                 estado TEXT,
                 fecha_transmision TIMESTAMP DEFAULT NOW()
             )
-        """)
+            """
+        )
+
         conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
     finally:
         cur.close()
         conn.close()
 
 
+# ============================================================
+# CARGA Y PREVISUALIZACIÓN
+# ============================================================
+
 @cupones_bp.route("/", methods=["GET", "POST"])
 def index():
     if session.get("usuario_rol") != "publicidad":
-        return redirect(url_for("sistemas.login"))
+        return redirect(
+            url_for("sistemas.login")
+        )
 
     cupones = []
     total_filas = 0
     total_cupones = 0
+    total_anulados = 0
+    total_sucursal_invalida = 0
     cache_id = ""
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
 
         if not archivo or archivo.filename == "":
-            flash("Debe seleccionar un archivo Excel", "warning")
-            return redirect(url_for("cupones.index"))
+            flash(
+                "Debe seleccionar un archivo Excel.",
+                "warning",
+            )
+            return redirect(
+                url_for("cupones.index")
+            )
 
         try:
-            df = pd.read_excel(archivo)
+            df = pd.read_excel(
+                archivo,
+                dtype=object,
+            )
+
         except Exception as error:
             print(
                 "ERROR LEYENDO ARCHIVO EXCEL:",
@@ -300,19 +317,18 @@ def index():
                 f"No se pudo leer el archivo Excel: {error}",
                 "danger",
             )
-            return redirect(url_for("cupones.index"))
+
+            return redirect(
+                url_for("cupones.index")
+            )
 
         print(
             "COLUMNAS DEL EXCEL:",
-            [repr(columna) for columna in df.columns],
+            [str(columna) for columna in df.columns],
             flush=True,
         )
 
         total_filas = len(df)
-        lote_carga = str(uuid.uuid4())
-
-        filas_sin_id = 0
-        filas_sin_fecha = 0
 
         for numero_fila, (_, fila) in enumerate(
             df.iterrows(),
@@ -326,7 +342,13 @@ def index():
                 )
             )
 
-            if estado not in ["Facturado", "Entregado"]:
+            estado_normalizado = normalizar_texto(
+                estado
+            )
+
+            # El único estado que no genera cupón.
+            if estado_normalizado == "anulacion confirmada":
+                total_anulados += 1
                 continue
 
             sucursal_origen = limpiar_texto(
@@ -335,6 +357,7 @@ def index():
                     "Tienda",
                     "Sucursal",
                     "Sucursal origen",
+                    "Sucursal Origen",
                 )
             )
 
@@ -342,254 +365,60 @@ def index():
                 sucursal_origen
             )
 
-            id_secuencia = limpiar_texto(
-                obtener_valor_fila(
-                    fila,
-                    "ID de secuencia",
-                    "Id de secuencia",
-                    "ID Secuencia",
-                    "Id secuencia",
-                    "Secuencia",
-                )
-            )
+            # Solo se admiten sucursales pertenecientes al sorteo.
+            if sucursal_codigo not in SUCURSALES_VALIDAS_SORTEO:
+                total_sucursal_invalida += 1
 
-            id_pedido = limpiar_texto(
-                obtener_valor_fila(
-                    fila,
-                    "ID de pedido",
-                    "Id de pedido",
-                    "ID Pedido",
-                    "Id pedido",
-                    "Pedido",
-                    "Nro Pedido",
-                    "Número pedido",
-                    "Numero pedido",
-                    "Order ID",
-                    "Order Id",
-                )
-            )
-
-            ecommerce_prod_id = limpiar_texto(
-                obtener_valor_fila(
-                    fila,
-                    "Ecommerce Prod ID",
-                    "Ecommerce Prod Id",
-                    "Ecommerce prod id",
-                    "ID Ecommerce",
-                )
-            )
-
-            fecha_excel = obtener_valor_fila(
-                fila,
-                "Fecha de creación",
-                "Fecha de creacion",
-                "Fecha creación",
-                "Fecha Creacion",
-            )
-
-            fecha_creacion = limpiar_fecha(fecha_excel)
-
-            fecha_entrega = limpiar_fecha(
-                obtener_valor_fila(
-                    fila,
-                    "Fecha de entrega",
-                    "Fecha entrega",
-                    "Fecha Entrega",
-                )
-            )
-
-            fecha_pickeo = limpiar_fecha(
-                obtener_valor_fila(
-                    fila,
-                    "Fecha de pickeo",
-                    "Fecha pickeo",
-                    "Fecha Pickeo",
-                )
-            )
-
-            limite_entrega = limpiar_fecha(
-                obtener_valor_fila(
-                    fila,
-                    "Límite de entrega",
-                    "Limite de entrega",
-                    "Límite entrega",
-                    "Limite entrega",
-                    "Fecha límite entrega",
-                    "Fecha limite entrega",
-                )
-            )
-
-            if numero_fila <= 7:
-                print(
-                    "DEBUG FILA:",
-                    numero_fila,
-                    "| ID PEDIDO:",
-                    repr(id_pedido),
-                    "| FECHA ORIGINAL:",
-                    repr(fecha_excel),
-                    "| TIPO:",
-                    type(fecha_excel).__name__,
-                    "| FECHA CONVERTIDA:",
-                    fecha_creacion,
-                    flush=True,
-                )
-
-            if not id_pedido:
-                filas_sin_id += 1
-
-                if filas_sin_id <= 10:
+                if total_sucursal_invalida <= 10:
                     print(
-                        "FILA OMITIDA POR FALTA DE ID:",
+                        "FILA OMITIDA POR SUCURSAL NO VÁLIDA:",
                         numero_fila,
+                        "| ORIGEN:",
+                        repr(sucursal_origen),
+                        "| CÓDIGO:",
+                        repr(sucursal_codigo),
                         flush=True,
                     )
 
                 continue
 
-            if fecha_creacion is None:
-                filas_sin_fecha += 1
+            nombre = limpiar_texto(
+                obtener_valor_fila(
+                    fila,
+                    "Cliente",
+                    "Nombre",
+                    "Nombre cliente",
+                    "Nombre Cliente",
+                )
+            )
 
-                if filas_sin_fecha <= 10:
-                    print(
-                        "FECHA DE CREACION NO RECONOCIDA:",
-                        "FILA:",
-                        numero_fila,
-                        "VALOR:",
-                        repr(fecha_excel),
-                        flush=True,
-                    )
+            dni = limpiar_texto(
+                obtener_valor_fila(
+                    fila,
+                    "Documento cliente",
+                    "Documento Cliente",
+                    "Documento",
+                    "DNI",
+                )
+            )
+
+            telefono = limpiar_texto(
+                obtener_valor_fila(
+                    fila,
+                    "Teléfono",
+                    "Telefono",
+                    "Teléfono cliente",
+                    "Telefono cliente",
+                )
+            )
 
             registro = {
-                "nombre": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Cliente",
-                    )
-                ),
-
-                "dni": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Documento cliente",
-                        "Documento Cliente",
-                        "DNI",
-                    )
-                ),
-
-                "telefono": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Teléfono",
-                        "Telefono",
-                    )
-                ),
-
-                "sucursal": sucursal_origen,
+                "nombre": nombre,
+                "dni": dni,
+                "telefono": telefono,
+                "sucursal_origen": sucursal_origen,
                 "sucursal_codigo": sucursal_codigo,
                 "estado": estado,
-
-                "id_secuencia": id_secuencia,
-                "id_pedido": id_pedido,
-                "ecommerce_prod_id": ecommerce_prod_id,
-
-                "fecha_creacion": fecha_creacion,
-                "fecha_entrega": fecha_entrega,
-                "fecha_pickeo": fecha_pickeo,
-                "limite_entrega": limite_entrega,
-
-                "email_cliente": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Email de cliente",
-                        "Email cliente",
-                        "Email Cliente",
-                        "Email",
-                    )
-                ),
-
-                "transportadora": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Transportadora",
-                        "Método de entrega",
-                        "Metodo de entrega",
-                        "Modalidad entrega",
-                    )
-                ),
-
-                "ruta": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Ruta",
-                    )
-                ),
-
-                "persona_recibe": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Persona que recibe",
-                        "Persona recibe",
-                    )
-                ),
-
-                "direccion_entrega": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Dirección de entrega",
-                        "Direccion de entrega",
-                        "Dirección entrega",
-                        "Direccion entrega",
-                        "Dirección",
-                        "Direccion",
-                    )
-                ),
-
-                "medio_pago": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Medio de pago",
-                        "Medio pago",
-                        "Modalidad pago",
-                    )
-                ),
-
-                "banco": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Banco",
-                    )
-                ),
-
-                "estado_transaccion": limpiar_texto(
-                    obtener_valor_fila(
-                        fila,
-                        "Estado de la transacción",
-                        "Estado de la transaccion",
-                        "Estado transacción",
-                        "Estado transaccion",
-                    )
-                ),
-
-                "cantidad_productos": limpiar_entero(
-                    obtener_valor_fila(
-                        fila,
-                        "Cantidad de productos",
-                        "Cantidad productos",
-                        "Qty",
-                    )
-                ),
-
-                "productos_faltantes": limpiar_entero(
-                    obtener_valor_fila(
-                        fila,
-                        "Cantidad de productos faltantes",
-                        "Cantidad productos faltantes",
-                        "Productos faltantes",
-                        "Cantidad faltantes",
-                    )
-                ),
-
-                "lote_carga": lote_carga,
             }
 
             cupones.append(registro)
@@ -597,25 +426,26 @@ def index():
         total_cupones = len(cupones)
 
         print(
-            "RESUMEN PROCESAMIENTO:",
+            "RESUMEN CUPONES:",
             "TOTAL EXCEL:",
             total_filas,
-            "| PROCESADOS:",
+            "| CUPONES:",
             total_cupones,
-            "| SIN ID:",
-            filas_sin_id,
-            "| SIN FECHA:",
-            filas_sin_fecha,
+            "| ANULADOS:",
+            total_anulados,
+            "| SUCURSAL INVÁLIDA:",
+            total_sucursal_invalida,
             flush=True,
         )
 
         if cupones:
             cache_id = str(uuid.uuid4())
+            clave_redis = f"{CACHE_PREFIX}:{cache_id}"
 
             try:
                 redis_client.setex(
-                    f"cupones_sorteo:{cache_id}",
-                    3600,
+                    clave_redis,
+                    CACHE_TTL,
                     json.dumps(
                         cupones,
                         ensure_ascii=False,
@@ -626,7 +456,7 @@ def index():
                 print(
                     "CUPONES GUARDADOS EN REDIS:",
                     total_cupones,
-                    "CACHE ID:",
+                    "| CACHE ID:",
                     cache_id,
                     flush=True,
                 )
@@ -643,11 +473,13 @@ def index():
                     "danger",
                 )
 
-                return redirect(url_for("cupones.index"))
+                return redirect(
+                    url_for("cupones.index")
+                )
 
         else:
             flash(
-                "No se encontraron pedidos Facturados o Entregados con ID válido.",
+                "No se encontraron registros válidos para generar cupones.",
                 "warning",
             )
 
@@ -657,27 +489,45 @@ def index():
         cache_id=cache_id,
         total_filas=total_filas,
         total_cupones=total_cupones,
+        total_anulados=total_anulados,
+        total_sucursal_invalida=total_sucursal_invalida,
     )
 
 
-@cupones_bp.route("/transmitir_sucursales", methods=["POST"])
+# ============================================================
+# TRANSMISIÓN A SUCURSALES
+# ============================================================
+
+@cupones_bp.route(
+    "/transmitir_sucursales",
+    methods=["POST"],
+)
 def transmitir_sucursales():
     if session.get("usuario_rol") != "publicidad":
-        return redirect(url_for("sistemas.login"))
+        return redirect(
+            url_for("sistemas.login")
+        )
 
-    cache_id = request.form.get("cache_id", "").strip()
+    cache_id = request.form.get(
+        "cache_id",
+        "",
+    ).strip()
 
     if not cache_id:
         flash(
             "No se recibió el identificador de los datos procesados.",
             "warning",
         )
-        return redirect(url_for("cupones.index"))
+        return redirect(
+            url_for("cupones.index")
+        )
 
-    clave_redis = f"cupones_sorteo:{cache_id}"
+    clave_redis = f"{CACHE_PREFIX}:{cache_id}"
 
     try:
-        datos_redis = redis_client.get(clave_redis)
+        datos_redis = redis_client.get(
+            clave_redis
+        )
 
     except Exception as error:
         print(
@@ -690,24 +540,34 @@ def transmitir_sucursales():
             "No se pudieron recuperar los datos procesados.",
             "danger",
         )
-        return redirect(url_for("cupones.index"))
+
+        return redirect(
+            url_for("cupones.index")
+        )
 
     if not datos_redis:
         flash(
             "Los datos procesados expiraron o ya fueron transmitidos.",
             "warning",
         )
-        return redirect(url_for("cupones.index"))
+
+        return redirect(
+            url_for("cupones.index")
+        )
 
     try:
         if isinstance(datos_redis, bytes):
-            datos_redis = datos_redis.decode("utf-8")
+            datos_redis = datos_redis.decode(
+                "utf-8"
+            )
 
-        registros = json.loads(datos_redis)
+        registros = json.loads(
+            datos_redis
+        )
 
     except Exception as error:
         print(
-            "ERROR DECODIFICANDO DATOS DE REDIS:",
+            "ERROR DECODIFICANDO REDIS:",
             repr(error),
             flush=True,
         )
@@ -716,268 +576,111 @@ def transmitir_sucursales():
             "Los datos temporales no tienen un formato válido.",
             "danger",
         )
-        return redirect(url_for("cupones.index"))
+
+        return redirect(
+            url_for("cupones.index")
+        )
 
     if not registros:
         flash(
-            "No hay pedidos procesados para transmitir.",
+            "No hay cupones procesados para transmitir.",
             "warning",
         )
-        return redirect(url_for("cupones.index"))
+
+        return redirect(
+            url_for("cupones.index")
+        )
 
     conn = None
     cur = None
 
     insertados = 0
-    actualizados = 0
     omitidos = 0
 
     try:
+        crear_tabla_cupones_sorteo()
+
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # Cada transmisión reemplaza el listado vigente.
+        cur.execute(
+            "DELETE FROM cupones_sorteo"
+        )
+
         for registro in registros:
-            id_pedido = limpiar_texto(
-                registro.get("id_pedido")
+            estado = limpiar_texto(
+                registro.get("estado")
             )
 
-            if not id_pedido:
+            if normalizar_texto(estado) == "anulacion confirmada":
                 omitidos += 1
                 continue
 
-            sucursal_codigo = normalizar_sucursal_sorteo(
-                registro.get("sucursal_codigo")
+            sucursal_origen = limpiar_texto(
+                registro.get("sucursal_origen")
                 or registro.get("sucursal")
             )
 
-            fecha_creacion = limpiar_fecha(
-                registro.get("fecha_creacion")
+            sucursal_codigo = normalizar_sucursal_sorteo(
+                registro.get("sucursal_codigo")
+                or sucursal_origen
             )
 
-            fecha_entrega = limpiar_fecha(
-                registro.get("fecha_entrega")
-            )
-
-            fecha_pickeo = limpiar_fecha(
-                registro.get("fecha_pickeo")
-            )
-
-            limite_entrega = limpiar_fecha(
-                registro.get("limite_entrega")
-            )
+            if sucursal_codigo not in SUCURSALES_VALIDAS_SORTEO:
+                omitidos += 1
+                continue
 
             cur.execute(
                 """
-                SELECT 1
-                FROM informes
-                WHERE id_pedido = %s
-                LIMIT 1
+                INSERT INTO cupones_sorteo (
+                    nombre,
+                    dni,
+                    telefono,
+                    sucursal_origen,
+                    sucursal_codigo,
+                    estado,
+                    fecha_transmision
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    NOW()
+                )
                 """,
-                (id_pedido,),
+                (
+                    limpiar_texto(
+                        registro.get("nombre")
+                    ),
+                    limpiar_texto(
+                        registro.get("dni")
+                    ),
+                    limpiar_texto(
+                        registro.get("telefono")
+                    ),
+                    sucursal_origen,
+                    sucursal_codigo,
+                    estado,
+                ),
             )
 
-            pedido_existente = cur.fetchone() is not None
-
-            if pedido_existente:
-                cur.execute(
-                    """
-                    UPDATE informes
-                    SET
-                        id_secuencia = %s,
-                        ecommerce_prod_id = %s,
-                        fecha_creacion = %s,
-                        fecha_entrega = %s,
-                        fecha_pickeo = %s,
-                        limite_entrega = %s,
-                        documento_cliente = %s,
-                        cliente = %s,
-                        email_cliente = %s,
-                        telefono = %s,
-                        sucursal_codigo = %s,
-                        estado = %s,
-                        transportadora = %s,
-                        ruta = %s,
-                        persona_recibe = %s,
-                        direccion_entrega = %s,
-                        medio_pago = %s,
-                        banco = %s,
-                        estado_transaccion = %s,
-                        cantidad_productos = %s,
-                        productos_faltantes = %s,
-                        lote_carga = %s
-                    WHERE id_pedido = %s
-                    """,
-                    (
-                        limpiar_texto(
-                            registro.get("id_secuencia")
-                        ),
-                        limpiar_texto(
-                            registro.get("ecommerce_prod_id")
-                        ),
-                        fecha_creacion,
-                        fecha_entrega,
-                        fecha_pickeo,
-                        limite_entrega,
-                        limpiar_texto(
-                            registro.get("dni")
-                        ),
-                        limpiar_texto(
-                            registro.get("nombre")
-                        ),
-                        limpiar_texto(
-                            registro.get("email_cliente")
-                        ),
-                        limpiar_texto(
-                            registro.get("telefono")
-                        ),
-                        sucursal_codigo,
-                        limpiar_texto(
-                            registro.get("estado")
-                        ),
-                        limpiar_texto(
-                            registro.get("transportadora")
-                        ),
-                        limpiar_texto(
-                            registro.get("ruta")
-                        ),
-                        limpiar_texto(
-                            registro.get("persona_recibe")
-                        ),
-                        limpiar_texto(
-                            registro.get("direccion_entrega")
-                        ),
-                        limpiar_texto(
-                            registro.get("medio_pago")
-                        ),
-                        limpiar_texto(
-                            registro.get("banco")
-                        ),
-                        limpiar_texto(
-                            registro.get("estado_transaccion")
-                        ),
-                        limpiar_entero(
-                            registro.get("cantidad_productos")
-                        ),
-                        limpiar_entero(
-                            registro.get("productos_faltantes")
-                        ),
-                        limpiar_texto(
-                            registro.get("lote_carga")
-                        ),
-                        id_pedido,
-                    ),
-                )
-
-                actualizados += 1
-
-            else:
-                cur.execute(
-                    """
-                    INSERT INTO informes (
-                        id_secuencia,
-                        id_pedido,
-                        ecommerce_prod_id,
-                        fecha_creacion,
-                        fecha_entrega,
-                        fecha_pickeo,
-                        limite_entrega,
-                        documento_cliente,
-                        cliente,
-                        email_cliente,
-                        telefono,
-                        sucursal_codigo,
-                        estado,
-                        transportadora,
-                        ruta,
-                        persona_recibe,
-                        direccion_entrega,
-                        medio_pago,
-                        banco,
-                        estado_transaccion,
-                        cantidad_productos,
-                        productos_faltantes,
-                        lote_carga
-                    )
-                    VALUES (
-                        %s, %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s
-                    )
-                    """,
-                    (
-                        limpiar_texto(
-                            registro.get("id_secuencia")
-                        ),
-                        id_pedido,
-                        limpiar_texto(
-                            registro.get("ecommerce_prod_id")
-                        ),
-                        fecha_creacion,
-                        fecha_entrega,
-                        fecha_pickeo,
-                        limite_entrega,
-                        limpiar_texto(
-                            registro.get("dni")
-                        ),
-                        limpiar_texto(
-                            registro.get("nombre")
-                        ),
-                        limpiar_texto(
-                            registro.get("email_cliente")
-                        ),
-                        limpiar_texto(
-                            registro.get("telefono")
-                        ),
-                        sucursal_codigo,
-                        limpiar_texto(
-                            registro.get("estado")
-                        ),
-                        limpiar_texto(
-                            registro.get("transportadora")
-                        ),
-                        limpiar_texto(
-                            registro.get("ruta")
-                        ),
-                        limpiar_texto(
-                            registro.get("persona_recibe")
-                        ),
-                        limpiar_texto(
-                            registro.get("direccion_entrega")
-                        ),
-                        limpiar_texto(
-                            registro.get("medio_pago")
-                        ),
-                        limpiar_texto(
-                            registro.get("banco")
-                        ),
-                        limpiar_texto(
-                            registro.get("estado_transaccion")
-                        ),
-                        limpiar_entero(
-                            registro.get("cantidad_productos")
-                        ),
-                        limpiar_entero(
-                            registro.get("productos_faltantes")
-                        ),
-                        limpiar_texto(
-                            registro.get("lote_carga")
-                        ),
-                    ),
-                )
-
-                insertados += 1
+            insertados += 1
 
         conn.commit()
 
-        redis_client.delete(clave_redis)
+        # La caché se elimina solo después del commit exitoso.
+        redis_client.delete(
+            clave_redis
+        )
 
         print(
-            "TRANSMISION FINALIZADA:",
+            "TRANSMISIÓN DE CUPONES FINALIZADA:",
             "INSERTADOS:",
             insertados,
-            "| ACTUALIZADOS:",
-            actualizados,
             "| OMITIDOS:",
             omitidos,
             flush=True,
@@ -985,9 +688,8 @@ def transmitir_sucursales():
 
         flash(
             (
-                f"Transmisión finalizada. "
-                f"Insertados: {insertados}. "
-                f"Actualizados: {actualizados}. "
+                "Transmisión finalizada. "
+                f"Cupones insertados: {insertados}. "
                 f"Omitidos: {omitidos}."
             ),
             "success",
@@ -998,13 +700,13 @@ def transmitir_sucursales():
             conn.rollback()
 
         print(
-            "ERROR TRANSMITIENDO PEDIDOS:",
+            "ERROR TRANSMITIENDO CUPONES:",
             repr(error),
             flush=True,
         )
 
         flash(
-            f"No se pudieron transmitir los pedidos: {error}",
+            f"No se pudieron transmitir los cupones: {error}",
             "danger",
         )
 
@@ -1015,22 +717,57 @@ def transmitir_sucursales():
         if conn:
             conn.close()
 
-    return redirect(url_for("cupones.index"))
+    return redirect(
+        url_for("cupones.index")
+    )
+
+
+# ============================================================
+# VISUALIZACIÓN PROVINCIAL
+# ============================================================
 
 @cupones_bp.route("/sucursales_sorteo")
 def sucursales_sorteo():
     if session.get("usuario_rol") != "sucursal":
-        return redirect(url_for("sistemas.login"))
+        return redirect(
+            url_for("sistemas.login")
+        )
+
+    sucursal_usuario = normalizar_sucursal_sorteo(
+        session.get(
+            "usuario_nombre",
+            "",
+        )
+    )
+
+    configuracion = SUCURSALES_SORTEO_POR_PROVINCIA.get(
+        sucursal_usuario
+    )
+
+    if not configuracion:
+        flash(
+            "La sucursal no está habilitada para administrar este sorteo.",
+            "warning",
+        )
+
+        return redirect(
+            url_for(
+                "compras.sucursal",
+                tipo="minorista",
+            )
+        )
+
+    provincia = configuracion["provincia"]
+    sucursales_provincia = configuracion["sucursales"]
 
     crear_tabla_cupones_sorteo()
-
-    sucursal_codigo = session.get("usuario_nombre", "").strip().upper()
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT
                 nombre,
                 dni,
@@ -1040,11 +777,20 @@ def sucursales_sorteo():
                 estado,
                 fecha_transmision
             FROM cupones_sorteo
-            WHERE sucursal_codigo = %s
-            ORDER BY fecha_transmision DESC, id DESC
-        """, (sucursal_codigo,))
+            WHERE sucursal_codigo = ANY(%s)
+            ORDER BY
+                sucursal_codigo ASC,
+                fecha_transmision DESC,
+                id DESC
+            """,
+            (sucursales_provincia,),
+        )
 
         cupones = cur.fetchall()
+
+    except Exception:
+        conn.rollback()
+        raise
 
     finally:
         cur.close()
@@ -1053,5 +799,8 @@ def sucursales_sorteo():
     return render_template(
         "publicidad/sucursales_sorteo.html",
         cupones=cupones,
-        sucursal=sucursal_codigo
+        sucursal=sucursal_usuario,
+        provincia=provincia,
+        sucursales_provincia=sucursales_provincia,
+        total_cupones=len(cupones),
     )
