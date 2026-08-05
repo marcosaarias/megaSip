@@ -73,12 +73,25 @@
         background: white;
         font-family: Arial, sans-serif;
     }
-
-    .cupon h3 {
+    
+    .titulo-cupon {
         text-align: center;
-        margin-top: 0;
         border-bottom: 1px solid #000;
         padding-bottom: 8px;
+        margin-bottom: 12px;
+    }
+
+    .titulo-cupon h3 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+        white-space: nowrap;   /* evita que se divida en dos líneas */
+    }
+
+    .subtitulo-cupon {
+        margin-top: 4px;
+        font-size: 16px;
+        font-weight: bold;
     }
 
     .cupon p {
@@ -162,7 +175,11 @@
         <div class="lista-cupones">
             {% for cupon in cupones %}
                 <div class="cupon">
-                    <h3>SORTEO PROMO DEL AÑO</h3>
+
+                    <div class="titulo-cupon">
+                        <h3>SORTEO PROMO DEL AÑO</h3>
+                        <div class="subtitulo-cupon">- Cliente Online -</div>
+                    </div>
 
                     <p>
                         <strong>Nombre y apellido:</strong>
@@ -181,7 +198,7 @@
 
                     <p>
                         <strong>Sucursal:</strong>
-                        {{ cupon.sucursal }}
+                        {{ cupon.sucursal_codigo }}
                     </p>
 
                     <p>
