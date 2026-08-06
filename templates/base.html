@@ -283,6 +283,17 @@
         Folder Mayorista
       </a>
 
+      <a href="{{ url_for('compras.folder_mayorista_tucuman') }}"
+          class="submenu-item
+          {% if request.endpoint in [
+              'compras.folder_mayorista_tucuman',
+              'compras.transmitir_folder_mayorista_tucuman'
+          ] %}
+              active-link
+          {% endif %}">
+            Folder Mayorista Tucumán
+      </a>
+
       <a href="{{ url_for('compras.folder_minorista') }}"
         class="submenu-item {% if request.path == url_for('compras.folder_minorista') %}active-link{% endif %}">
         Folder Minorista
