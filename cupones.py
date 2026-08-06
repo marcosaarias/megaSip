@@ -401,16 +401,16 @@ def index():
                     "Nombre Cliente",
                 )
             )
-            
-            "dni": limpiar_documento(
-                    obtener_valor_fila(
-                        fila,
-                        "Documento cliente",
-                        "Documento Cliente",
-                        "Documento",
-                        "DNI",
-                    )
-                ),
+
+            dni = limpiar_documento(
+                obtener_valor_fila(
+                    fila,
+                    "Documento cliente",
+                    "Documento Cliente",
+                    "Documento",
+                    "DNI",
+                )
+            )
 
             telefono = limpiar_texto(
                 obtener_valor_fila(
