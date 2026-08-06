@@ -103,6 +103,16 @@ def limpiar_valor(valor, defecto=""):
 
     return valor
 
+def limpiar_documento(valor):
+    texto = limpiar_texto(valor)
+
+    if not texto:
+        return ""
+
+    if texto.endswith(".0"):
+        texto = texto[:-2]
+
+    return texto
 
 def limpiar_texto(valor):
     valor = limpiar_valor(valor, "")
@@ -391,16 +401,16 @@ def index():
                     "Nombre Cliente",
                 )
             )
-
-            dni = limpiar_texto(
-                obtener_valor_fila(
-                    fila,
-                    "Documento cliente",
-                    "Documento Cliente",
-                    "Documento",
-                    "DNI",
-                )
-            )
+            
+            "dni": limpiar_documento(
+                    obtener_valor_fila(
+                        fila,
+                        "Documento cliente",
+                        "Documento Cliente",
+                        "Documento",
+                        "DNI",
+                    )
+                ),
 
             telefono = limpiar_texto(
                 obtener_valor_fila(
