@@ -16,20 +16,25 @@ from io import StringIO
 import re
 import unicodedata
 from psycopg2.extras import RealDictCursor
+from pathlib import Path
+from werkzeug.utils import secure_filename
+
 
 SUCURSAL_MAP = {
     "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02",
-    "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO29,MA02",
+    "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO24,CO29,MA02",
     "Jujuy - Mayorista": "CO05,CO12,CO15,MA02",
     "Salta - Mayorista": "CO09,CO29,CO21",
     "Oran - Mayorista": "CO21",
-    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO24,CO25,CO26,CO27,CO28",
+    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO25,CO26,CO27,CO28",
     "Jujuy - Minoristas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
     "Salta - Minoristas": "CO18,CO23",
     "Jujuy, Salta - Minoritas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO28",
     "Jujuy, Salta - Minoritas y Mayoristas": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO28,CO29,MA02",
     "Jujuy - Minorista Y Mayorista": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO19,CO20,CO22,CO28,MA02",
     "Tucuman": "CO24,CO25,CO26,CO27",
+    "Tucuman - Minorista": "CO26,CO27",
+    "Tucuman - Mayorista": "CO24,CO25",
     "Jujuy Capital": "CO01,CO02,CO05,CO07,CO11,CO16,CO19,CO20,CO22"
 }
 
@@ -1499,3 +1504,16 @@ def historico_cenefas():
         filtro_tipo=filtro_tipo,
         filtro_lote=filtro_lote
     )
+
+from sucursales.folder_mayorista_tucuman import (
+    registrar_rutas_folder_mayorista_tucuman,
+)
+
+registrar_rutas_folder_mayorista_tucuman(
+    compras_bp=compras_bp,
+    procesar_archivo_cenefas=procesar_archivo_cenefas,
+    guardar_cenefas_en_db=guardar_cenefas_en_db,
+    get_db_connection=get_db_connection,
+    limpiar_precio=limpiar_precio,
+    formatear_precio_arg=formatear_precio_arg,
+)
