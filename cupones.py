@@ -104,11 +104,26 @@ def limpiar_valor(valor, defecto=""):
     return valor
 
 def limpiar_documento(valor):
-    texto = limpiar_texto(valor)
-
-    if not texto:
+    if valor is None:
         return ""
 
+    try:
+        if pd.isna(valor):
+            return ""
+    except Exception:
+        pass
+
+    # Si viene como número (39738260.0)
+    if isinstance(valor, float):
+        return str(int(valor))
+
+    # Si viene como entero
+    if isinstance(valor, int):
+        return str(valor)
+
+    texto = str(valor).strip()
+
+    # Elimina el .0 si quedó como texto
     if texto.endswith(".0"):
         texto = texto[:-2]
 
