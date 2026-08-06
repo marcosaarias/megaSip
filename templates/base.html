@@ -352,7 +352,7 @@
 {% if session.get("usuario_rol") == "sucursal" %}
 
   {% set suc = session.get("usuario_nombre", "").strip().upper() %}
-  {% set sucursales_mayoristas = ['CO05', 'CO09', 'CO12', 'CO15', 'CO21', 'CO29', 'MA02'] %}
+  {% set sucursales_mayoristas = ['CO05', 'CO09', 'CO12', 'CO15', 'CO21', 'CO24','CO25','CO29', 'MA02'] %}
   {% set sucursales_sorteo = ['CO05', 'CO24', 'CO29'] %}
 
   <!-- CENEFAS -->
@@ -366,9 +366,23 @@
 
       {% if suc in sucursales_mayoristas %}
         <!-- SOLO MAYORISTA -->
-        <a href="{{ url_for('compras.sucursal', tipo='mayorista') }}"
+        
+        <!--<a href="{{ url_for('compras.sucursal', tipo='mayorista') }}"
           class="submenu-item {% if request.args.get('tipo') == 'mayorista' %}active-link{% endif %}">
           Folder Mayorista
+        </a>-->
+        <a
+          href="{{ url_for('compras.sucursal', tipo='mayorista') }}"
+          class="submenu-item
+          {% if request.args.get('tipo') == 'mayorista' %}
+              active-link
+          {% endif %}"
+        >
+          {% if suc in ['CO24', 'CO25'] %}
+              Folder Mayorista Tucumán
+          {% else %}
+              Folder Mayorista
+          {% endif %}
         </a>
       {% else %}
         <!-- SOLO MINORISTA -->
