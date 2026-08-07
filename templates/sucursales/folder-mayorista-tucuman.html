@@ -1,155 +1,593 @@
 {% extends "base.html" %}
-{% block title %}Folder{% endblock %}
+
+{% block title %}Folder Mayorista Tucumán{% endblock %}
 
 {% block content %}
+
 <div class="container-fluid">
-    <h2 class="mb-4">Gestión de Folder</h2>
+
+    <h2 class="mb-4">
+        Gestión de Folder Mayorista Tucumán
+    </h2>
+
+    <!-- ===================================================== -->
+    <!-- FECHAS -->
+    <!-- ===================================================== -->
 
     <div class="card p-4 shadow-sm mb-4">
+
         <div class="row">
+
             <div class="col-md-3">
-                <label><strong>Desde:</strong></label>
-                <input type="date"
-                       id="fecha_desde"
-                       class="form-control"
-                       value="{{ fecha_desde }}"
-                       required>
+                <label for="fecha_desde">
+                    <strong>Desde:</strong>
+                </label>
+
+                <input
+                    type="date"
+                    id="fecha_desde"
+                    class="form-control"
+                    value="{{ fecha_desde }}"
+                    required
+                >
             </div>
 
             <div class="col-md-3">
-                <label><strong>Hasta:</strong></label>
-                <input type="date"
-                       id="fecha_hasta"
-                       class="form-control"
-                       value="{{ fecha_hasta }}"
-                       required>
+                <label for="fecha_hasta">
+                    <strong>Hasta:</strong>
+                </label>
+
+                <input
+                    type="date"
+                    id="fecha_hasta"
+                    class="form-control"
+                    value="{{ fecha_hasta }}"
+                    required
+                >
             </div>
+
         </div>
+
     </div>
+
+
+    <!-- ===================================================== -->
+    <!-- CARGA DEL EXCEL -->
+    <!-- ===================================================== -->
 
     <div class="row">
+
         <div class="col-md-6">
+
             <div class="card p-4 shadow-sm">
-                <h4>Folder Mayorista</h4>
 
-                <form method="POST"
-                      action="{{ url_for('compras.folder_mayorista') }}"
-                      enctype="multipart/form-data"
-                      class="folder-form">
+                <h4>
+                    Folder Mayorista Tucumán
+                </h4>
 
-                    <input type="hidden" name="tipo" value="mayorista">
-                    <input type="hidden" name="fecha_desde">
-                    <input type="hidden" name="fecha_hasta">
-                    <input type="hidden" name="sobrescribir" value="0">
+                <p class="text-muted">
+                    Destino:
+                    <strong>
+                        {{ sucursales_destino|default("CO25") }}
+                    </strong>
+                </p>
 
-                    <input type="file" name="archivo" class="form-control mb-3" required>
+                <form
+                    method="POST"
+                    action="{{ url_for('compras.folder_mayorista_tucuman') }}"
+                    enctype="multipart/form-data"
+                    class="folder-form"
+                >
 
-                    <button type="submit" class="btn btn-primary w-100">
+                    <input
+                        type="hidden"
+                        name="fecha_desde"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="fecha_hasta"
+                    >
+
+                    <input
+                        type="file"
+                        name="archivo"
+                        class="form-control mb-3"
+                        accept=".xlsx,.xls"
+                        required
+                    >
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
                         Cargar Folder Mayorista
                     </button>
+
                 </form>
+
             </div>
+
         </div>
+
     </div>
+
+
+    <!-- ===================================================== -->
+    <!-- MENSAJES -->
+    <!-- ===================================================== -->
 
     {% if mensaje_error %}
-    <div class="alert alert-danger mt-4">
-        {{ mensaje_error }}
-    </div>
-    {% endif %}
 
-    {% if preview %}
-    <div class="mt-5">
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">
-                    Previsualización - {{ tipo|capitalize }}
-                    {% if total_registros %}
-                        | Total: {{ total_registros }}
-                    {% endif %}
-                </h5>
-            </div>
-
-            <div class="card-body p-2">
-                <div style="max-height:600px; overflow:auto;">
-                    {{ preview|safe }}
-                </div>
-
-                <div class="text-end mt-4">
-                    <form method="POST"
-                          action="{{ url_for('compras.folder_mayorista') }}"
-                          class="folder-form"
-                          onsubmit="return confirmarTransmision(this);">
-
-                        <input type="hidden" name="tipo" value="{{ tipo }}">
-                        <input type="hidden" name="fecha_desde">
-                        <input type="hidden" name="fecha_hasta">
-                        <input type="hidden" name="sobrescribir" value="0">
-
-                        <button type="submit" class="btn btn-warning px-4">
-                            Transmitir Folder
-                        </button>
-                    </form>
-                </div>
-            </div>
+        <div class="alert alert-danger mt-4">
+            {{ mensaje_error }}
         </div>
-    </div>
+
     {% endif %}
+
+
+    {% if mensaje_exito %}
+
+        <div class="alert alert-success mt-4">
+            {{ mensaje_exito }}
+        </div>
+
+    {% endif %}
+
+
+    <!-- ===================================================== -->
+    <!-- PREVISUALIZACIÓN -->
+    <!-- ===================================================== -->
+
+    {% if datos_preview %}
+
+        <div class="mt-5">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header bg-dark text-white">
+
+                    <h5 class="mb-0">
+
+                        Previsualización -
+                        Folder Mayorista Tucumán
+
+                        {% if total_registros %}
+                            | Total: {{ total_registros }}
+                        {% endif %}
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div
+                        class="table-responsive"
+                        style="max-height: 600px; overflow: auto;"
+                    >
+
+                        <table
+                            class="table table-sm table-bordered table-hover align-middle"
+                            id="tabla-preview"
+                        >
+
+                            <thead
+                                class="table-dark sticky-top"
+                            >
+
+                                <tr>
+
+                                    {% if datos_preview %}
+
+                                        {% for columna in datos_preview[0].keys() %}
+
+                                            <th>
+                                                {{ columna }}
+                                            </th>
+
+                                        {% endfor %}
+
+                                    {% endif %}
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody>
+
+                                {% for fila in datos_preview %}
+
+                                    {% set indice_fila = loop.index0 %}
+
+                                    <tr>
+
+                                        {% for columna, valor in fila.items() %}
+
+                                            <td>
+
+                                                {% if columna in columnas_editables %}
+
+                                                    <input
+                                                        type="text"
+                                                        class="form-control form-control-sm campo-editable"
+                                                        data-fila="{{ indice_fila }}"
+                                                        data-columna="{{ columna }}"
+                                                        data-valor-original="{{ valor }}"
+                                                        value="{{ valor }}"
+                                                    >
+
+                                                {% else %}
+
+                                                    {{ valor }}
+
+                                                {% endif %}
+
+                                            </td>
+
+                                        {% endfor %}
+
+                                    </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+
+                    <!-- ============================================= -->
+                    <!-- FORMULARIO DE TRANSMISIÓN -->
+                    <!-- ============================================= -->
+
+                    <div class="text-end mt-4">
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('compras.transmitir_folder_mayorista_tucuman') }}"
+                            id="form-transmitir"
+                            onsubmit="return confirmarTransmision(this);"
+                        >
+
+                            <!-- TOKEN DEL ARCHIVO TEMPORAL -->
+                            <input
+                                type="hidden"
+                                name="token"
+                                value="{{ token }}"
+                            >
+
+
+                            <!-- CAMBIOS REALIZADOS EN LA TABLA -->
+                            <input
+                                type="hidden"
+                                name="cambios"
+                                id="cambios_json"
+                                value="[]"
+                            >
+
+
+                            <!-- SOBRESCRITURA -->
+                            <input
+                                type="hidden"
+                                name="sobrescribir"
+                                value="0"
+                            >
+
+
+                            <button
+                                type="submit"
+                                class="btn btn-warning px-4"
+                            >
+                                Transmitir Folder
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- ===================================================== -->
+    <!-- RESULTADO DE LA TRANSMISIÓN -->
+    <!-- ===================================================== -->
+
+    {% if datos_transmitidos %}
+
+        <div class="mt-5">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header bg-success text-white">
+
+                    <h5 class="mb-0">
+                        Folder transmitido correctamente
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    {% if lote_carga %}
+
+                        <p>
+                            <strong>Lote:</strong>
+                            {{ lote_carga }}
+                        </p>
+
+                    {% endif %}
+
+
+                    {% if fecha_carga %}
+
+                        <p>
+                            <strong>Fecha de carga:</strong>
+                            {{ fecha_carga }}
+                        </p>
+
+                    {% endif %}
+
+
+                    <p>
+                        <strong>Destino:</strong>
+                        {{ sucursales_destino|default("CO25") }}
+                    </p>
+
+
+                    <p>
+                        <strong>Total transmitido:</strong>
+                        {{ total_registros }}
+                    </p>
+
+
+                    <div
+                        class="table-responsive"
+                        style="max-height: 600px; overflow: auto;"
+                    >
+
+                        <table
+                            class="table table-sm table-bordered table-hover"
+                        >
+
+                            <thead class="table-success">
+
+                                <tr>
+
+                                    {% for columna in datos_transmitidos[0].keys() %}
+
+                                        <th>
+                                            {{ columna }}
+                                        </th>
+
+                                    {% endfor %}
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody>
+
+                                {% for fila in datos_transmitidos %}
+
+                                    <tr>
+
+                                        {% for columna, valor in fila.items() %}
+
+                                            <td>
+                                                {{ valor }}
+                                            </td>
+
+                                        {% endfor %}
+
+                                    </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
 </div>
 
+
 <script>
+
+/* ============================================================
+   CARGAR FECHAS AL FORMULARIO DE CARGA
+   ============================================================ */
+
 function cargarFechasEnFormulario(form) {
-    const fechaDesde = document.getElementById("fecha_desde").value;
-    const fechaHasta = document.getElementById("fecha_hasta").value;
+
+    const fechaDesde =
+        document.getElementById("fecha_desde").value;
+
+    const fechaHasta =
+        document.getElementById("fecha_hasta").value;
+
 
     if (!fechaDesde || !fechaHasta) {
-        alert("Debe seleccionar fecha desde y fecha hasta.");
+
+        alert(
+            "Debe seleccionar fecha desde y fecha hasta."
+        );
+
         return false;
     }
 
-    form.querySelector('input[name="fecha_desde"]').value = fechaDesde;
-    form.querySelector('input[name="fecha_hasta"]').value = fechaHasta;
+
+    const inputDesde =
+        form.querySelector(
+            'input[name="fecha_desde"]'
+        );
+
+    const inputHasta =
+        form.querySelector(
+            'input[name="fecha_hasta"]'
+        );
+
+
+    if (inputDesde) {
+        inputDesde.value = fechaDesde;
+    }
+
+    if (inputHasta) {
+        inputHasta.value = fechaHasta;
+    }
+
 
     return true;
 }
 
-document.querySelectorAll(".folder-form").forEach(form => {
-    form.addEventListener("submit", function (event) {
-        if (!cargarFechasEnFormulario(this)) {
-            event.preventDefault();
-        }
-    });
-});
 
-function confirmarTransmision(form) {
-    if (!cargarFechasEnFormulario(form)) {
-        return false;
-    }
+/* ============================================================
+   FORMULARIO DE CARGA
+   ============================================================ */
 
-    const requiereSobrescribir =
-        "{{ requiere_sobrescribir|default(false)|lower }}" === "true";
+document
+    .querySelectorAll(".folder-form")
+    .forEach(form => {
 
-    if (requiereSobrescribir) {
-        const confirmar = confirm(
-            "Ya existen registros para este período. ¿Desea sobrescribirlos?"
+        form.addEventListener(
+            "submit",
+            function(event) {
+
+                if (!cargarFechasEnFormulario(this)) {
+                    event.preventDefault();
+                }
+
+            }
         );
 
-        if (!confirmar) return false;
+    });
 
-        form.querySelector('input[name="sobrescribir"]').value = "1";
-        alert("Sobrescribiendo información...");
-        return true;
-    }
 
-    const confirmar = confirm("¿Está seguro que desea transmitir el folder?");
+/* ============================================================
+   OBTENER CAMBIOS DE LA PREVISUALIZACIÓN
+   ============================================================ */
 
-    if (confirmar) {
-        alert("Transmitiendo información...");
-        return true;
-    }
+function obtenerCambios() {
 
-    return false;
+    const cambios = [];
+
+    document
+        .querySelectorAll(".campo-editable")
+        .forEach(input => {
+
+            const valorActual =
+                input.value;
+
+            const valorOriginal =
+                input.dataset.valorOriginal;
+
+
+            if (
+                String(valorActual) !==
+                String(valorOriginal)
+            ) {
+
+                cambios.push({
+
+                    fila:
+                        parseInt(
+                            input.dataset.fila,
+                            10
+                        ),
+
+                    columna:
+                        input.dataset.columna,
+
+                    valor:
+                        valorActual
+
+                });
+
+            }
+
+        });
+
+
+    return cambios;
 }
+
+
+/* ============================================================
+   CONFIRMAR TRANSMISIÓN
+   ============================================================ */
+
+function confirmarTransmision(form) {
+
+    const cambios =
+        obtenerCambios();
+
+
+    const inputCambios =
+        document.getElementById(
+            "cambios_json"
+        );
+
+
+    inputCambios.value =
+        JSON.stringify(cambios);
+
+
+    const requiereSobrescribir =
+        "{{ requiere_sobrescribir|default(false)|lower }}"
+        === "true";
+
+
+    if (requiereSobrescribir) {
+
+        const confirmar =
+            confirm(
+                "Ya existen registros para este período. " +
+                "¿Desea sobrescribirlos?"
+            );
+
+
+        if (!confirmar) {
+            return false;
+        }
+
+
+        form
+            .querySelector(
+                'input[name="sobrescribir"]'
+            )
+            .value = "1";
+
+
+        return true;
+    }
+
+
+    return confirm(
+        "¿Está seguro que desea transmitir " +
+        "el Folder Mayorista Tucumán?"
+    );
+}
+
 </script>
 
 {% endblock %}
