@@ -314,6 +314,19 @@
         Oferta por Liquidacion
       </a>
 
+          <!-- NUEVO -->
+      <a href="{{ url_for('compras.administrar_cenefas') }}"
+         class="submenu-item
+          {% if request.endpoint in [
+              'compras.administrar_cenefas',
+              'compras.actualizar_cenefas'
+          ] %}
+              active-link
+          {% endif %}">
+            <i class="bi bi-pencil-square me-1"></i>
+          Administrar Cenefas
+      </a>
+
     </div>
   </div>
 
