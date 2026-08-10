@@ -1,0 +1,779 @@
+{% extends "base.html" %}
+
+{% block title %}
+Administrar Cenefas
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="mb-1">
+                Administrar Cenefas
+            </h2>
+
+            <div class="text-muted">
+                Consulta y modificación de cenefas transmitidas
+            </div>
+        </div>
+
+        <div class="badge bg-dark fs-6">
+            {{ total }} registros
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- FILTROS -->
+    <!-- ================================================= -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>Filtros</strong>
+        </div>
+
+        <div class="card-body">
+
+            <form
+                method="GET"
+                action="{{ url_for('compras.administrar_cenefas') }}"
+            >
+
+                <div class="row g-3">
+
+
+                    <!-- CODIGO / EAN -->
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+                            Código / EAN
+                        </label>
+
+                        <input
+                            type="text"
+                            name="codigo"
+                            class="form-control"
+                            value="{{ filtro_codigo }}"
+                            placeholder="Código o EAN"
+                        >
+
+                    </div>
+
+
+                    <!-- DESCRIPCION -->
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Descripción
+                        </label>
+
+                        <input
+                            type="text"
+                            name="descripcion"
+                            class="form-control"
+                            value="{{ filtro_descripcion }}"
+                            placeholder="Buscar producto..."
+                        >
+
+                    </div>
+
+
+                    <!-- TIPO -->
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+                            Tipo
+                        </label>
+
+                        <select
+                            name="tipo"
+                            class="form-select"
+                        >
+
+                            <option value="">
+                                Todos
+                            </option>
+
+                            {% for tipo in tipos %}
+
+                                <option
+                                    value="{{ tipo }}"
+                                    {% if filtro_tipo == tipo %}
+                                    selected
+                                    {% endif %}
+                                >
+                                    {{ tipo }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- SUCURSAL -->
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+                            Sucursal
+                        </label>
+
+                        <input
+                            type="text"
+                            name="sucursal"
+                            class="form-control"
+                            value="{{ filtro_sucursal }}"
+                            placeholder="Ej. CO25"
+                        >
+
+                    </div>
+
+
+                    <!-- LOTE -->
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Lote
+                        </label>
+
+                        <input
+                            type="text"
+                            name="lote"
+                            class="form-control"
+                            value="{{ filtro_lote }}"
+                            placeholder="Buscar lote..."
+                        >
+
+                    </div>
+
+
+                    <!-- DESDE -->
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+                            Vigente desde
+                        </label>
+
+                        <input
+                            type="date"
+                            name="fecha_desde"
+                            class="form-control"
+                            value="{{ filtro_fecha_desde }}"
+                        >
+
+                    </div>
+
+
+                    <!-- HASTA -->
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+                            Vigente hasta
+                        </label>
+
+                        <input
+                            type="date"
+                            name="fecha_hasta"
+                            class="form-control"
+                            value="{{ filtro_fecha_hasta }}"
+                        >
+
+                    </div>
+
+
+                    <div class="col-md-8 d-flex align-items-end gap-2">
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
+                            <i class="bi bi-search"></i>
+                            Buscar
+                        </button>
+
+                        <a
+                            href="{{ url_for('compras.administrar_cenefas') }}"
+                            class="btn btn-outline-secondary"
+                        >
+                            Limpiar
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- TABLA -->
+    <!-- ================================================= -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-dark text-white d-flex justify-content-between">
+
+            <strong>
+                Cenefas transmitidas
+            </strong>
+
+            <span>
+                Página {{ pagina }} de {{ paginas }}
+            </span>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            <div
+                class="table-responsive"
+                style="max-height: 650px; overflow:auto;"
+            >
+
+                <table
+                    class="table table-sm table-bordered table-hover align-middle mb-0"
+                >
+
+                    <thead class="table-dark sticky-top">
+
+                        <tr>
+
+                            <th>ID</th>
+                            <th>Código</th>
+                            <th>EAN</th>
+                            <th style="min-width:300px;">
+                                Descripción
+                            </th>
+                            <th style="min-width:120px;">
+                                Normal
+                            </th>
+                            <th style="min-width:120px;">
+                                Oferta
+                            </th>
+                            <th style="min-width:180px;">
+                                Cenefa
+                            </th>
+                            <th style="min-width:130px;">
+                                Desde
+                            </th>
+                            <th style="min-width:130px;">
+                                Hasta
+                            </th>
+                            <th>Destino</th>
+                            <th>Tipo</th>
+                            <th>Lote</th>
+                            <th>Usuario</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    {% for fila in registros %}
+
+                        <tr>
+
+                            <td>
+                                {{ fila.id }}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ fila.codigo }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ fila.ean }}
+                            </td>
+
+
+                            <!-- DESCRIPCION -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="descripcion"
+                                    data-original="{{ fila.descripcion or '' }}"
+                                    value="{{ fila.descripcion or '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- NORMAL -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="normal"
+                                    data-original="{{ fila.normal if fila.normal is not none else '' }}"
+                                    value="{{ fila.normal if fila.normal is not none else '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- OFERTA -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="oferta"
+                                    data-original="{{ fila.oferta if fila.oferta is not none else '' }}"
+                                    value="{{ fila.oferta if fila.oferta is not none else '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- CENEFA -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="cenefa"
+                                    data-original="{{ fila.cenefa or '' }}"
+                                    value="{{ fila.cenefa or '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- DESDE -->
+
+                            <td>
+
+                                <input
+                                    type="date"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="desde"
+                                    data-original="{{ fila.desde }}"
+                                    value="{{ fila.desde }}"
+                                >
+
+                            </td>
+
+
+                            <!-- HASTA -->
+
+                            <td>
+
+                                <input
+                                    type="date"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="hasta"
+                                    data-original="{{ fila.hasta }}"
+                                    value="{{ fila.hasta }}"
+                                >
+
+                            </td>
+
+
+                            <!-- PROTEGIDOS -->
+
+                            <td>
+                                {{ fila.sucursales }}
+                            </td>
+
+                            <td>
+                                {{ fila.tipo_cenefa }}
+                            </td>
+
+                            <td>
+                                <small>
+                                    {{ fila.lote_carga }}
+                                </small>
+                            </td>
+
+                            <td>
+                                {{ fila.usuario_carga }}
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+
+                            <td
+                                colspan="13"
+                                class="text-center py-5 text-muted"
+                            >
+                                No se encontraron cenefas
+                                para los filtros seleccionados.
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- ACCIONES -->
+        <!-- ================================================= -->
+
+        {% if registros %}
+
+        <div class="card-footer">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div id="contador-cambios">
+                    Sin modificaciones
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn btn-warning px-4"
+                    id="btn-guardar"
+                    onclick="guardarCambios()"
+                    disabled
+                >
+                    <i class="bi bi-save"></i>
+                    Guardar cambios
+                </button>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- PAGINACION -->
+    <!-- ================================================= -->
+
+    {% if paginas > 1 %}
+
+    <nav class="mt-4">
+
+        <ul class="pagination">
+
+            {% if pagina > 1 %}
+
+            <li class="page-item">
+
+                <a
+                    class="page-link"
+                    href="{{ url_for(
+                        'compras.administrar_cenefas',
+                        pagina=pagina-1,
+                        codigo=filtro_codigo,
+                        descripcion=filtro_descripcion,
+                        tipo=filtro_tipo,
+                        sucursal=filtro_sucursal,
+                        lote=filtro_lote,
+                        fecha_desde=filtro_fecha_desde,
+                        fecha_hasta=filtro_fecha_hasta
+                    ) }}"
+                >
+                    Anterior
+                </a>
+
+            </li>
+
+            {% endif %}
+
+
+            <li class="page-item disabled">
+
+                <span class="page-link">
+                    {{ pagina }} / {{ paginas }}
+                </span>
+
+            </li>
+
+
+            {% if pagina < paginas %}
+
+            <li class="page-item">
+
+                <a
+                    class="page-link"
+                    href="{{ url_for(
+                        'compras.administrar_cenefas',
+                        pagina=pagina+1,
+                        codigo=filtro_codigo,
+                        descripcion=filtro_descripcion,
+                        tipo=filtro_tipo,
+                        sucursal=filtro_sucursal,
+                        lote=filtro_lote,
+                        fecha_desde=filtro_fecha_desde,
+                        fecha_hasta=filtro_fecha_hasta
+                    ) }}"
+                >
+                    Siguiente
+                </a>
+
+            </li>
+
+            {% endif %}
+
+        </ul>
+
+    </nav>
+
+    {% endif %}
+
+</div>
+
+
+<script>
+
+const campos =
+    document.querySelectorAll(
+        ".campo-editable"
+    );
+
+const botonGuardar =
+    document.getElementById(
+        "btn-guardar"
+    );
+
+const contador =
+    document.getElementById(
+        "contador-cambios"
+    );
+
+
+function obtenerCambios() {
+
+    const cambios = [];
+
+    campos.forEach(input => {
+
+        const actual =
+            String(input.value ?? "");
+
+        const original =
+            String(
+                input.dataset.original ?? ""
+            );
+
+        if (actual !== original) {
+
+            cambios.push({
+
+                id:
+                    parseInt(
+                        input.dataset.id,
+                        10
+                    ),
+
+                columna:
+                    input.dataset.columna,
+
+                valor:
+                    input.value
+
+            });
+
+        }
+
+    });
+
+    return cambios;
+}
+
+
+function actualizarEstado() {
+
+    const cambios =
+        obtenerCambios();
+
+    if (!contador) {
+        return;
+    }
+
+    if (cambios.length === 0) {
+
+        contador.textContent =
+            "Sin modificaciones";
+
+        contador.className =
+            "text-muted";
+
+        if (botonGuardar) {
+            botonGuardar.disabled = true;
+        }
+
+        return;
+    }
+
+    contador.textContent =
+        cambios.length +
+        (
+            cambios.length === 1
+            ? " modificación pendiente"
+            : " modificaciones pendientes"
+        );
+
+    contador.className =
+        "text-warning fw-bold";
+
+    if (botonGuardar) {
+        botonGuardar.disabled = false;
+    }
+}
+
+
+campos.forEach(input => {
+
+    input.addEventListener(
+        "input",
+        actualizarEstado
+    );
+
+    input.addEventListener(
+        "change",
+        actualizarEstado
+    );
+
+});
+
+
+async function guardarCambios() {
+
+    const cambios =
+        obtenerCambios();
+
+    if (cambios.length === 0) {
+
+        alert(
+            "No existen modificaciones."
+        );
+
+        return;
+    }
+
+
+    const confirmar =
+        confirm(
+            "Se modificarán " +
+            cambios.length +
+            " campos de cenefas ya transmitidas.\n\n" +
+            "¿Desea continuar?"
+        );
+
+
+    if (!confirmar) {
+        return;
+    }
+
+
+    botonGuardar.disabled = true;
+
+    const textoOriginal =
+        botonGuardar.innerHTML;
+
+    botonGuardar.innerHTML =
+        '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+
+
+    try {
+
+        const formData =
+            new FormData();
+
+        formData.append(
+            "cambios",
+            JSON.stringify(cambios)
+        );
+
+
+        const respuesta =
+            await fetch(
+                "{{ url_for('compras.actualizar_cenefas') }}",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+        const texto =
+            await respuesta.text();
+
+
+        if (!respuesta.ok) {
+
+            throw new Error(
+                texto ||
+                "No se pudieron guardar los cambios."
+            );
+
+        }
+
+
+        alert(texto);
+
+        window.location.reload();
+
+
+    } catch (error) {
+
+        alert(
+            "Error guardando cambios: " +
+            error.message
+        );
+
+        botonGuardar.disabled = false;
+
+        botonGuardar.innerHTML =
+            textoOriginal;
+
+    }
+
+}
+
+</script>
+
+{% endblock %}

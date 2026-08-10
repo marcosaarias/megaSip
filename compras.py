@@ -1517,3 +1517,14 @@ registrar_rutas_folder_mayorista_tucuman(
     limpiar_precio=limpiar_precio,
     formatear_precio_arg=formatear_precio_arg,
 )
+
+from sucursales.administrar_cenefas import (
+    registrar_rutas_administrar_cenefas,
+)
+
+
+registrar_rutas_administrar_cenefas(
+    compras_bp=compras_bp,
+    get_db_connection=get_db_connection,
+    limpiar_precio=limpiar_precio,
+)
