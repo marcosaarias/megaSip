@@ -4,10 +4,13 @@
 Administrar Cenefas
 {% endblock %}
 
-
 {% block content %}
 
 <div class="container-fluid">
+
+    <!-- ===================================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ===================================================== -->
 
     <div class="d-flex justify-content-between align-items-center mb-4">
 
@@ -28,14 +31,16 @@ Administrar Cenefas
     </div>
 
 
-    <!-- ================================================= -->
+    <!-- ===================================================== -->
     <!-- FILTROS -->
-    <!-- ================================================= -->
+    <!-- ===================================================== -->
 
     <div class="card shadow-sm mb-4">
 
         <div class="card-header">
-            <strong>Filtros</strong>
+            <strong>
+                Buscar cenefas transmitidas
+            </strong>
         </div>
 
         <div class="card-body">
@@ -45,130 +50,50 @@ Administrar Cenefas
                 action="{{ url_for('compras.administrar_cenefas') }}"
             >
 
-                <div class="row g-3">
+                <div class="row g-3 align-items-end">
 
-
+                    <!-- ===================================== -->
                     <!-- CODIGO / EAN -->
+                    <!-- ===================================== -->
 
-                    <div class="col-md-2">
+                    <div class="col-md-4">
 
-                        <label class="form-label">
+                        <label
+                            for="codigo"
+                            class="form-label"
+                        >
                             Código / EAN
                         </label>
 
                         <input
                             type="text"
+                            id="codigo"
                             name="codigo"
                             class="form-control"
                             value="{{ filtro_codigo }}"
-                            placeholder="Código o EAN"
+                            placeholder="Ingrese código o EAN"
+                            autocomplete="off"
                         >
 
                     </div>
 
 
-                    <!-- DESCRIPCION -->
+                    <!-- ===================================== -->
+                    <!-- VIGENCIA DESDE -->
+                    <!-- ===================================== -->
 
                     <div class="col-md-3">
 
-                        <label class="form-label">
-                            Descripción
-                        </label>
-
-                        <input
-                            type="text"
-                            name="descripcion"
-                            class="form-control"
-                            value="{{ filtro_descripcion }}"
-                            placeholder="Buscar producto..."
+                        <label
+                            for="fecha_desde"
+                            class="form-label"
                         >
-
-                    </div>
-
-
-                    <!-- TIPO -->
-
-                    <div class="col-md-2">
-
-                        <label class="form-label">
-                            Tipo
-                        </label>
-
-                        <select
-                            name="tipo"
-                            class="form-select"
-                        >
-
-                            <option value="">
-                                Todos
-                            </option>
-
-                            {% for tipo in tipos %}
-
-                                <option
-                                    value="{{ tipo }}"
-                                    {% if filtro_tipo == tipo %}
-                                    selected
-                                    {% endif %}
-                                >
-                                    {{ tipo }}
-                                </option>
-
-                            {% endfor %}
-
-                        </select>
-
-                    </div>
-
-
-                    <!-- SUCURSAL -->
-
-                    <div class="col-md-2">
-
-                        <label class="form-label">
-                            Sucursal
-                        </label>
-
-                        <input
-                            type="text"
-                            name="sucursal"
-                            class="form-control"
-                            value="{{ filtro_sucursal }}"
-                            placeholder="Ej. CO25"
-                        >
-
-                    </div>
-
-
-                    <!-- LOTE -->
-
-                    <div class="col-md-3">
-
-                        <label class="form-label">
-                            Lote
-                        </label>
-
-                        <input
-                            type="text"
-                            name="lote"
-                            class="form-control"
-                            value="{{ filtro_lote }}"
-                            placeholder="Buscar lote..."
-                        >
-
-                    </div>
-
-
-                    <!-- DESDE -->
-
-                    <div class="col-md-2">
-
-                        <label class="form-label">
-                            Vigente desde
+                            Vigencia desde
                         </label>
 
                         <input
                             type="date"
+                            id="fecha_desde"
                             name="fecha_desde"
                             class="form-control"
                             value="{{ filtro_fecha_desde }}"
@@ -177,16 +102,22 @@ Administrar Cenefas
                     </div>
 
 
-                    <!-- HASTA -->
+                    <!-- ===================================== -->
+                    <!-- VIGENCIA HASTA -->
+                    <!-- ===================================== -->
 
-                    <div class="col-md-2">
+                    <div class="col-md-3">
 
-                        <label class="form-label">
-                            Vigente hasta
+                        <label
+                            for="fecha_hasta"
+                            class="form-label"
+                        >
+                            Vigencia hasta
                         </label>
 
                         <input
                             type="date"
+                            id="fecha_hasta"
                             name="fecha_hasta"
                             class="form-control"
                             value="{{ filtro_fecha_hasta }}"
@@ -195,22 +126,31 @@ Administrar Cenefas
                     </div>
 
 
-                    <div class="col-md-8 d-flex align-items-end gap-2">
+                    <!-- ===================================== -->
+                    <!-- BOTONES -->
+                    <!-- ===================================== -->
 
-                        <button
-                            type="submit"
-                            class="btn btn-primary"
-                        >
-                            <i class="bi bi-search"></i>
-                            Buscar
-                        </button>
+                    <div class="col-md-2">
 
-                        <a
-                            href="{{ url_for('compras.administrar_cenefas') }}"
-                            class="btn btn-outline-secondary"
-                        >
-                            Limpiar
-                        </a>
+                        <div class="d-grid gap-2">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                            >
+                                <i class="bi bi-search me-1"></i>
+                                Buscar
+                            </button>
+
+                            <a
+                                href="{{ url_for('compras.administrar_cenefas') }}"
+                                class="btn btn-outline-secondary"
+                            >
+                                <i class="bi bi-x-circle me-1"></i>
+                                Limpiar
+                            </a>
+
+                        </div>
 
                     </div>
 
@@ -223,13 +163,73 @@ Administrar Cenefas
     </div>
 
 
-    <!-- ================================================= -->
+    <!-- ===================================================== -->
+    <!-- INFORMACION DE BUSQUEDA -->
+    <!-- ===================================================== -->
+
+    {% if filtro_codigo or filtro_fecha_desde or filtro_fecha_hasta %}
+
+    <div class="alert alert-light border mb-4">
+
+        <div class="d-flex flex-wrap gap-3">
+
+            <strong>
+                Filtros activos:
+            </strong>
+
+            {% if filtro_codigo %}
+
+                <span>
+                    Código/EAN:
+                    <strong>
+                        {{ filtro_codigo }}
+                    </strong>
+                </span>
+
+            {% endif %}
+
+
+            {% if filtro_fecha_desde %}
+
+                <span>
+                    Desde:
+                    <strong>
+                        {{ filtro_fecha_desde }}
+                    </strong>
+                </span>
+
+            {% endif %}
+
+
+            {% if filtro_fecha_hasta %}
+
+                <span>
+                    Hasta:
+                    <strong>
+                        {{ filtro_fecha_hasta }}
+                    </strong>
+                </span>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ===================================================== -->
     <!-- TABLA -->
-    <!-- ================================================= -->
+    <!-- ===================================================== -->
 
     <div class="card shadow-sm">
 
-        <div class="card-header bg-dark text-white d-flex justify-content-between">
+        <div
+            class="card-header bg-dark text-white
+                   d-flex justify-content-between
+                   align-items-center"
+        >
 
             <strong>
                 Cenefas transmitidas
@@ -246,42 +246,72 @@ Administrar Cenefas
 
             <div
                 class="table-responsive"
-                style="max-height: 650px; overflow:auto;"
+                style="max-height: 650px; overflow: auto;"
             >
 
                 <table
-                    class="table table-sm table-bordered table-hover align-middle mb-0"
+                    class="table table-sm
+                           table-bordered
+                           table-hover
+                           align-middle
+                           mb-0"
                 >
 
                     <thead class="table-dark sticky-top">
 
                         <tr>
 
-                            <th>ID</th>
-                            <th>Código</th>
-                            <th>EAN</th>
-                            <th style="min-width:300px;">
+                            <th>
+                                ID
+                            </th>
+
+                            <th>
+                                Código
+                            </th>
+
+                            <th>
+                                EAN
+                            </th>
+
+                            <th style="min-width: 300px;">
                                 Descripción
                             </th>
-                            <th style="min-width:120px;">
+
+                            <th style="min-width: 120px;">
                                 Normal
                             </th>
-                            <th style="min-width:120px;">
+
+                            <th style="min-width: 120px;">
                                 Oferta
                             </th>
-                            <th style="min-width:180px;">
+
+                            <th style="min-width: 180px;">
                                 Cenefa
                             </th>
-                            <th style="min-width:130px;">
+
+                            <th style="min-width: 140px;">
                                 Desde
                             </th>
-                            <th style="min-width:130px;">
+
+                            <th style="min-width: 140px;">
                                 Hasta
                             </th>
-                            <th>Destino</th>
-                            <th>Tipo</th>
-                            <th>Lote</th>
-                            <th>Usuario</th>
+
+                            <th style="min-width: 180px;">
+                                Destino
+                            </th>
+
+                            <th>
+                                Tipo
+                            </th>
+
+                            <th style="min-width: 180px;">
+                                Lote
+                            </th>
+
+                            <th>
+                                Usuario
+                            </th>
 
                         </tr>
 
@@ -294,9 +324,18 @@ Administrar Cenefas
 
                         <tr>
 
+                            <!-- ============================= -->
+                            <!-- ID -->
+                            <!-- ============================= -->
+
                             <td>
                                 {{ fila.id }}
                             </td>
+
+
+                            <!-- ============================= -->
+                            <!-- CODIGO -->
+                            <!-- ============================= -->
 
                             <td>
                                 <strong>
@@ -304,12 +343,19 @@ Administrar Cenefas
                                 </strong>
                             </td>
 
+
+                            <!-- ============================= -->
+                            <!-- EAN -->
+                            <!-- ============================= -->
+
                             <td>
                                 {{ fila.ean }}
                             </td>
 
 
-                            <!-- DESCRIPCION -->
+                            <!-- ============================= -->
+                            <!-- DESCRIPCION EDITABLE -->
+                            <!-- ============================= -->
 
                             <td>
 
@@ -325,12 +371,15 @@ Administrar Cenefas
                             </td>
 
 
-                            <!-- NORMAL -->
+                            <!-- ============================= -->
+                            <!-- NORMAL EDITABLE -->
+                            <!-- ============================= -->
 
                             <td>
 
                                 <input
                                     type="text"
+                                    inputmode="decimal"
                                     class="form-control form-control-sm campo-editable"
                                     data-id="{{ fila.id }}"
                                     data-columna="normal"
@@ -341,12 +390,15 @@ Administrar Cenefas
                             </td>
 
 
-                            <!-- OFERTA -->
+                            <!-- ============================= -->
+                            <!-- OFERTA EDITABLE -->
+                            <!-- ============================= -->
 
                             <td>
 
                                 <input
                                     type="text"
+                                    inputmode="decimal"
                                     class="form-control form-control-sm campo-editable"
                                     data-id="{{ fila.id }}"
                                     data-columna="oferta"
@@ -357,7 +409,9 @@ Administrar Cenefas
                             </td>
 
 
-                            <!-- CENEFA -->
+                            <!-- ============================= -->
+                            <!-- CENEFA EDITABLE -->
+                            <!-- ============================= -->
 
                             <td>
 
@@ -373,7 +427,9 @@ Administrar Cenefas
                             </td>
 
 
-                            <!-- DESDE -->
+                            <!-- ============================= -->
+                            <!-- DESDE EDITABLE -->
+                            <!-- ============================= -->
 
                             <td>
 
@@ -382,14 +438,16 @@ Administrar Cenefas
                                     class="form-control form-control-sm campo-editable"
                                     data-id="{{ fila.id }}"
                                     data-columna="desde"
-                                    data-original="{{ fila.desde }}"
-                                    value="{{ fila.desde }}"
+                                    data-original="{{ fila.desde.strftime('%Y-%m-%d') if fila.desde else '' }}"
+                                    value="{{ fila.desde.strftime('%Y-%m-%d') if fila.desde else '' }}"
                                 >
 
                             </td>
 
 
-                            <!-- HASTA -->
+                            <!-- ============================= -->
+                            <!-- HASTA EDITABLE -->
+                            <!-- ============================= -->
 
                             <td>
 
@@ -398,21 +456,29 @@ Administrar Cenefas
                                     class="form-control form-control-sm campo-editable"
                                     data-id="{{ fila.id }}"
                                     data-columna="hasta"
-                                    data-original="{{ fila.hasta }}"
-                                    value="{{ fila.hasta }}"
+                                    data-original="{{ fila.hasta.strftime('%Y-%m-%d') if fila.hasta else '' }}"
+                                    value="{{ fila.hasta.strftime('%Y-%m-%d') if fila.hasta else '' }}"
                                 >
 
                             </td>
 
 
-                            <!-- PROTEGIDOS -->
+                            <!-- ============================= -->
+                            <!-- DATOS PROTEGIDOS -->
+                            <!-- ============================= -->
 
                             <td>
-                                {{ fila.sucursales }}
+                                <small>
+                                    {{ fila.sucursales }}
+                                </small>
                             </td>
 
                             <td>
-                                {{ fila.tipo_cenefa }}
+
+                                <span class="badge bg-secondary">
+                                    {{ fila.tipo_cenefa }}
+                                </span>
+
                             </td>
 
                             <td>
@@ -427,6 +493,7 @@ Administrar Cenefas
 
                         </tr>
 
+
                     {% else %}
 
                         <tr>
@@ -435,8 +502,19 @@ Administrar Cenefas
                                 colspan="13"
                                 class="text-center py-5 text-muted"
                             >
-                                No se encontraron cenefas
-                                para los filtros seleccionados.
+
+                                <i
+                                    class="bi bi-search"
+                                    style="font-size: 2rem;"
+                                ></i>
+
+                                <div class="mt-2">
+
+                                    No se encontraron cenefas
+                                    para los filtros seleccionados.
+
+                                </div>
+
                             </td>
 
                         </tr>
@@ -453,16 +531,23 @@ Administrar Cenefas
 
 
         <!-- ================================================= -->
-        <!-- ACCIONES -->
+        <!-- GUARDAR CAMBIOS -->
         <!-- ================================================= -->
 
         {% if registros %}
 
         <div class="card-footer">
 
-            <div class="d-flex justify-content-between align-items-center">
+            <div
+                class="d-flex
+                       justify-content-between
+                       align-items-center"
+            >
 
-                <div id="contador-cambios">
+                <div
+                    id="contador-cambios"
+                    class="text-muted"
+                >
                     Sin modificaciones
                 </div>
 
@@ -474,8 +559,11 @@ Administrar Cenefas
                     onclick="guardarCambios()"
                     disabled
                 >
-                    <i class="bi bi-save"></i>
+
+                    <i class="bi bi-save me-1"></i>
+
                     Guardar cambios
+
                 </button>
 
             </div>
@@ -487,15 +575,20 @@ Administrar Cenefas
     </div>
 
 
-    <!-- ================================================= -->
+    <!-- ===================================================== -->
     <!-- PAGINACION -->
-    <!-- ================================================= -->
+    <!-- ===================================================== -->
 
     {% if paginas > 1 %}
 
     <nav class="mt-4">
 
-        <ul class="pagination">
+        <ul class="pagination justify-content-center">
+
+
+            <!-- ============================================= -->
+            <!-- ANTERIOR -->
+            <!-- ============================================= -->
 
             {% if pagina > 1 %}
 
@@ -507,30 +600,50 @@ Administrar Cenefas
                         'compras.administrar_cenefas',
                         pagina=pagina-1,
                         codigo=filtro_codigo,
-                        descripcion=filtro_descripcion,
-                        tipo=filtro_tipo,
-                        sucursal=filtro_sucursal,
-                        lote=filtro_lote,
                         fecha_desde=filtro_fecha_desde,
                         fecha_hasta=filtro_fecha_hasta
                     ) }}"
                 >
+                    <i class="bi bi-chevron-left"></i>
                     Anterior
                 </a>
+
+            </li>
+
+            {% else %}
+
+            <li class="page-item disabled">
+
+                <span class="page-link">
+                    <i class="bi bi-chevron-left"></i>
+                    Anterior
+                </span>
 
             </li>
 
             {% endif %}
 
 
+            <!-- ============================================= -->
+            <!-- PAGINA ACTUAL -->
+            <!-- ============================================= -->
+
             <li class="page-item disabled">
 
                 <span class="page-link">
-                    {{ pagina }} / {{ paginas }}
+
+                    {{ pagina }}
+                    /
+                    {{ paginas }}
+
                 </span>
 
             </li>
 
+
+            <!-- ============================================= -->
+            <!-- SIGUIENTE -->
+            <!-- ============================================= -->
 
             {% if pagina < paginas %}
 
@@ -542,16 +655,28 @@ Administrar Cenefas
                         'compras.administrar_cenefas',
                         pagina=pagina+1,
                         codigo=filtro_codigo,
-                        descripcion=filtro_descripcion,
-                        tipo=filtro_tipo,
-                        sucursal=filtro_sucursal,
-                        lote=filtro_lote,
                         fecha_desde=filtro_fecha_desde,
                         fecha_hasta=filtro_fecha_hasta
                     ) }}"
                 >
+
                     Siguiente
+                    <i class="bi bi-chevron-right"></i>
+
                 </a>
+
+            </li>
+
+            {% else %}
+
+            <li class="page-item disabled">
+
+                <span class="page-link">
+
+                    Siguiente
+                    <i class="bi bi-chevron-right"></i>
+
+                </span>
 
             </li>
 
@@ -567,6 +692,10 @@ Administrar Cenefas
 
 
 <script>
+
+/* ============================================================
+   CAMPOS
+   ============================================================ */
 
 const campos =
     document.querySelectorAll(
@@ -584,6 +713,10 @@ const contador =
     );
 
 
+/* ============================================================
+   OBTENER CAMBIOS
+   ============================================================ */
+
 function obtenerCambios() {
 
     const cambios = [];
@@ -591,12 +724,15 @@ function obtenerCambios() {
     campos.forEach(input => {
 
         const actual =
-            String(input.value ?? "");
+            String(
+                input.value ?? ""
+            );
 
         const original =
             String(
                 input.dataset.original ?? ""
             );
+
 
         if (actual !== original) {
 
@@ -620,18 +756,25 @@ function obtenerCambios() {
 
     });
 
+
     return cambios;
 }
 
+
+/* ============================================================
+   ACTUALIZAR ESTADO VISUAL
+   ============================================================ */
 
 function actualizarEstado() {
 
     const cambios =
         obtenerCambios();
 
+
     if (!contador) {
         return;
     }
+
 
     if (cambios.length === 0) {
 
@@ -641,29 +784,39 @@ function actualizarEstado() {
         contador.className =
             "text-muted";
 
+
         if (botonGuardar) {
             botonGuardar.disabled = true;
         }
 
+
         return;
     }
+
 
     contador.textContent =
         cambios.length +
         (
             cambios.length === 1
-            ? " modificación pendiente"
-            : " modificaciones pendientes"
+                ? " modificación pendiente"
+                : " modificaciones pendientes"
         );
+
 
     contador.className =
         "text-warning fw-bold";
 
+
     if (botonGuardar) {
         botonGuardar.disabled = false;
     }
+
 }
 
+
+/* ============================================================
+   ESCUCHAR MODIFICACIONES
+   ============================================================ */
 
 campos.forEach(input => {
 
@@ -680,10 +833,15 @@ campos.forEach(input => {
 });
 
 
+/* ============================================================
+   GUARDAR CAMBIOS
+   ============================================================ */
+
 async function guardarCambios() {
 
     const cambios =
         obtenerCambios();
+
 
     if (cambios.length === 0) {
 
@@ -700,6 +858,8 @@ async function guardarCambios() {
             "Se modificarán " +
             cambios.length +
             " campos de cenefas ya transmitidas.\n\n" +
+            "Los cambios quedarán disponibles " +
+            "para las sucursales.\n\n" +
             "¿Desea continuar?"
         );
 
@@ -711,11 +871,14 @@ async function guardarCambios() {
 
     botonGuardar.disabled = true;
 
+
     const textoOriginal =
         botonGuardar.innerHTML;
 
+
     botonGuardar.innerHTML =
-        '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+        '<span class="spinner-border spinner-border-sm me-1"></span>' +
+        'Guardando...';
 
 
     try {
@@ -723,9 +886,12 @@ async function guardarCambios() {
         const formData =
             new FormData();
 
+
         formData.append(
             "cambios",
-            JSON.stringify(cambios)
+            JSON.stringify(
+                cambios
+            )
         );
 
 
@@ -753,8 +919,16 @@ async function guardarCambios() {
         }
 
 
-        alert(texto);
+        alert(
+            texto
+        );
 
+
+        /*
+         * Recargamos manteniendo los filtros actuales,
+         * porque window.location.reload() conserva
+         * automáticamente el query string.
+         */
         window.location.reload();
 
 
@@ -765,7 +939,10 @@ async function guardarCambios() {
             error.message
         );
 
-        botonGuardar.disabled = false;
+
+        botonGuardar.disabled =
+            false;
+
 
         botonGuardar.innerHTML =
             textoOriginal;

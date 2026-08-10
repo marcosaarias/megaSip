@@ -1,5 +1,7 @@
 import json
+from datetime import datetime
 
+import pandas as pd
 import psycopg2
 
 from flask import (
@@ -14,6 +16,10 @@ from logs import guardar_log_compras
 from sistemas import login_requerido
 
 
+# ============================================================
+# CONFIGURACION
+# ============================================================
+
 COLUMNAS_EDITABLES = {
     "descripcion",
     "normal",
@@ -27,15 +33,81 @@ LIMITE_POR_PAGINA = 200
 MAX_CAMBIOS = 2000
 
 
+# ============================================================
+# VALIDACIONES
+# ============================================================
+
+def validar_fecha(valor):
+    """
+    Valida una fecha recibida desde el formulario HTML.
+    Retorna YYYY-MM-DD.
+    """
+
+    valor = str(valor or "").strip()
+
+    if not valor:
+        raise ValueError(
+            "La fecha no puede quedar vacía."
+        )
+
+    try:
+        fecha = datetime.strptime(
+            valor,
+            "%Y-%m-%d",
+        ).date()
+
+    except ValueError as error:
+        raise ValueError(
+            f"La fecha '{valor}' no tiene "
+            f"un formato válido."
+        ) from error
+
+    return fecha.isoformat()
+
+
+def validar_precio(valor, limpiar_precio):
+    """
+    Normaliza un precio utilizando la función general
+    de compras.py y evita guardar NaN en PostgreSQL.
+    """
+
+    precio = limpiar_precio(valor)
+
+    if precio is None:
+        raise ValueError(
+            "El precio recibido no es válido."
+        )
+
+    try:
+        if pd.isna(precio):
+            raise ValueError(
+                "El precio recibido no es válido."
+            )
+
+    except TypeError:
+        pass
+
+    if precio < 0:
+        raise ValueError(
+            "El precio no puede ser negativo."
+        )
+
+    return precio
+
+
+# ============================================================
+# REGISTRO DE RUTAS
+# ============================================================
+
 def registrar_rutas_administrar_cenefas(
     compras_bp,
     get_db_connection,
     limpiar_precio,
 ):
 
-    # =========================================================
-    # LISTADO / FILTROS
-    # =========================================================
+    # ========================================================
+    # ADMINISTRAR CENEFAS
+    # ========================================================
 
     @compras_bp.route(
         "/cenefas/administrar",
@@ -45,28 +117,12 @@ def registrar_rutas_administrar_cenefas(
     @login_requerido("compras")
     def administrar_cenefas():
 
+        # ----------------------------------------------------
+        # FILTROS
+        # ----------------------------------------------------
+
         codigo = request.args.get(
             "codigo",
-            "",
-        ).strip()
-
-        descripcion = request.args.get(
-            "descripcion",
-            "",
-        ).strip()
-
-        tipo = request.args.get(
-            "tipo",
-            "",
-        ).strip()
-
-        sucursal = request.args.get(
-            "sucursal",
-            "",
-        ).strip()
-
-        lote = request.args.get(
-            "lote",
             "",
         ).strip()
 
@@ -80,6 +136,10 @@ def registrar_rutas_administrar_cenefas(
             "",
         ).strip()
 
+        # ----------------------------------------------------
+        # PAGINACION
+        # ----------------------------------------------------
+
         try:
             pagina = max(
                 int(
@@ -91,86 +151,66 @@ def registrar_rutas_administrar_cenefas(
                 1,
             )
 
-        except (TypeError, ValueError):
+        except (
+            TypeError,
+            ValueError,
+        ):
             pagina = 1
 
         offset = (
             pagina - 1
         ) * LIMITE_POR_PAGINA
 
+        # ----------------------------------------------------
+        # CONSTRUCCION DE FILTROS SQL
+        # ----------------------------------------------------
+
         condiciones = [
-            "1 = 1"
+            "1 = 1",
         ]
 
         parametros = []
 
+        # ====================================================
+        # CODIGO / EAN
+        # ====================================================
+
         if codigo:
+
+            termino = (
+                f"%{codigo}%"
+            )
+
             condiciones.append(
                 """
                 (
                     codigo::text ILIKE %s
-                    OR ean::text ILIKE %s
-                )
-                """
-            )
-
-            termino = f"%{codigo}%"
-
-            parametros.extend(
-                [
-                    termino,
-                    termino,
-                ]
-            )
-
-        if descripcion:
-            condiciones.append(
-                "descripcion ILIKE %s"
-            )
-
-            parametros.append(
-                f"%{descripcion}%"
-            )
-
-        if tipo:
-            condiciones.append(
-                "tipo_cenefa = %s"
-            )
-
-            parametros.append(
-                tipo
-            )
-
-        if sucursal:
-            condiciones.append(
-                """
-                (
-                    sucursales = %s
                     OR
-                    (
-                        ',' || sucursales || ','
-                    ) LIKE %s
+                    ean::text ILIKE %s
                 )
                 """
             )
 
             parametros.extend(
                 [
-                    sucursal,
-                    f"%,{sucursal},%",
+                    termino,
+                    termino,
                 ]
             )
 
-        if lote:
-            condiciones.append(
-                "lote_carga ILIKE %s"
-            )
-
-            parametros.append(
-                f"%{lote}%"
-            )
+        # ====================================================
+        # VIGENCIA
+        #
+        # Ejemplo:
+        #
+        # Buscar 10/08 - 16/08
+        #
+        # Una cenefa se muestra si su período se cruza
+        # con el período buscado.
+        # ====================================================
 
         if fecha_desde:
+
             condiciones.append(
                 "hasta >= %s"
             )
@@ -180,6 +220,7 @@ def registrar_rutas_administrar_cenefas(
             )
 
         if fecha_hasta:
+
             condiciones.append(
                 "desde <= %s"
             )
@@ -194,6 +235,10 @@ def registrar_rutas_administrar_cenefas(
             )
         )
 
+        # ----------------------------------------------------
+        # BASE DE DATOS
+        # ----------------------------------------------------
+
         conn = get_db_connection()
 
         cursor = conn.cursor(
@@ -202,26 +247,33 @@ def registrar_rutas_administrar_cenefas(
 
         try:
 
-            # -----------------------------------------------
-            # TOTAL
-            # -----------------------------------------------
+            # =================================================
+            # TOTAL DE REGISTROS
+            # =================================================
 
             cursor.execute(
                 f"""
-                SELECT COUNT(*) AS total
+                SELECT
+                    COUNT(*) AS total
                 FROM cenefas
                 WHERE {where_sql}
                 """,
                 parametros,
             )
 
-            total = cursor.fetchone()[
-                "total"
-            ]
+            resultado_total = (
+                cursor.fetchone()
+            )
 
-            # -----------------------------------------------
-            # REGISTROS
-            # -----------------------------------------------
+            total = (
+                resultado_total["total"]
+                if resultado_total
+                else 0
+            )
+
+            # =================================================
+            # LISTADO
+            # =================================================
 
             parametros_listado = (
                 parametros.copy()
@@ -268,50 +320,14 @@ def registrar_rutas_administrar_cenefas(
                 cursor.fetchall()
             )
 
-            # -----------------------------------------------
-            # TIPOS DISPONIBLES
-            # -----------------------------------------------
-
-            cursor.execute(
-                """
-                SELECT DISTINCT tipo_cenefa
-                FROM cenefas
-                WHERE tipo_cenefa IS NOT NULL
-                  AND tipo_cenefa <> ''
-                ORDER BY tipo_cenefa
-                """
-            )
-
-            tipos = [
-                fila["tipo_cenefa"]
-                for fila
-                in cursor.fetchall()
-            ]
-
-            # -----------------------------------------------
-            # SUCURSALES
-            # -----------------------------------------------
-
-            cursor.execute(
-                """
-                SELECT DISTINCT sucursales
-                FROM cenefas
-                WHERE sucursales IS NOT NULL
-                  AND sucursales <> ''
-                ORDER BY sucursales
-                """
-            )
-
-            destinos = [
-                fila["sucursales"]
-                for fila
-                in cursor.fetchall()
-            ]
-
         finally:
 
             cursor.close()
             conn.close()
+
+        # ----------------------------------------------------
+        # PAGINAS
+        # ----------------------------------------------------
 
         paginas = max(
             (
@@ -323,6 +339,10 @@ def registrar_rutas_administrar_cenefas(
             1,
         )
 
+        # Evita pedir páginas inexistentes.
+        if pagina > paginas:
+            pagina = paginas
+
         return render_template(
             "sucursales/administrar-cenefas.html",
 
@@ -332,14 +352,7 @@ def registrar_rutas_administrar_cenefas(
             pagina=pagina,
             paginas=paginas,
 
-            tipos=tipos,
-            destinos=destinos,
-
             filtro_codigo=codigo,
-            filtro_descripcion=descripcion,
-            filtro_tipo=tipo,
-            filtro_sucursal=sucursal,
-            filtro_lote=lote,
             filtro_fecha_desde=fecha_desde,
             filtro_fecha_hasta=fecha_hasta,
 
@@ -348,9 +361,9 @@ def registrar_rutas_administrar_cenefas(
         )
 
 
-    # =========================================================
+    # ========================================================
     # ACTUALIZAR CENEFAS
-    # =========================================================
+    # ========================================================
 
     @compras_bp.route(
         "/cenefas/administrar/actualizar",
@@ -374,9 +387,20 @@ def registrar_rutas_administrar_cenefas(
 
         try:
 
-            cambios = json.loads(
-                cambios_json
-            )
+            # =================================================
+            # DECODIFICAR JSON
+            # =================================================
+
+            try:
+                cambios = json.loads(
+                    cambios_json
+                )
+
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    "No se pudieron interpretar "
+                    "las modificaciones."
+                ) from error
 
             if not isinstance(
                 cambios,
@@ -393,17 +417,26 @@ def registrar_rutas_administrar_cenefas(
                     "para guardar."
                 )
 
-            if len(cambios) > MAX_CAMBIOS:
+            if (
+                len(cambios)
+                > MAX_CAMBIOS
+            ):
                 raise ValueError(
                     "La cantidad de cambios "
                     "supera el máximo permitido."
                 )
 
+            # =================================================
+            # BASE DE DATOS
+            # =================================================
+
             conn = (
                 get_db_connection()
             )
 
-            cursor = conn.cursor()
+            cursor = (
+                conn.cursor()
+            )
 
             actualizados = 0
 
@@ -411,30 +444,38 @@ def registrar_rutas_administrar_cenefas(
 
                 for cambio in cambios:
 
+                    # -----------------------------------------
+                    # ESTRUCTURA DEL CAMBIO
+                    # -----------------------------------------
+
                     if not isinstance(
                         cambio,
                         dict,
                     ):
                         raise ValueError(
-                            "Se recibió un cambio "
-                            "inválido."
+                            "Se recibió una "
+                            "modificación inválida."
                         )
 
-                    id_cenefa = cambio.get(
-                        "id"
+                    id_cenefa = (
+                        cambio.get("id")
                     )
 
-                    columna = cambio.get(
-                        "columna"
+                    columna = (
+                        cambio.get(
+                            "columna"
+                        )
                     )
 
-                    valor = cambio.get(
-                        "valor"
+                    valor = (
+                        cambio.get(
+                            "valor"
+                        )
                     )
 
-                    # -------------------------------------
-                    # VALIDAR ID
-                    # -------------------------------------
+                    # -----------------------------------------
+                    # ID
+                    # -----------------------------------------
 
                     try:
                         id_cenefa = int(
@@ -444,15 +485,22 @@ def registrar_rutas_administrar_cenefas(
                     except (
                         TypeError,
                         ValueError,
-                    ):
+                    ) as error:
+
                         raise ValueError(
                             "Se recibió un ID "
                             "de cenefa inválido."
+                        ) from error
+
+                    if id_cenefa <= 0:
+                        raise ValueError(
+                            "El ID de cenefa "
+                            "no es válido."
                         )
 
-                    # -------------------------------------
-                    # WHITELIST DE COLUMNAS
-                    # -------------------------------------
+                    # -----------------------------------------
+                    # WHITELIST
+                    # -----------------------------------------
 
                     if (
                         columna
@@ -461,33 +509,27 @@ def registrar_rutas_administrar_cenefas(
                     ):
                         raise ValueError(
                             f"No está permitido "
-                            f"modificar {columna}."
+                            f"modificar la columna "
+                            f"'{columna}'."
                         )
 
-                    # -------------------------------------
+                    # -----------------------------------------
                     # PRECIOS
-                    # -------------------------------------
+                    # -----------------------------------------
 
                     if columna in {
                         "normal",
                         "oferta",
                     }:
 
-                        valor = (
-                            limpiar_precio(
-                                valor
-                            )
+                        valor = validar_precio(
+                            valor,
+                            limpiar_precio,
                         )
 
-                        if valor is None:
-                            raise ValueError(
-                                "El precio recibido "
-                                "no es válido."
-                            )
-
-                    # -------------------------------------
+                    # -----------------------------------------
                     # TEXTO
-                    # -------------------------------------
+                    # -----------------------------------------
 
                     elif columna in {
                         "descripcion",
@@ -498,37 +540,35 @@ def registrar_rutas_administrar_cenefas(
                             valor or ""
                         ).strip()
 
-                        if len(valor) > 250:
+                        if (
+                            len(valor)
+                            > 250
+                        ):
                             raise ValueError(
                                 f"El contenido de "
                                 f"{columna} supera "
                                 f"los 250 caracteres."
                             )
 
-                    # -------------------------------------
+                    # -----------------------------------------
                     # FECHAS
-                    # -------------------------------------
+                    # -----------------------------------------
 
                     elif columna in {
                         "desde",
                         "hasta",
                     }:
 
-                        valor = str(
-                            valor or ""
-                        ).strip()
+                        valor = validar_fecha(
+                            valor
+                        )
 
-                        if not valor:
-                            raise ValueError(
-                                "La vigencia no puede "
-                                "quedar vacía."
-                            )
-
-                    # -------------------------------------
+                    # -----------------------------------------
                     # UPDATE
-                    # columna es segura porque pasó
-                    # por COLUMNAS_EDITABLES
-                    # -------------------------------------
+                    #
+                    # El nombre de columna es seguro
+                    # porque pasó por COLUMNAS_EDITABLES.
+                    # -----------------------------------------
 
                     cursor.execute(
                         f"""
@@ -542,13 +582,68 @@ def registrar_rutas_administrar_cenefas(
                         ),
                     )
 
-                    if cursor.rowcount != 1:
+                    if (
+                        cursor.rowcount
+                        != 1
+                    ):
                         raise ValueError(
-                            f"No se encontró la "
-                            f"cenefa ID {id_cenefa}."
+                            f"No se encontró "
+                            f"la cenefa con ID "
+                            f"{id_cenefa}."
                         )
 
                     actualizados += 1
+
+                # =================================================
+                # VALIDAR RANGO DE FECHAS
+                # =================================================
+
+                ids_modificados = list(
+                    {
+                        int(cambio["id"])
+                        for cambio in cambios
+                        if cambio.get("id")
+                    }
+                )
+
+                if ids_modificados:
+
+                    cursor.execute(
+                        """
+                        SELECT
+                            id,
+                            desde,
+                            hasta
+                        FROM cenefas
+                        WHERE id = ANY(%s)
+                        """,
+                        (
+                            ids_modificados,
+                        ),
+                    )
+
+                    fechas = (
+                        cursor.fetchall()
+                    )
+
+                    for (
+                        id_registro,
+                        desde,
+                        hasta,
+                    ) in fechas:
+
+                        if (
+                            desde
+                            and hasta
+                            and desde > hasta
+                        ):
+                            raise ValueError(
+                                f"La cenefa ID "
+                                f"{id_registro} tiene "
+                                f"una vigencia inválida: "
+                                f"Desde es posterior "
+                                f"a Hasta."
+                            )
 
                 conn.commit()
 
@@ -562,11 +657,17 @@ def registrar_rutas_administrar_cenefas(
                 cursor.close()
                 conn.close()
 
+            # =================================================
+            # LOG
+            # =================================================
+
             guardar_log_compras(
                 usuario=usuario,
                 nivel="INFO",
                 origen="backend",
-                modulo="administrar_cenefas",
+                modulo=(
+                    "administrar_cenefas"
+                ),
                 accion=(
                     "Modificar cenefas "
                     "transmitidas"
@@ -577,7 +678,9 @@ def registrar_rutas_administrar_cenefas(
                     f"modificaciones."
                 ),
                 estado="exitoso",
-                total_registros=actualizados,
+                total_registros=(
+                    actualizados
+                ),
             )
 
             mensaje = (
@@ -590,13 +693,19 @@ def registrar_rutas_administrar_cenefas(
                 200,
             )
 
+        # =====================================================
+        # ERROR POSTGRESQL
+        # =====================================================
+
         except psycopg2.Error as error:
 
             guardar_log_compras(
                 usuario=usuario,
                 nivel="CRITICAL",
                 origen="base_datos",
-                modulo="administrar_cenefas",
+                modulo=(
+                    "administrar_cenefas"
+                ),
                 accion=(
                     "Error actualizando cenefas"
                 ),
@@ -606,10 +715,14 @@ def registrar_rutas_administrar_cenefas(
             )
 
             return (
-                f"Error de base de datos: "
+                "Error de base de datos: "
                 f"{error}",
                 500,
             )
+
+        # =====================================================
+        # OTROS ERRORES
+        # =====================================================
 
         except Exception as error:
 
@@ -617,7 +730,9 @@ def registrar_rutas_administrar_cenefas(
                 usuario=usuario,
                 nivel="ERROR",
                 origen="backend",
-                modulo="administrar_cenefas",
+                modulo=(
+                    "administrar_cenefas"
+                ),
                 accion=(
                     "Error actualizando cenefas"
                 ),
