@@ -438,8 +438,8 @@ Administrar Cenefas
                                     class="form-control form-control-sm campo-editable"
                                     data-id="{{ fila.id }}"
                                     data-columna="desde"
-                                    data-original="{{ fila.desde.strftime('%Y-%m-%d') if fila.desde else '' }}"
-                                    value="{{ fila.desde.strftime('%Y-%m-%d') if fila.desde else '' }}"
+                                    data-original="{{ fila.desde or '' }}"
+                                    value="{{ fila.desde or '' }}"
                                 >
 
                             </td>
@@ -456,8 +456,8 @@ Administrar Cenefas
                                     class="form-control form-control-sm campo-editable"
                                     data-id="{{ fila.id }}"
                                     data-columna="hasta"
-                                    data-original="{{ fila.hasta.strftime('%Y-%m-%d') if fila.hasta else '' }}"
-                                    value="{{ fila.hasta.strftime('%Y-%m-%d') if fila.hasta else '' }}"
+                                    data-original="{{ fila.hasta or '' }}"
+                                    value="{{ fila.hasta or '' }}"
                                 >
 
                             </td>
