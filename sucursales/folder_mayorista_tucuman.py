@@ -703,164 +703,166 @@ def registrar_rutas_folder_mayorista_tucuman(
         methods=["GET", "POST"],
         endpoint="folder_mayorista_tucuman",
     )
+    
     @login_requerido("compras")
-    def folder_mayorista_tucuman():
-        if request.method == "GET":
-            limpiar_temporales_folder_tucuman()
+def folder_mayorista_tucuman():
+    if request.method == "GET":
+        limpiar_temporales_folder_tucuman()
 
-            return render_folder_mayorista_tucuman()
+        return render_folder_mayorista_tucuman()
 
-        archivo = request.files.get("archivo")
+    archivo = request.files.get("archivo")
 
-        fecha_desde = request.form.get(
-            "fecha_desde",
+    fecha_desde = request.form.get(
+        "fecha_desde",
             "",
-        ).strip()
+    ).strip()
 
-        fecha_hasta = request.form.get(
-            "fecha_hasta",
-            "",
-        ).strip()
+    fecha_hasta = request.form.get(
+        "fecha_hasta",
+        "",
+    ).strip()
 
-        usuario = session.get(
-            "usuario_nombre",
-            "desconocido",
+    usuario = session.get(
+        "usuario_nombre",
+        "desconocido",
+    )
+
+    nombre_archivo = None
+
+    try:
+        validar_fechas_folder_tucuman(
+            fecha_desde,
+            fecha_hasta,
         )
 
-        nombre_archivo = None
+        nombre_archivo = validar_archivo_excel(
+            archivo
+        )
 
-        try:
-            validar_fechas_folder_tucuman(
-                fecha_desde,
-                fecha_hasta,
-            )
+        (
+            df,
+            _,
+            mensaje_error,
+            _,
+        ) = procesar_archivo_cenefas(
+            archivo=archivo,
+            tipo="mayorista",
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+        )
 
-            nombre_archivo = validar_archivo_excel(
-                archivo
-            )
-
-            (
-                df,
-                _,
-                mensaje_error,
-                _,
-            ) = procesar_archivo_cenefas(
-                archivo=archivo,
-                tipo="mayorista",
-                fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta,
-            )
-
-            if df is None:
-                raise ValueError(
-                    mensaje_error
-                    or (
-                        "No se pudo procesar "
-                        "el archivo."
-                    )
+        if df is None:
+            raise ValueError(
+                mensaje_error
+                or (
+                    "No se pudo procesar "
+                    "el archivo."
                 )
+            )
 
-            if df.empty:
-                raise ValueError(
-                    "El archivo no contiene "
-                    "registros válidos."
+        if df.empty:
+            raise ValueError(
+                "El archivo no contiene "
+                "registros válidos."
+            )
+
+        # Datos protegidos.
+        df["sucursales"] = (
+            SUCURSALES_MAYORISTA_TUCUMAN
+        )
+
+        df["desde"] = fecha_desde
+        df["hasta"] = fecha_hasta
+
+        df = df.reset_index(drop=True)
+
+        validar_dataframe_antes_transmitir(
+            df
+        )
+
+        token = guardar_folder_tucuman_temporal(
+            df=df,
+            usuario=usuario,
+            archivo_nombre=nombre_archivo,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+        )
+
+        datos_preview = (
+            df.fillna("")
+            .to_dict(orient="records")
+        )
+
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="INFO",
+            origen="backend",
+            modulo=(
+                "folder_mayorista_tucuman"
+            ),
+            accion=(
+                "Previsualizar folder"
+            ),
+            archivo=nombre_archivo,
+            detalle=(
+                "Archivo procesado y "
+                "almacenado temporalmente. "
+                "Pendiente de transmisión."
+            ),
+            estado="exitoso",
+            total_registros=len(df),
+            )
+
+        return render_folder_mayorista_tucuman(
+            datos_preview=datos_preview,
+            token=token,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            total_registros=len(df),
+        )
+
+    except Exception as error:
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="ERROR",
+            origen="validacion",
+            modulo=(
+                "folder_mayorista_tucuman"
+            ),
+            accion=(
+                "Error previsualizando folder"
+            ),
+            archivo=(
+                nombre_archivo
+                or (
+                    archivo.filename
+                    if archivo
+                    else None
                 )
+            ),
+            detalle=str(error),
+            estado="fallido",
+            total_registros=0,
+        )
 
-            # Datos protegidos.
-            df["sucursales"] = (
-                SUCURSALES_MAYORISTA_TUCUMAN
-            )
-
-            df["desde"] = fecha_desde
-            df["hasta"] = fecha_hasta
-
-            df = df.reset_index(drop=True)
-
-            validar_dataframe_antes_transmitir(
-                df
-            )
-
-            token = guardar_folder_tucuman_temporal(
-                df=df,
-                usuario=usuario,
-                archivo_nombre=nombre_archivo,
-                fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta,
-            )
-
-            datos_preview = (
-                df.fillna("")
-                .to_dict(orient="records")
-            )
-
-            guardar_log_compras(
-                usuario=usuario,
-                nivel="INFO",
-                origen="backend",
-                modulo=(
-                    "folder_mayorista_tucuman"
-                ),
-                accion=(
-                    "Previsualizar folder"
-                ),
-                archivo=nombre_archivo,
-                detalle=(
-                    "Archivo procesado y "
-                    "almacenado temporalmente. "
-                    "Pendiente de transmisión."
-                ),
-                estado="exitoso",
-                total_registros=len(df),
-            )
-
-            return render_folder_mayorista_tucuman(
-                datos_preview=datos_preview,
-                token=token,
-                fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta,
-                total_registros=len(df),
-            )
-
-        except Exception as error:
-            guardar_log_compras(
-                usuario=usuario,
-                nivel="ERROR",
-                origen="validacion",
-                modulo=(
-                    "folder_mayorista_tucuman"
-                ),
-                accion=(
-                    "Error previsualizando folder"
-                ),
-                archivo=(
-                    nombre_archivo
-                    or (
-                        archivo.filename
-                        if archivo
-                        else None
-                    )
-                ),
-                detalle=str(error),
-                estado="fallido",
-                total_registros=0,
-            )
-
-            return render_folder_mayorista_tucuman(
-                mensaje_error=str(error),
-                fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta,
-                status_code=400,
-            )
+        return render_folder_mayorista_tucuman(
+            mensaje_error=str(error),
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            status_code=400,
+        )
 
 
-    @compras_bp.route(
-        "/folder/mayorista/tucuman/transmitir",
-        methods=["POST"],
-        endpoint=(
-            "transmitir_folder_mayorista_tucuman"
-        ),
-    )
-   @login_requerido("compras")
+@compras_bp.route(
+    "/folder/mayorista/tucuman/transmitir",
+    methods=["POST"],
+    endpoint=(
+        "transmitir_folder_mayorista_tucuman"
+    ),
+)
+@login_requerido("compras")
+
 def transmitir_folder_mayorista_tucuman():
 
     token = request.form.get(
