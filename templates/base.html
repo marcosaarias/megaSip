@@ -259,6 +259,7 @@
 {% endif %}
 
   <!-- ================= COMPRAS ================= -->
+    {% if session.get("usuario_rol") == "compras" %}
     {% set endpoints_cenefas = [
         'compras.folder_mayorista',
         'compras.folder_mayorista_tucuman',
