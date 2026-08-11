@@ -860,327 +860,363 @@ def registrar_rutas_folder_mayorista_tucuman(
             "transmitir_folder_mayorista_tucuman"
         ),
     )
-    @login_requerido("compras")
-    def transmitir_folder_mayorista_tucuman():
-        token = request.form.get(
-            "token",
-            "",
-        ).strip()
+   @login_requerido("compras")
+def transmitir_folder_mayorista_tucuman():
 
-        cambios_json = request.form.get(
-            "cambios",
-            "[]",
+    token = request.form.get(
+        "token",
+        "",
+    ).strip()
+
+    cambios_json = request.form.get(
+        "cambios",
+        "[]",
+    )
+
+    sobrescribir = (
+        request.form.get("sobrescribir")
+        == "1"
+    )
+
+    usuario = session.get(
+        "usuario_nombre",
+        "desconocido",
+    )
+
+    df, metadata = (
+        recuperar_folder_tucuman_temporal(
+            token
+        )
+    )
+
+    if df is None or metadata is None:
+        return render_folder_mayorista_tucuman(
+            mensaje_error=(
+                "La previsualización venció, "
+                "fue eliminada o no existe. "
+                "Debe volver a cargar el archivo."
+            ),
+            status_code=400,
         )
 
-        sobrescribir = (
-            request.form.get("sobrescribir")
-            == "1"
-        )
+    try:
 
-        usuario = session.get(
-            "usuario_nombre",
-            "desconocido",
-        )
+        # ====================================================
+        # VALIDAR USUARIO
+        # ====================================================
 
-        df, metadata = (
-            recuperar_folder_tucuman_temporal(
-                token
-            )
-        )
-
-        if df is None or metadata is None:
-            return render_folder_mayorista_tucuman(
-                mensaje_error=(
-                    "La previsualización venció, "
-                    "fue eliminada o no existe. "
-                    "Debe volver a cargar el archivo."
-                ),
-                status_code=400,
-            )
-
-        try:
-            if (
-                metadata.get("usuario")
-                != usuario
-            ):
-                raise PermissionError(
-                    "El lote temporal pertenece "
-                    "a otro usuario."
-                )
-
-            if (
-                metadata.get("region")
-                != "tucuman"
-            ):
-                raise ValueError(
-                    "El lote no corresponde "
-                    "a Tucumán."
-                )
-
-            if (
-                metadata.get("tipo_cenefa")
-                != TIPO_CENEFA_MAYORISTA_TUCUMAN
-            ):
-                raise ValueError(
-                    "El tipo de folder temporal "
-                    "no es válido."
-                )
-
-            cambios = normalizar_cambios_json(
-                cambios_json
+        if (
+            metadata.get("usuario")
+            != usuario
+        ):
+            raise PermissionError(
+                "El lote temporal pertenece "
+                "a otro usuario."
             )
 
-            df = aplicar_cambios_folder_tucuman(
+        # ====================================================
+        # VALIDAR REGION
+        # ====================================================
+
+        if (
+            metadata.get("region")
+            != "tucuman"
+        ):
+            raise ValueError(
+                "El lote no corresponde "
+                "a Tucumán."
+            )
+
+        # ====================================================
+        # VALIDAR TIPO
+        # ====================================================
+
+        if (
+            metadata.get("tipo_cenefa")
+            != TIPO_CENEFA_MAYORISTA_TUCUMAN
+        ):
+            raise ValueError(
+                "El tipo de folder temporal "
+                "no es válido."
+            )
+
+        # ====================================================
+        # APLICAR CAMBIOS DEL PREVIEW
+        # ====================================================
+
+        cambios = normalizar_cambios_json(
+            cambios_json
+        )
+
+        df = aplicar_cambios_folder_tucuman(
+            df=df,
+            cambios=cambios,
+            limpiar_precio=limpiar_precio,
+        )
+
+        # ====================================================
+        # DATOS CRITICOS PROTEGIDOS
+        # ====================================================
+
+        df["desde"] = metadata[
+            "fecha_desde"
+        ]
+
+        df["hasta"] = metadata[
+            "fecha_hasta"
+        ]
+
+        df["sucursales"] = (
+            SUCURSALES_MAYORISTA_TUCUMAN
+        )
+
+        validar_dataframe_antes_transmitir(
+            df
+        )
+
+        # ====================================================
+        # BUSCAR REPETIDOS
+        # ====================================================
+
+        repetidos = (
+            existen_repetidos_folder_tucuman(
                 df=df,
-                cambios=cambios,
-                limpiar_precio=limpiar_precio,
+                get_db_connection=(
+                    get_db_connection
+                ),
+            )
+        )
+
+        # ====================================================
+        # PEDIR CONFIRMACION DE SOBRESCRITURA
+        # ====================================================
+
+        if repetidos and not sobrescribir:
+
+            datos_preview = (
+                df.fillna("")
+                .to_dict(
+                    orient="records"
+                )
             )
 
-            # Datos críticos protegidos.
-            df["desde"] = metadata[
+            return render_folder_mayorista_tucuman(
+                datos_preview=datos_preview,
+                token=token,
+                mensaje_error=(
+                    f"Se encontraron "
+                    f"{len(repetidos)} registros "
+                    "existentes para el mismo "
+                    "código, período y sucursal. "
+                    "Confirme el reemplazo."
+                ),
+                fecha_desde=metadata[
+                    "fecha_desde"
+                ],
+                fecha_hasta=metadata[
+                    "fecha_hasta"
+                ],
+                total_registros=len(df),
+                requiere_sobrescribir=True,
+            )
+
+        # ====================================================
+        # TRANSMITIR A BASE DE DATOS
+        # ====================================================
+
+        lote_carga, fecha_carga = (
+            guardar_cenefas_en_db(
+                df=df,
+                tipo_cenefa=(
+                    TIPO_CENEFA_MAYORISTA_TUCUMAN
+                ),
+                usuario=usuario,
+                sobrescribir=sobrescribir,
+            )
+        )
+
+        # ====================================================
+        # ELIMINAR ARCHIVO TEMPORAL
+        # ====================================================
+
+        eliminar_folder_tucuman_temporal(
+            token
+        )
+
+        # ====================================================
+        # LOG EXITOSO
+        # ====================================================
+
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="INFO",
+            origen="backend",
+            modulo="folder_mayorista_tucuman",
+            accion="Transmitir folder",
+            archivo=metadata.get(
+                "archivo"
+            ),
+            detalle=(
+                "Folder Mayorista Tucumán "
+                "transmitido correctamente "
+                f"a {SUCURSALES_MAYORISTA_TUCUMAN}. "
+                f"Lote: {lote_carga}."
+            ),
+            estado="exitoso",
+            total_registros=len(df),
+        )
+
+        # ====================================================
+        # IMPORTANTE:
+        # NO VOLVER A MOSTRAR EL PREVIEW
+        # ====================================================
+
+        return render_folder_mayorista_tucuman(
+            datos_preview=None,
+            datos_transmitidos=None,
+            token=None,
+            mensaje_exito=(
+                "Folder transmitido "
+                "correctamente a "
+                f"{SUCURSALES_MAYORISTA_TUCUMAN}."
+            ),
+            fecha_desde=metadata[
                 "fecha_desde"
-            ]
-
-            df["hasta"] = metadata[
+            ],
+            fecha_hasta=metadata[
                 "fecha_hasta"
-            ]
+            ],
+            total_registros=len(df),
+            requiere_sobrescribir=False,
+            lote_carga=lote_carga,
+            fecha_carga=fecha_carga,
+        )
 
-            df["sucursales"] = (
-                SUCURSALES_MAYORISTA_TUCUMAN
-            )
+    # ========================================================
+    # ERROR DE PERMISOS
+    # ========================================================
 
-            validar_dataframe_antes_transmitir(
-                df
-            )
+    except PermissionError as error:
 
-            repetidos = (
-                existen_repetidos_folder_tucuman(
-                    df=df,
-                    get_db_connection=(
-                        get_db_connection
-                    ),
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="ERROR",
+            origen="seguridad",
+            modulo="folder_mayorista_tucuman",
+            accion="Transmisión rechazada",
+            archivo=metadata.get(
+                "archivo"
+            ),
+            detalle=str(error),
+            estado="fallido",
+            total_registros=0,
+        )
+
+        return render_folder_mayorista_tucuman(
+            mensaje_error=str(error),
+            status_code=403,
+        )
+
+    # ========================================================
+    # ERROR DE BASE DE DATOS
+    # ========================================================
+
+    except psycopg2.Error as error:
+
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="CRITICAL",
+            origen="base_datos",
+            modulo="folder_mayorista_tucuman",
+            accion="Error transmitiendo folder",
+            archivo=metadata.get(
+                "archivo"
+            ),
+            detalle=str(error),
+            estado="fallido",
+            total_registros=(
+                len(df)
+                if df is not None
+                else 0
+            ),
+        )
+
+        # En caso de error mantenemos el preview
+        # para que el usuario pueda reintentar.
+        return render_folder_mayorista_tucuman(
+            datos_preview=(
+                df.fillna("")
+                .to_dict(
+                    orient="records"
                 )
-            )
+            ),
+            token=token,
+            mensaje_error=(
+                "Error de base de datos: "
+                f"{error}"
+            ),
+            fecha_desde=metadata[
+                "fecha_desde"
+            ],
+            fecha_hasta=metadata[
+                "fecha_hasta"
+            ],
+            total_registros=len(df),
+            status_code=500,
+        )
 
-            if repetidos and not sobrescribir:
-                datos_preview = (
-                    df.fillna("")
-                    .to_dict(
-                        orient="records"
-                    )
+    # ========================================================
+    # OTROS ERRORES
+    # ========================================================
+
+    except Exception as error:
+
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="ERROR",
+            origen="backend",
+            modulo="folder_mayorista_tucuman",
+            accion=(
+                "Excepción transmitiendo folder"
+            ),
+            archivo=metadata.get(
+                "archivo"
+            ),
+            detalle=str(error),
+            estado="fallido",
+            total_registros=(
+                len(df)
+                if df is not None
+                else 0
+            ),
+        )
+
+        # También mantenemos el preview si hubo error,
+        # porque la transmisión no terminó correctamente.
+        return render_folder_mayorista_tucuman(
+            datos_preview=(
+                df.fillna("")
+                .to_dict(
+                    orient="records"
                 )
-
-                return render_folder_mayorista_tucuman(
-                    datos_preview=datos_preview,
-                    token=token,
-                    mensaje_error=(
-                        f"Se encontraron "
-                        f"{len(repetidos)} registros "
-                        "existentes para el mismo "
-                        "código, período y sucursal. "
-                        "Confirme el reemplazo."
-                    ),
-                    fecha_desde=metadata[
-                        "fecha_desde"
-                    ],
-                    fecha_hasta=metadata[
-                        "fecha_hasta"
-                    ],
-                    total_registros=len(df),
-                    requiere_sobrescribir=True,
-                )
-
-            lote_carga, fecha_carga = (
-                guardar_cenefas_en_db(
-                    df=df,
-                    tipo_cenefa=(
-                        TIPO_CENEFA_MAYORISTA_TUCUMAN
-                    ),
-                    usuario=usuario,
-                    sobrescribir=sobrescribir,
-                )
-            )
-
-            datos_transmitidos = (
-                obtener_lote_folder_tucuman(
-                    lote_carga=lote_carga,
-                    get_db_connection=(
-                        get_db_connection
-                    ),
-                    formatear_precio_arg=(
-                        formatear_precio_arg
-                    ),
-                )
-            )
-
-            if (
-                len(datos_transmitidos)
-                != len(df)
-            ):
-                raise RuntimeError(
-                    "La cantidad de registros "
-                    "consultados después de la "
-                    "transmisión no coincide con "
-                    "la cantidad procesada."
-                )
-
-            eliminar_folder_tucuman_temporal(
-                token
-            )
-
-            guardar_log_compras(
-                usuario=usuario,
-                nivel="INFO",
-                origen="backend",
-                modulo=(
-                    "folder_mayorista_tucuman"
-                ),
-                accion="Transmitir folder",
-                archivo=metadata.get(
-                    "archivo"
-                ),
-                detalle=(
-                    "Folder Mayorista Tucumán "
-                    "transmitido correctamente "
-                    f"a {SUCURSALES_MAYORISTA_TUCUMAN}. "
-                    f"Lote: {lote_carga}."
-                ),
-                estado="exitoso",
-                total_registros=len(
-                    datos_transmitidos
-                ),
-            )
-
-            return render_folder_mayorista_tucuman(
-                datos_transmitidos=(
-                    datos_transmitidos
-                ),
-                mensaje_exito=(
-                    "Folder transmitido "
-                    "correctamente a "
-                    f"{SUCURSALES_MAYORISTA_TUCUMAN}."
-                ),
-                fecha_desde=metadata[
-                    "fecha_desde"
-                ],
-                fecha_hasta=metadata[
-                    "fecha_hasta"
-                ],
-                total_registros=len(
-                    datos_transmitidos
-                ),
-                lote_carga=lote_carga,
-                fecha_carga=fecha_carga,
-            )
-
-        except PermissionError as error:
-            guardar_log_compras(
-                usuario=usuario,
-                nivel="ERROR",
-                origen="seguridad",
-                modulo=(
-                    "folder_mayorista_tucuman"
-                ),
-                accion=(
-                    "Transmisión rechazada"
-                ),
-                archivo=metadata.get(
-                    "archivo"
-                ),
-                detalle=str(error),
-                estado="fallido",
-                total_registros=0,
-            )
-
-            return render_folder_mayorista_tucuman(
-                mensaje_error=str(error),
-                status_code=403,
-            )
-
-        except psycopg2.Error as error:
-            guardar_log_compras(
-                usuario=usuario,
-                nivel="CRITICAL",
-                origen="base_datos",
-                modulo=(
-                    "folder_mayorista_tucuman"
-                ),
-                accion=(
-                    "Error transmitiendo folder"
-                ),
-                archivo=metadata.get(
-                    "archivo"
-                ),
-                detalle=str(error),
-                estado="fallido",
-                total_registros=len(df),
-            )
-
-            return render_folder_mayorista_tucuman(
-                datos_preview=(
-                    df.fillna("")
-                    .to_dict(
-                        orient="records"
-                    )
-                ),
-                token=token,
-                mensaje_error=(
-                    "Error de base de datos: "
-                    f"{error}"
-                ),
-                fecha_desde=metadata[
-                    "fecha_desde"
-                ],
-                fecha_hasta=metadata[
-                    "fecha_hasta"
-                ],
-                total_registros=len(df),
-                status_code=500,
-            )
-
-        except Exception as error:
-            guardar_log_compras(
-                usuario=usuario,
-                nivel="ERROR",
-                origen="backend",
-                modulo=(
-                    "folder_mayorista_tucuman"
-                ),
-                accion=(
-                    "Excepción transmitiendo folder"
-                ),
-                archivo=metadata.get(
-                    "archivo"
-                ),
-                detalle=str(error),
-                estado="fallido",
-                total_registros=(
-                    len(df)
-                    if df is not None
-                    else 0
-                ),
-            )
-
-            return render_folder_mayorista_tucuman(
-                datos_preview=(
-                    df.fillna("")
-                    .to_dict(
-                        orient="records"
-                    )
-                ),
-                token=token,
-                mensaje_error=(
-                    "Error transmitiendo "
-                    f"el folder: {error}"
-                ),
-                fecha_desde=metadata.get(
-                    "fecha_desde",
-                    "",
-                ),
-                fecha_hasta=metadata.get(
-                    "fecha_hasta",
-                    "",
-                ),
-                total_registros=len(df),
-                status_code=500,
-            )
+            ),
+            token=token,
+            mensaje_error=(
+                "Error transmitiendo "
+                f"el folder: {error}"
+            ),
+            fecha_desde=metadata.get(
+                "fecha_desde",
+                "",
+            ),
+            fecha_hasta=metadata.get(
+                "fecha_hasta",
+                "",
+            ),
+            total_registros=(
+                len(df)
+                if df is not None
+                else 0
+            ),
+            status_code=500,
+        )
