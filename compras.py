@@ -390,6 +390,300 @@ def normalizar_texto(texto):
 
 # ---------------- PROCESAMIENTO COMUN ----------------
 
+
+COLUMNAS_EDITABLES_PREVIEW = {
+    "DESCRIPCION",
+    "Normal",
+    "Oferta",
+    "cenefa",
+    "desde",
+    "hasta",
+    "sucursales",
+}
+
+
+def normalizar_cambios_preview(cambios_json):
+
+    try:
+        cambios = json.loads(
+            cambios_json or "[]"
+        )
+
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            "No se pudieron interpretar "
+            "las modificaciones."
+        ) from error
+
+    if not isinstance(cambios, list):
+        raise ValueError(
+            "El formato de las modificaciones "
+            "no es válido."
+        )
+
+    if len(cambios) > 10000:
+        raise ValueError(
+            "Se superó la cantidad máxima "
+            "de modificaciones permitidas."
+        )
+
+    return cambios
+
+
+def aplicar_cambios_preview(
+    df,
+    cambios,
+):
+
+    df = df.copy().reset_index(
+        drop=True
+    )
+
+    for cambio in cambios:
+
+        if not isinstance(cambio, dict):
+            raise ValueError(
+                "Se recibió una modificación "
+                "inválida."
+            )
+
+        fila = cambio.get("fila")
+        columna = cambio.get("columna")
+        valor = cambio.get("valor")
+
+        # ====================================================
+        # VALIDAR FILA
+        # ====================================================
+
+        if not isinstance(fila, int):
+            raise ValueError(
+                "Número de fila inválido."
+            )
+
+        if fila < 0 or fila >= len(df):
+            raise ValueError(
+                f"La fila {fila + 1} "
+                "no existe."
+            )
+
+        # ====================================================
+        # VALIDAR COLUMNA EDITABLE
+        # ====================================================
+
+        if columna not in COLUMNAS_EDITABLES_PREVIEW:
+            raise ValueError(
+                f"No está permitido modificar "
+                f"{columna}."
+            )
+
+        if columna not in df.columns:
+            raise ValueError(
+                f"La columna {columna} "
+                "no existe."
+            )
+
+        # ====================================================
+        # PRECIOS
+        # ====================================================
+
+        if columna in {
+            "Normal",
+            "Oferta",
+        }:
+
+            valor = limpiar_precio(
+                valor
+            )
+
+            if pd.isna(valor):
+                raise ValueError(
+                    f"Precio inválido en "
+                    f"fila {fila + 1}, "
+                    f"columna {columna}."
+                )
+
+            if valor < 0:
+                raise ValueError(
+                    f"El precio de la fila "
+                    f"{fila + 1} no puede "
+                    "ser negativo."
+                )
+
+            valor = (
+                np.floor(valor * 100)
+                / 100
+            )
+
+        # ====================================================
+        # DESCRIPCION / CENEFA
+        # ====================================================
+
+        elif columna in {
+            "DESCRIPCION",
+            "cenefa",
+        }:
+
+            valor = str(
+                valor or ""
+            ).strip()
+
+            if len(valor) > 250:
+                raise ValueError(
+                    f"El campo {columna} "
+                    f"de la fila {fila + 1} "
+                    "supera los 250 caracteres."
+                )
+
+            if (
+                columna == "cenefa"
+                and not valor
+            ):
+                valor = "OFERTA"
+
+        # ====================================================
+        # FECHAS
+        # ====================================================
+
+        elif columna in {
+            "desde",
+            "hasta",
+        }:
+
+            valor = str(
+                valor or ""
+            ).strip()
+
+            if not valor:
+                raise ValueError(
+                    f"La fecha {columna} "
+                    f"de la fila {fila + 1} "
+                    "no puede estar vacía."
+                )
+
+            try:
+                datetime.strptime(
+                    valor,
+                    "%Y-%m-%d",
+                )
+
+            except ValueError as error:
+                raise ValueError(
+                    f"La fecha {columna} "
+                    f"de la fila {fila + 1} "
+                    "no tiene un formato válido. "
+                    "Debe ser YYYY-MM-DD."
+                ) from error
+
+        # ====================================================
+        # SUCURSALES
+        # ====================================================
+
+        elif columna == "sucursales":
+
+            valor = str(
+                valor or ""
+            ).strip().upper()
+
+            if not valor:
+                raise ValueError(
+                    f"Las sucursales de la fila "
+                    f"{fila + 1} no pueden "
+                    "estar vacías."
+                )
+
+            # Limpiamos espacios:
+            # "CO01, CO02" -> "CO01,CO02"
+            sucursales = [
+                sucursal.strip()
+                for sucursal
+                in valor.split(",")
+                if sucursal.strip()
+            ]
+
+            if not sucursales:
+                raise ValueError(
+                    f"No se encontraron sucursales "
+                    f"válidas en la fila {fila + 1}."
+                )
+
+            # Validar formato COxx o MAxx
+            for sucursal in sucursales:
+
+                if not re.fullmatch(
+                    r"(CO|MA)[0-9]{2}",
+                    sucursal,
+                ):
+                    raise ValueError(
+                        f"La sucursal '{sucursal}' "
+                        f"de la fila {fila + 1} "
+                        "no tiene un formato válido."
+                    )
+
+            # Evitar duplicados manteniendo orden.
+            sucursales = list(
+                dict.fromkeys(
+                    sucursales
+                )
+            )
+
+            valor = ",".join(
+                sucursales
+            )
+
+        # ====================================================
+        # APLICAR CAMBIO
+        # ====================================================
+
+        df.at[
+            fila,
+            columna,
+        ] = valor
+
+    # ========================================================
+    # VALIDAR COHERENCIA DE FECHAS
+    # ========================================================
+
+    for indice, row in df.iterrows():
+
+        desde = str(
+            row.get("desde") or ""
+        ).strip()
+
+        hasta = str(
+            row.get("hasta") or ""
+        ).strip()
+
+        if desde and hasta:
+
+            try:
+                fecha_desde = datetime.strptime(
+                    desde,
+                    "%Y-%m-%d",
+                ).date()
+
+                fecha_hasta = datetime.strptime(
+                    hasta,
+                    "%Y-%m-%d",
+                ).date()
+
+            except ValueError as error:
+                raise ValueError(
+                    f"Las fechas de la fila "
+                    f"{indice + 1} "
+                    "no son válidas."
+                ) from error
+
+            if fecha_desde > fecha_hasta:
+                raise ValueError(
+                    f"En la fila {indice + 1}, "
+                    "la fecha Desde no puede "
+                    "ser posterior a Hasta."
+                )
+
+    return df
+
+
+
 def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
     preview = None
     mensaje_error = None
@@ -958,112 +1252,77 @@ def _folder_base(tipo, template_name):
     mensaje_error = None
     total_registros = 0
 
-    fecha_desde = request.form.get("fecha_desde") or request.args.get("fecha_desde") or ""
-    fecha_hasta = request.form.get("fecha_hasta") or request.args.get("fecha_hasta") or ""
+    fecha_desde = (
+        request.form.get("fecha_desde")
+        or request.args.get("fecha_desde")
+        or ""
+    )
+    fecha_hasta = (
+        request.form.get("fecha_hasta")
+        or request.args.get("fecha_hasta")
+        or ""
+    )
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
         usuario = session.get("usuario_nombre", "desconocido")
 
         try:
-            df, preview, mensaje_error, total_registros = procesar_archivo_cenefas(
+            df, _, mensaje_error, total_registros = procesar_archivo_cenefas(
                 archivo=archivo,
                 tipo=tipo,
                 fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta
+                fecha_hasta=fecha_hasta,
             )
 
-            if df is not None:
-
-                #lote_carga, fecha_carga = guardar_cenefas_en_db(
-                #    df,
-                #   tipo,
-                #    usuario=usuario
-                #)
-                sobrescribir = request.form.get("sobrescribir") == "1"
-
-                repetidos = existen_cenefas_repetidas(df, tipo)
-
-                if repetidos and not sobrescribir:
-                    mensaje_error = (
-                        f"Ya existen {len(repetidos)} registros para este período. "
-                        "Si desea sobrescribirlos, confirme nuevamente."
-                    )
-
-                    return render_template(
-                        template_name,
-                        preview=preview,
-                        tipo=tipo,
-                        mensaje_error=mensaje_error,
-                        total_registros=total_registros,
-                        fecha_desde=fecha_desde,
-                        fecha_hasta=fecha_hasta,
-                        requiere_sobrescribir=True
-                    )
-
-                lote_carga, fecha_carga = guardar_cenefas_en_db(
-                    df,
-                    tipo,
-                    usuario=usuario,
-                    sobrescribir=sobrescribir
+            if df is None:
+                raise ValueError(
+                    mensaje_error or "No se pudo procesar el archivo."
                 )
 
-                guardar_log_compras(
-                    usuario=usuario,
-                    nivel="INFO",
-                    origen="backend",
-                    modulo="folder",
-                    accion=f"Carga de folder {tipo}",
-                    archivo=archivo.filename if archivo else None,
-                    detalle=f"Archivo procesado y guardado correctamente ({tipo})",
-                    estado="exitoso",
-                    total_registros=total_registros
-                )
-            else:
-                guardar_log_compras(
-                    usuario=usuario,
-                    nivel="ERROR",
-                    origen="validacion",
-                    modulo="folder",
-                    accion=f"Error carga folder {tipo}",
-                    archivo=archivo.filename if archivo else None,
-                    detalle=mensaje_error or "No se pudo procesar el archivo",
-                    estado="fallido",
-                    total_registros=0
-                )
+            if df.empty:
+                raise ValueError("El archivo no contiene registros válidos.")
 
-        #except sqlite3.Error as e:
-        except psycopg2.Error as e:
-            mensaje_error = f"Error de base de datos: {e}"
+            df = df.reset_index(drop=True)
+            lote_id = uuid.uuid4().hex
+
+            # Solo se guarda temporalmente. La BD se modifica al transmitir.
+            guardar_temporal(lote_id, df)
+
+            session["folder_lote_id"] = lote_id
+            session["folder_preview_tipo"] = tipo
+            session["folder_preview_fecha_desde"] = fecha_desde
+            session["folder_preview_fecha_hasta"] = fecha_hasta
+            session["folder_preview_template"] = template_name
+
+            preview = df.fillna("").to_dict(orient="records")
+            total_registros = len(df)
 
             guardar_log_compras(
                 usuario=usuario,
-                nivel="CRITICAL",
-                origen="base_datos",
+                nivel="INFO",
+                origen="backend",
                 modulo="folder",
-                accion=f"Error guardando folder {tipo}",
+                accion=f"Previsualizar folder {tipo}",
                 archivo=archivo.filename if archivo else None,
-                detalle=str(e),
-                estado="fallido",
-                total_registros=0,
-               #error_trace=traceback.format_exc()
+                detalle="Archivo procesado. Pendiente de transmisión.",
+                estado="exitoso",
+                total_registros=total_registros,
             )
 
-        except Exception as e:
-            #print(traceback.format_exc())
-            mensaje_error = f"Error de backend: {e}"
+        except Exception as error:
+            mensaje_error = str(error)
 
             guardar_log_compras(
                 usuario=usuario,
                 nivel="ERROR",
                 origen="backend",
                 modulo="folder",
-                accion=f"Excepción en folder {tipo}",
+                accion=f"Error previsualizando folder {tipo}",
                 archivo=archivo.filename if archivo else None,
-                detalle=str(e),
+                detalle=str(error),
                 estado="fallido",
                 total_registros=0,
-                #error_trace=traceback.format_exc()
             )
 
     return render_template(
@@ -1073,7 +1332,8 @@ def _folder_base(tipo, template_name):
         mensaje_error=mensaje_error,
         total_registros=total_registros,
         fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta
+        fecha_hasta=fecha_hasta,
+        columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
     )
 
 
@@ -1088,21 +1348,173 @@ def folder_mayorista():
 def folder_minorista():
     return _folder_base("minorista", "folder-minorista.html")
 
+
+@compras_bp.route("/folder/transmitir", methods=["POST"])
+@login_requerido("compras")
+def transmitir_folder():
+    lote_id = session.get("folder_lote_id")
+    tipo = session.get("folder_preview_tipo")
+    fecha_desde = session.get("folder_preview_fecha_desde", "")
+    fecha_hasta = session.get("folder_preview_fecha_hasta", "")
+    template_name = session.get("folder_preview_template")
+    usuario = session.get("usuario_nombre", "desconocido")
+
+    if not lote_id or not tipo:
+        return "No existe una previsualización para transmitir.", 400
+
+    if not template_name:
+        template_name = (
+            "folder-mayorista.html"
+            if tipo == "mayorista"
+            else "folder-minorista.html"
+        )
+
+    df = recuperar_temporal(lote_id)
+
+    if df is None:
+        return render_template(
+            template_name,
+            preview=None,
+            tipo=tipo,
+            mensaje_error=(
+                "La previsualización venció o fue eliminada. "
+                "Debe volver a cargar el archivo."
+            ),
+            total_registros=0,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
+        ), 400
+
+    try:
+        cambios_json = request.form.get("cambios", "[]")
+        sobrescribir = request.form.get("sobrescribir") == "1"
+
+        cambios = normalizar_cambios_preview(cambios_json)
+        df = aplicar_cambios_preview(df, cambios)
+
+        # Guardamos el estado editado para no perder cambios si hay que
+        # confirmar una sobrescritura en un segundo envío.
+        guardar_temporal(lote_id, df)
+
+        repetidos = existen_cenefas_repetidas(df, tipo)
+
+        if repetidos and not sobrescribir:
+            return render_template(
+                template_name,
+                preview=df.fillna("").to_dict(orient="records"),
+                tipo=tipo,
+                mensaje_error=(
+                    f"Ya existen {len(repetidos)} registros para este período. "
+                    "Confirme el reemplazo para sobrescribirlos."
+                ),
+                total_registros=len(df),
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+                requiere_sobrescribir=True,
+                columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
+            )
+
+        lote_carga, fecha_carga = guardar_cenefas_en_db(
+            df=df,
+            tipo_cenefa=tipo,
+            usuario=usuario,
+            sobrescribir=sobrescribir,
+        )
+
+        redis_client.delete(lote_id)
+
+        session.pop("folder_lote_id", None)
+        session.pop("folder_preview_tipo", None)
+        session.pop("folder_preview_fecha_desde", None)
+        session.pop("folder_preview_fecha_hasta", None)
+        session.pop("folder_preview_template", None)
+
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="INFO",
+            origen="backend",
+            modulo="folder",
+            accion=f"Transmitir folder {tipo}",
+            detalle=f"Folder transmitido correctamente. Lote: {lote_carga}",
+            estado="exitoso",
+            total_registros=len(df),
+        )
+
+        return render_template(
+            template_name,
+            preview=None,
+            tipo=tipo,
+            mensaje_error=None,
+            mensaje_exito="Folder transmitido correctamente.",
+            total_registros=0,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            lote_carga=lote_carga,
+            fecha_carga=fecha_carga,
+            columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
+        )
+
+    except psycopg2.Error as error:
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="CRITICAL",
+            origen="base_datos",
+            modulo="folder",
+            accion=f"Error transmitiendo folder {tipo}",
+            detalle=str(error),
+            estado="fallido",
+            total_registros=len(df) if df is not None else 0,
+        )
+
+        return render_template(
+            template_name,
+            preview=df.fillna("").to_dict(orient="records"),
+            tipo=tipo,
+            mensaje_error=f"Error de base de datos: {error}",
+            total_registros=len(df),
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
+        ), 500
+
+    except Exception as error:
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="ERROR",
+            origen="backend",
+            modulo="folder",
+            accion=f"Excepción transmitiendo folder {tipo}",
+            detalle=str(error),
+            estado="fallido",
+            total_registros=len(df) if df is not None else 0,
+        )
+
+        return render_template(
+            template_name,
+            preview=df.fillna("").to_dict(orient="records"),
+            tipo=tipo,
+            mensaje_error=f"Error transmitiendo el folder: {error}",
+            total_registros=len(df),
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
+        ), 500
+
+
 @compras_bp.route("/cenefas", methods=["GET", "POST"])
 def cenefas():
-    #tipo = request.args.get("tipo", "folder")
     tipo = request.args.get("tipo") or "minorista"
-    return render_template(
-        "cenefas.html",
-        tipo=tipo
-    )
+    return render_template("cenefas.html", tipo=tipo)
+
 
 @compras_bp.route("/ofertas/<modo>", methods=["GET", "POST"])
+@login_requerido("compras")
 def ofertas(modo):
     modos_validos = {
         "competencia": "Oferta por Competencia",
         "interna": "Oferta Interna",
-        "vencimientos": "Oferta por Vencimientos"
+        "vencimientos": "Oferta por Vencimientos",
     }
 
     if modo not in modos_validos:
@@ -1111,33 +1523,73 @@ def ofertas(modo):
     preview = None
     mensaje_error = None
     total_registros = 0
-    fecha_desde = None
-    fecha_hasta = None
+    fecha_desde = ""
+    fecha_hasta = ""
     tipo = "mayorista"
 
     if request.method == "POST":
         archivo = request.files.get("archivo")
-        fecha_desde = request.form.get("fecha_desde")
-        fecha_hasta = request.form.get("fecha_hasta")
+        fecha_desde = request.form.get("fecha_desde", "").strip()
+        fecha_hasta = request.form.get("fecha_hasta", "").strip()
         tipo = request.form.get("tipo", "mayorista")
+        usuario = session.get("usuario_nombre", "desconocido")
 
-        df, preview, mensaje_error, total_registros = procesar_archivo_cenefas(
-            archivo=archivo,
-            tipo=tipo,
-            fecha_desde=fecha_desde,
-            fecha_hasta=fecha_hasta
-        )
+        try:
+            df, _, mensaje_error, total_registros = procesar_archivo_cenefas(
+                archivo=archivo,
+                tipo=tipo,
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+            )
 
-        if df is not None:
-                lote_id = str(uuid.uuid4())
+            if df is None:
+                raise ValueError(
+                    mensaje_error or "No se pudo procesar el archivo."
+                )
 
-                guardar_temporal(lote_id, df)
+            if df.empty:
+                raise ValueError("El archivo no contiene registros válidos.")
 
-                session["ofertas_lote_id"] = lote_id
-                session["ofertas_preview_modo"] = modo
-                session["ofertas_preview_tipo"] = tipo
-                session["ofertas_preview_fecha_desde"] = fecha_desde
-                session["ofertas_preview_fecha_hasta"] = fecha_hasta
+            df = df.reset_index(drop=True)
+            lote_id = uuid.uuid4().hex
+
+            guardar_temporal(lote_id, df)
+
+            session["ofertas_lote_id"] = lote_id
+            session["ofertas_preview_modo"] = modo
+            session["ofertas_preview_tipo"] = tipo
+            session["ofertas_preview_fecha_desde"] = fecha_desde
+            session["ofertas_preview_fecha_hasta"] = fecha_hasta
+
+            preview = df.fillna("").to_dict(orient="records")
+            total_registros = len(df)
+
+            guardar_log_compras(
+                usuario=usuario,
+                nivel="INFO",
+                origen="backend",
+                modulo="ofertas",
+                accion=f"Previsualizar oferta {modo}",
+                archivo=archivo.filename if archivo else None,
+                detalle="Archivo procesado. Pendiente de transmisión.",
+                estado="exitoso",
+                total_registros=total_registros,
+            )
+
+        except Exception as error:
+            mensaje_error = str(error)
+
+            guardar_log_compras(
+                usuario=usuario,
+                nivel="ERROR",
+                origen="backend",
+                modulo="ofertas",
+                accion=f"Error previsualizando oferta {modo}",
+                archivo=archivo.filename if archivo else None,
+                detalle=str(error),
+                estado="fallido",
+                total_registros=0,
+            )
 
     return render_template(
         "ofertas.html",
@@ -1148,44 +1600,59 @@ def ofertas(modo):
         mensaje_error=mensaje_error,
         total_registros=total_registros,
         fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta
+        fecha_hasta=fecha_hasta,
+        columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
     )
 
+
 @compras_bp.route("/transmitir_ofertas", methods=["POST"])
+@login_requerido("compras")
 def transmitir_ofertas():
     lote_id = session.get("ofertas_lote_id")
-    df = recuperar_temporal(lote_id)
     modo = session.get("ofertas_preview_modo")
     tipo = session.get("ofertas_preview_tipo", "mayorista")
-    fecha_desde = session.get("ofertas_preview_fecha_desde")
-    fecha_hasta = session.get("ofertas_preview_fecha_hasta")
+    fecha_desde = session.get("ofertas_preview_fecha_desde", "")
+    fecha_hasta = session.get("ofertas_preview_fecha_hasta", "")
     usuario = session.get("usuario_nombre", "desconocido")
 
     modos_validos = {
         "competencia": "Oferta por Competencia",
         "interna": "Oferta Interna",
-        "vencimientos": "Oferta por Vencimientos"
+        "vencimientos": "Oferta por Vencimientos",
     }
 
-    if not lote_id or df is None or not modo:
-        guardar_log_compras(
-            usuario=usuario,
-            nivel="ERROR",
-            origen="validacion",
-            modulo="transmitir",
-            accion="Transmitir ofertas",
-            detalle="No hay datos para transmitir",
-            estado="fallido",
-            total_registros=0
-        )
+    if not lote_id or not modo or modo not in modos_validos:
         return "No hay datos para transmitir.", 400
 
-    try:
-        #if df is None:
-        #    return "Los datos ya no están disponibles. Volvé a cargar el archivo.", 400
+    df = recuperar_temporal(lote_id)
 
-        usuario = session.get("usuario_nombre", "desconocido")
+    if df is None:
+        return render_template(
+            "ofertas.html",
+            modo=modo,
+            titulo_vista=modos_validos[modo],
+            preview=None,
+            tipo=tipo,
+            mensaje_error=(
+                "La previsualización venció o fue eliminada. "
+                "Debe volver a cargar el archivo."
+            ),
+            total_registros=0,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
+        ), 400
+
+    try:
+        cambios_json = request.form.get("cambios", "[]")
         sobrescribir = request.form.get("sobrescribir") == "1"
+
+        cambios = normalizar_cambios_preview(cambios_json)
+        df = aplicar_cambios_preview(df, cambios)
+
+        # Persistimos las ediciones en Redis para conservarlas si aparece
+        # la confirmación de sobrescritura.
+        guardar_temporal(lote_id, df)
 
         repetidos = existen_cenefas_repetidas(df, modo)
 
@@ -1193,86 +1660,111 @@ def transmitir_ofertas():
             return render_template(
                 "ofertas.html",
                 modo=modo,
-                titulo_vista=modos_validos.get(modo, "Ofertas"),
-                preview=df.to_html(
-                    classes="table table-striped table-bordered",
-                    index=False
-                ),
+                titulo_vista=modos_validos[modo],
+                preview=df.fillna("").to_dict(orient="records"),
                 tipo=tipo,
                 mensaje_error=(
                     f"Ya existen {len(repetidos)} registros para este período. "
-                    "Si desea sobrescribirlos, confirme nuevamente."
+                    "Confirme el reemplazo para sobrescribirlos."
                 ),
                 total_registros=len(df),
                 fecha_desde=fecha_desde,
                 fecha_hasta=fecha_hasta,
-                requiere_sobrescribir=True
+                requiere_sobrescribir=True,
+                columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
             )
 
         lote_carga, fecha_carga = guardar_cenefas_en_db(
-            df,
-            modo,
+            df=df,
+            tipo_cenefa=modo,
             usuario=usuario,
-            sobrescribir=sobrescribir
-        )
-        redis_client.delete(lote_id) 
-        guardar_log_compras(
-            usuario=usuario,
-            nivel="INFO",
-            origen="backend",
-            modulo="transmitir",
-            accion="Transmitir ofertas",
-            detalle="Datos transmitidos correctamente",
-            estado="exitoso",
-            total_registros=len(df)
+            sobrescribir=sobrescribir,
         )
 
-        session.pop("ofertas_preview_data", None)
+        redis_client.delete(lote_id)
+
+        session.pop("ofertas_lote_id", None)
         session.pop("ofertas_preview_modo", None)
         session.pop("ofertas_preview_tipo", None)
         session.pop("ofertas_preview_fecha_desde", None)
         session.pop("ofertas_preview_fecha_hasta", None)
 
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="INFO",
+            origen="backend",
+            modulo="transmitir",
+            accion=f"Transmitir oferta {modo}",
+            detalle=f"Datos transmitidos correctamente. Lote: {lote_carga}",
+            estado="exitoso",
+            total_registros=len(df),
+        )
+
         return render_template(
             "ofertas.html",
             modo=modo,
-            titulo_vista=modos_validos.get(modo, "Ofertas"),
-            preview="<div class='alert alert-success'>Datos transmitidos correctamente.</div>",
+            titulo_vista=modos_validos[modo],
+            preview=None,
             tipo=tipo,
             mensaje_error=None,
+            mensaje_exito="Datos transmitidos correctamente.",
             total_registros=0,
             fecha_desde=fecha_desde,
-            fecha_hasta=fecha_hasta
+            fecha_hasta=fecha_hasta,
+            lote_carga=lote_carga,
+            fecha_carga=fecha_carga,
+            columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
         )
 
-    #except sqlite3.Error as e:
-    except psycopg2.Error as e:
+    except psycopg2.Error as error:
         guardar_log_compras(
             usuario=usuario,
             nivel="CRITICAL",
             origen="base_datos",
             modulo="transmitir",
-            accion="Error transmitiendo ofertas",
-            detalle=str(e),
+            accion=f"Error transmitiendo oferta {modo}",
+            detalle=str(error),
             estado="fallido",
-            total_registros=0,
-            #error_trace=traceback.format_exc()
+            total_registros=len(df) if df is not None else 0,
         )
-        return f"Error de base de datos: {e}", 500
 
-    except Exception as e:
+        return render_template(
+            "ofertas.html",
+            modo=modo,
+            titulo_vista=modos_validos[modo],
+            preview=df.fillna("").to_dict(orient="records"),
+            tipo=tipo,
+            mensaje_error=f"Error de base de datos: {error}",
+            total_registros=len(df),
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
+        ), 500
+
+    except Exception as error:
         guardar_log_compras(
             usuario=usuario,
             nivel="ERROR",
             origen="backend",
             modulo="transmitir",
-            accion="Excepción transmitiendo ofertas",
-            detalle=str(e),
+            accion=f"Excepción transmitiendo oferta {modo}",
+            detalle=str(error),
             estado="fallido",
-            total_registros=0,
-            #error_trace=traceback.format_exc()
+            total_registros=len(df) if df is not None else 0,
         )
-        return f"Error interno: {e}", 500
+
+        return render_template(
+            "ofertas.html",
+            modo=modo,
+            titulo_vista=modos_validos[modo],
+            preview=df.fillna("").to_dict(orient="records"),
+            tipo=tipo,
+            mensaje_error=f"Error transmitiendo la oferta: {error}",
+            total_registros=len(df),
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            columnas_editables=COLUMNAS_EDITABLES_PREVIEW,
+        ), 500
 
 
 @compras_bp.route("/sucursal")
