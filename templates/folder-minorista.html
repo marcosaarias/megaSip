@@ -1,143 +1,795 @@
 {% extends "base.html" %}
-{% block title %}Folder{% endblock %}
+{% block title %}Folder Minorista{% endblock %}
 
 {% block content %}
+
 <div class="container-fluid">
-    <h2 class="mb-4">Gestión de Folder</h2>
 
-    <!-- Selector global de fechas -->
+    <h2 class="mb-4">
+        Gestión de Folder Minorista
+    </h2>
+
+    <!-- ====================================================== -->
+    <!-- SELECTOR DE FECHAS -->
+    <!-- ====================================================== -->
+
     <div class="card p-4 shadow-sm mb-4">
+
         <div class="row">
-            <div class="col-md-3">
-                <label><strong>Desde:</strong></label>
-                <input type="date"
-                       id="fecha_desde"
-                       class="form-control"
-                       value="{{ fecha_desde }}"
-                       required>
-            </div>
 
             <div class="col-md-3">
-                <label><strong>Hasta:</strong></label>
-                <input type="date"
-                       id="fecha_hasta"
-                       class="form-control"
-                       value="{{ fecha_hasta }}"
-                       required>
+
+                <label>
+                    <strong>Desde:</strong>
+                </label>
+
+                <input
+                    type="date"
+                    id="fecha_desde"
+                    class="form-control"
+                    value="{{ fecha_desde }}"
+                    required
+                >
+
             </div>
+
+
+            <div class="col-md-3">
+
+                <label>
+                    <strong>Hasta:</strong>
+                </label>
+
+                <input
+                    type="date"
+                    id="fecha_hasta"
+                    class="form-control"
+                    value="{{ fecha_hasta }}"
+                    required
+                >
+
+            </div>
+
         </div>
+
     </div>
+
+
+    <!-- ====================================================== -->
+    <!-- CARGAR ARCHIVO -->
+    <!-- ====================================================== -->
 
     <div class="row">
 
-        <!-- Minorista -->
         <div class="col-md-6">
+
             <div class="card p-4 shadow-sm">
-                <h4>Folder Minorista</h4>
 
-                <form method="POST"
-                      action="{{ url_for('compras.folder_minorista') }}"
-                      enctype="multipart/form-data"
-                      class="folder-form">
-                    <input type="hidden" name="tipo" value="minorista">
-                    <input type="hidden" name="fecha_desde">
-                    <input type="hidden" name="fecha_hasta">
+                <h4>
+                    Folder Minorista
+                </h4>
 
-                    <input type="file" name="archivo" class="form-control mb-3" required>
+                <form
+                    method="POST"
+                    action="{{ url_for('compras.folder_minorista') }}"
+                    enctype="multipart/form-data"
+                    class="folder-form"
+                >
 
-                    <button type="submit" class="btn btn-success w-100">
+                    <input
+                        type="hidden"
+                        name="tipo"
+                        value="minorista"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="fecha_desde"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="fecha_hasta"
+                    >
+
+                    <input
+                        type="file"
+                        name="archivo"
+                        class="form-control mb-3"
+                        required
+                    >
+
+                    <button
+                        type="submit"
+                        class="btn btn-success w-100"
+                    >
                         Cargar Folder Minorista
                     </button>
+
                 </form>
+
             </div>
+
         </div>
 
     </div>
 
-    <!-- Mensaje de error -->
+
+    <!-- ====================================================== -->
+    <!-- ERROR -->
+    <!-- ====================================================== -->
+
     {% if mensaje_error %}
-    <div class="alert alert-danger mt-4">
-        {{ mensaje_error }}
-    </div>
+
+        <div class="alert alert-danger mt-4">
+            {{ mensaje_error }}
+        </div>
+
     {% endif %}
 
-    <!-- Preview -->
+
+    <!-- ====================================================== -->
+    <!-- EXITO -->
+    <!-- ====================================================== -->
+
+    {% if mensaje_exito %}
+
+        <div class="alert alert-success mt-4">
+            {{ mensaje_exito }}
+        </div>
+
+    {% endif %}
+
+
+    <!-- ====================================================== -->
+    <!-- PREVISUALIZACION EDITABLE -->
+    <!-- ====================================================== -->
+
     {% if preview %}
+
     <div class="mt-5">
+
         <div class="card shadow-sm">
 
             <div class="card-header bg-dark text-white">
+
                 <h5 class="mb-0">
+
                     Previsualización - {{ tipo|capitalize }}
+
                     {% if total_registros %}
                         | Total: {{ total_registros }}
                     {% endif %}
+
                 </h5>
+
             </div>
+
 
             <div class="card-body p-2">
 
-                <div style="max-height:600px; overflow:auto;">
-                    {{ preview|safe }}
+                <div
+                    style="
+                        max-height: 600px;
+                        overflow: auto;
+                    "
+                >
+
+                    <table
+                        class="
+                            table
+                            table-sm
+                            table-bordered
+                            table-hover
+                            align-middle
+                        "
+                    >
+
+                        <!-- ====================================== -->
+                        <!-- CABECERA -->
+                        <!-- ====================================== -->
+
+                        <thead class="table-dark sticky-top">
+
+                            <tr>
+
+                                {% for columna in preview[0].keys() %}
+
+                                    <th>
+                                        {{ columna }}
+                                    </th>
+
+                                {% endfor %}
+
+                            </tr>
+
+                        </thead>
+
+
+                        <!-- ====================================== -->
+                        <!-- FILAS -->
+                        <!-- ====================================== -->
+
+                        <tbody>
+
+                            {% for fila in preview %}
+
+                                {% set indice = loop.index0 %}
+
+                                <tr>
+
+                                    {% for columna, valor in fila.items() %}
+
+                                        <td>
+
+                                            {% if columna in columnas_editables %}
+
+                                                <!-- ========================== -->
+                                                <!-- FECHAS -->
+                                                <!-- ========================== -->
+
+                                                {% if columna in ['desde', 'hasta'] %}
+
+                                                    <input
+                                                        type="date"
+                                                        class="form-control form-control-sm campo-editable"
+                                                        data-fila="{{ indice }}"
+                                                        data-columna="{{ columna }}"
+                                                        data-original="{{ valor }}"
+                                                        value="{{ valor }}"
+                                                    >
+
+
+                                                <!-- ========================== -->
+                                                <!-- PRECIOS -->
+                                                <!-- ========================== -->
+
+                                                {% elif columna in ['Normal', 'Oferta'] %}
+
+                                                    <input
+                                                        type="text"
+                                                        inputmode="decimal"
+                                                        class="form-control form-control-sm campo-editable"
+                                                        data-fila="{{ indice }}"
+                                                        data-columna="{{ columna }}"
+                                                        data-original="{{ valor }}"
+                                                        value="{{ valor }}"
+                                                        style="min-width: 110px;"
+                                                    >
+
+
+                                                <!-- ========================== -->
+                                                <!-- SUCURSALES -->
+                                                <!-- ========================== -->
+
+                                                {% elif columna == 'sucursales' %}
+
+                                                    <input
+                                                        type="text"
+                                                        class="form-control form-control-sm campo-editable"
+                                                        data-fila="{{ indice }}"
+                                                        data-columna="sucursales"
+                                                        data-original="{{ valor }}"
+                                                        value="{{ valor }}"
+                                                        placeholder="Ej: CO01,CO02,CO24"
+                                                        autocomplete="off"
+                                                        style="min-width: 260px;"
+                                                    >
+
+
+                                                <!-- ========================== -->
+                                                <!-- DESCRIPCION / CENEFA -->
+                                                <!-- ========================== -->
+
+                                                {% else %}
+
+                                                    <input
+                                                        type="text"
+                                                        class="form-control form-control-sm campo-editable"
+                                                        data-fila="{{ indice }}"
+                                                        data-columna="{{ columna }}"
+                                                        data-original="{{ valor }}"
+                                                        value="{{ valor }}"
+                                                        style="
+                                                            {% if columna == 'DESCRIPCION' %}
+                                                                min-width: 280px;
+                                                            {% elif columna == 'cenefa' %}
+                                                                min-width: 160px;
+                                                            {% endif %}
+                                                        "
+                                                    >
+
+                                                {% endif %}
+
+                                            {% else %}
+
+                                                {{ valor }}
+
+                                            {% endif %}
+
+                                        </td>
+
+                                    {% endfor %}
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
                 </div>
 
-                <!-- Botón transmitir -->
-                <div class="text-end mt-4">
-                    <form method="POST"
-                          action="{{ url_for('compras.folder_minorista') }}"
-                          onsubmit="return confirmarTransmision();">
 
-                        <input type="hidden" name="tipo" value="{{ tipo }}">
-                        <input type="hidden" name="fecha_desde" value="{{ fecha_desde }}">
-                        <input type="hidden" name="fecha_hasta" value="{{ fecha_hasta }}">
+                <!-- ================================================== -->
+                <!-- CONTADOR DE CAMBIOS -->
+                <!-- ================================================== -->
 
-                        <button type="submit" class="btn btn-warning px-4">
+                <div
+                    id="contador-cambios"
+                    class="text-muted mt-3"
+                >
+                    Sin modificaciones
+                </div>
+
+
+                <!-- ================================================== -->
+                <!-- TRANSMITIR -->
+                <!-- ================================================== -->
+
+                <div class="text-end mt-3">
+
+                    <form
+                        method="POST"
+                        action="{{ url_for('compras.transmitir_folder') }}"
+                        id="form-transmitir-folder"
+                        onsubmit="return prepararTransmision(this);"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="cambios"
+                            value="[]"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="sobrescribir"
+                            value="0"
+                        >
+
+                        <button
+                            type="submit"
+                            class="btn btn-warning px-4"
+                        >
                             Transmitir Folder
                         </button>
+
                     </form>
+
                 </div>
 
             </div>
+
         </div>
+
     </div>
+
     {% endif %}
 
 </div>
 
+
 <script>
-document.querySelectorAll(".folder-form").forEach(form => {
-    form.addEventListener("submit", function(event) {
-        const desde = document.getElementById("fecha_desde").value;
-        const hasta = document.getElementById("fecha_hasta").value;
 
-        if (!desde || !hasta) {
-            alert("Debe seleccionar las fechas Desde y Hasta.");
-            event.preventDefault();
-            return;
-        }
+/* ============================================================
+   CARGAR FECHAS EN FORMULARIO DE ARCHIVO
+   ============================================================ */
 
-        const archivoInput = form.querySelector("input[name='archivo']");
-        if (!archivoInput || !archivoInput.files || archivoInput.files.length === 0) {
-            alert("Debe seleccionar un archivo.");
-            event.preventDefault();
-            return;
-        }
+function cargarFechasEnFormulario(form) {
 
-        form.querySelector("input[name='fecha_desde']").value = desde;
-        form.querySelector("input[name='fecha_hasta']").value = hasta;
+    const fechaDesde =
+        document.getElementById(
+            "fecha_desde"
+        ).value;
+
+    const fechaHasta =
+        document.getElementById(
+            "fecha_hasta"
+        ).value;
+
+    if (!fechaDesde || !fechaHasta) {
+
+        alert(
+            "Debe seleccionar fecha desde "
+            + "y fecha hasta."
+        );
+
+        return false;
+    }
+
+
+    const inputDesde =
+        form.querySelector(
+            'input[name="fecha_desde"]'
+        );
+
+    const inputHasta =
+        form.querySelector(
+            'input[name="fecha_hasta"]'
+        );
+
+
+    if (inputDesde) {
+        inputDesde.value =
+            fechaDesde;
+    }
+
+    if (inputHasta) {
+        inputHasta.value =
+            fechaHasta;
+    }
+
+
+    return true;
+}
+
+
+/* ============================================================
+   FORMULARIO DE CARGA
+   ============================================================ */
+
+document
+    .querySelectorAll(
+        ".folder-form"
+    )
+    .forEach(form => {
+
+        form.addEventListener(
+            "submit",
+            function(event) {
+
+                if (
+                    !cargarFechasEnFormulario(
+                        this
+                    )
+                ) {
+
+                    event.preventDefault();
+
+                }
+
+            }
+        );
+
     });
-});
 
-function confirmarTransmision() {
-    let confirmar = confirm("¿Está seguro que desea transmitir el folder?");
 
-    if (confirmar) {
-        alert("Transmitiendo información...");
+/* ============================================================
+   CAMPOS EDITABLES
+   ============================================================ */
+
+const camposEditables =
+    document.querySelectorAll(
+        ".campo-editable"
+    );
+
+const contadorCambios =
+    document.getElementById(
+        "contador-cambios"
+    );
+
+
+/* ============================================================
+   NORMALIZAR VALOR
+   ============================================================ */
+
+function normalizarValor(
+    input,
+    valor
+) {
+
+    valor = String(
+        valor ?? ""
+    ).trim();
+
+
+    if (
+        input.dataset.columna
+        === "sucursales"
+    ) {
+
+        return valor
+            .toUpperCase()
+            .split(",")
+            .map(
+                item =>
+                    item.trim()
+            )
+            .filter(Boolean)
+            .join(",");
+
+    }
+
+
+    return valor;
+}
+
+
+/* ============================================================
+   OBTENER MODIFICACIONES
+   ============================================================ */
+
+function obtenerCambiosPreview() {
+
+    const cambios = [];
+
+
+    camposEditables.forEach(
+        input => {
+
+            const actual =
+                normalizarValor(
+                    input,
+                    input.value
+                );
+
+            const original =
+                normalizarValor(
+                    input,
+                    input.dataset.original
+                );
+
+
+            if (
+                actual !== original
+            ) {
+
+                cambios.push({
+
+                    fila:
+                        parseInt(
+                            input.dataset.fila,
+                            10
+                        ),
+
+                    columna:
+                        input.dataset.columna,
+
+                    valor:
+                        actual
+
+                });
+
+            }
+
+        }
+    );
+
+
+    return cambios;
+}
+
+
+/* ============================================================
+   MOSTRAR CANTIDAD DE CAMBIOS
+   ============================================================ */
+
+function actualizarContadorCambios() {
+
+    if (!contadorCambios) {
+        return;
+    }
+
+
+    const cambios =
+        obtenerCambiosPreview();
+
+
+    if (
+        cambios.length === 0
+    ) {
+
+        contadorCambios.textContent =
+            "Sin modificaciones";
+
+        contadorCambios.className =
+            "text-muted mt-3";
+
+        return;
+    }
+
+
+    contadorCambios.textContent =
+        cambios.length
+        + (
+            cambios.length === 1
+                ? " modificación pendiente"
+                : " modificaciones pendientes"
+        );
+
+
+    contadorCambios.className =
+        "text-warning fw-bold mt-3";
+}
+
+
+/* ============================================================
+   ESCUCHAR MODIFICACIONES
+   ============================================================ */
+
+camposEditables.forEach(
+    input => {
+
+        input.addEventListener(
+            "input",
+            actualizarContadorCambios
+        );
+
+        input.addEventListener(
+            "change",
+            actualizarContadorCambios
+        );
+
+    }
+);
+
+
+/* ============================================================
+   VALIDAR SUCURSALES
+   ============================================================ */
+
+function validarSucursales(
+    cambios
+) {
+
+    for (
+        const cambio
+        of cambios
+    ) {
+
+        if (
+            cambio.columna
+            !== "sucursales"
+        ) {
+            continue;
+        }
+
+
+        const valor =
+            String(
+                cambio.valor ?? ""
+            ).trim();
+
+
+        if (!valor) {
+
+            alert(
+                "El campo sucursales "
+                + "no puede quedar vacío."
+            );
+
+            return false;
+        }
+
+
+        const sucursales =
+            valor.split(",");
+
+
+        for (
+            const sucursal
+            of sucursales
+        ) {
+
+            if (
+                !/^(CO|MA)[0-9]{2}$/
+                    .test(
+                        sucursal.trim()
+                    )
+            ) {
+
+                alert(
+                    "Sucursal inválida: "
+                    + sucursal
+                    + "\n\n"
+                    + "Use códigos como "
+                    + "CO24, CO25 o MA02."
+                );
+
+                return false;
+            }
+
+        }
+
+    }
+
+
+    return true;
+}
+
+
+/* ============================================================
+   PREPARAR TRANSMISION
+   ============================================================ */
+
+function prepararTransmision(
+    form
+) {
+
+    const cambios =
+        obtenerCambiosPreview();
+
+
+    if (
+        !validarSucursales(
+            cambios
+        )
+    ) {
+        return false;
+    }
+
+
+    const inputCambios =
+        form.querySelector(
+            'input[name="cambios"]'
+        );
+
+
+    inputCambios.value =
+        JSON.stringify(
+            cambios
+        );
+
+
+    const requiereSobrescribir =
+        "{{ requiere_sobrescribir|default(false)|lower }}"
+        === "true";
+
+
+    /* ========================================================
+       CONFIRMACION DE SOBRESCRITURA
+       ======================================================== */
+
+    if (
+        requiereSobrescribir
+    ) {
+
+        const confirmar =
+            confirm(
+                "Ya existen registros "
+                + "para este período. "
+                + "¿Desea sobrescribirlos?"
+            );
+
+
+        if (!confirmar) {
+            return false;
+        }
+
+
+        form
+            .querySelector(
+                'input[name="sobrescribir"]'
+            )
+            .value = "1";
+
+
         return true;
     }
 
-    return false;
+
+    /* ========================================================
+       CONFIRMACION NORMAL
+       ======================================================== */
+
+    return confirm(
+        "¿Está seguro que desea "
+        + "transmitir el Folder Minorista?"
+    );
 }
+
 </script>
 
 {% endblock %}
