@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 
 import pandas as pd
@@ -27,6 +28,7 @@ COLUMNAS_EDITABLES = {
     "cenefa",
     "desde",
     "hasta",
+    "sucursales",
 }
 
 LIMITE_POR_PAGINA = 200
@@ -93,6 +95,52 @@ def validar_precio(valor, limpiar_precio):
         )
 
     return precio
+
+
+
+
+def eliminar_cenefas_vencidas(
+    get_db_connection,
+):
+    """
+    Elimina todas las cenefas cuya vigencia
+    ya finalizó.
+
+    Una cenefa con hasta = CURRENT_DATE
+    todavía se considera vigente.
+    """
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        cursor.execute(
+            """
+            DELETE FROM cenefas
+            WHERE hasta IS NOT NULL
+              AND hasta < CURRENT_DATE
+            RETURNING id
+            """
+        )
+
+        eliminadas = cursor.fetchall()
+
+        total = len(eliminadas)
+
+        conn.commit()
+
+        return total
+
+    except Exception:
+
+        conn.rollback()
+        raise
+
+    finally:
+
+        cursor.close()
+        conn.close()
 
 
 # ============================================================
@@ -562,6 +610,47 @@ def registrar_rutas_administrar_cenefas(
                         valor = validar_fecha(
                             valor
                         )
+
+                    # -----------------------------------------
+                    # SUCURSALES
+                    # -----------------------------------------
+
+                    elif columna == "sucursales":
+
+                        valor = str(
+                            valor or ""
+                        ).strip().upper()
+
+                        if not valor:
+                            raise ValueError(
+                                "Las sucursales no pueden "
+                                "quedar vacías."
+                            )
+
+                        sucursales = [
+                            sucursal.strip()
+                            for sucursal in valor.split(",")
+                            if sucursal.strip()
+                        ]
+
+                        if not sucursales:
+                            raise ValueError(
+                                "No se encontraron sucursales válidas."
+                            )
+
+                        for sucursal in sucursales:
+                            if not re.fullmatch(
+                                r"(CO|MA)[0-9]{2}",
+                                sucursal,
+                            ):
+                                raise ValueError(
+                                    f"La sucursal '{sucursal}' "
+                                    "no tiene un formato válido."
+                                )
+
+                        # Quitar duplicados manteniendo el orden.
+                        sucursales = list(dict.fromkeys(sucursales))
+                        valor = ",".join(sucursales)
 
                     # -----------------------------------------
                     # UPDATE
