@@ -29,7 +29,7 @@ from sistemas import login_requerido
 # CONFIGURACIÓN
 # ============================================================
 
-SUCURSALES_MAYORISTA_TUCUMAN = "CO25"
+SUCURSALES_MAYORISTA_TUCUMAN = "CO24,CO25"
 
 TIPO_CENEFA_MAYORISTA_TUCUMAN = "mayorista"
 
@@ -497,7 +497,7 @@ def validar_dataframe_antes_transmitir(df):
     if not sucursales_incorrectas.empty:
         raise ValueError(
             "El lote contiene destinos "
-            "distintos a CO25."
+            "distintos a CO24,CO25."
         )
 
 
