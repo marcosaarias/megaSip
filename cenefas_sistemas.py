@@ -31,6 +31,11 @@ def index():
     fecha_hasta = request.form.get("fecha_hasta") or ""
     grupo_sucursales = request.form.get("grupo_sucursales") or ""
 
+    codigos_sucursales = (
+    request.form.get("codigos_sucursales")
+    or ""
+    ).strip().upper()
+
     if request.method == "POST":
         archivo = request.files.get("archivo")
         lote_id = session.get("cenefas_sistemas_lote_id")
@@ -74,17 +79,52 @@ def index():
                     print("Primeras filas recuperadas:")
                     print(df.head().to_string())
 
-            if df is not None and grupo_sucursales:
-                codigos = SUCURSAL_MAP.get(grupo_sucursales, "")
+#            if df is not None and grupo_sucursales:
+#                codigos = SUCURSAL_MAP.get(grupo_sucursales, "")
 
-                print("Aplicando grupo:", grupo_sucursales)
-                print("Codigos a aplicar:", codigos)
+#                print("Aplicando grupo:", grupo_sucursales)
+#                print("Codigos a aplicar:", codigos)
 
-                if codigos:
+#                if codigos:
+#                    df["sucursales"] = codigos
+
+#                    print("Primeras filas DESPUES de aplicar grupo:")
+#                    print(df.head().to_string())
+
+
+                if df is not None and grupo_sucursales:
+
+                    # Selección personalizada
+                    if grupo_sucursales == "__personalizada__":
+
+                        if not codigos_sucursales:
+                            raise ValueError(
+                                "Debe seleccionar al menos una sucursal."
+                            )
+
+                        codigos = codigos_sucursales
+
+                    # Grupo definido en SUCURSAL_MAP
+                    else:
+
+                        codigos = SUCURSAL_MAP.get(
+                            grupo_sucursales,
+                            ""
+                        )
+
+                        if not codigos:
+                            raise ValueError(
+                                "El grupo de sucursales seleccionado no es válido."
+                            )
+
+                    print("Aplicando grupo:", grupo_sucursales)
+                    print("Codigos a aplicar:", codigos)
+
                     df["sucursales"] = codigos
 
                     print("Primeras filas DESPUES de aplicar grupo:")
                     print(df.head().to_string())
+
 
             if df is not None:
 

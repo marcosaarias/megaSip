@@ -2,161 +2,551 @@
 {% block title %}Cenefas Sistemas{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <h2 class="mb-4">Conversor de Cenefas</h2>
 
-    {% if mensaje_error %}
-    <div class="alert alert-danger">
-        {{ mensaje_error }}
-    </div>
-    {% endif %}
+{% if mensaje_error %}
+<div class="alert alert-danger">
+    {{ mensaje_error }}
+</div>
+{% endif %}
 
-    <div class="card p-4 shadow-sm mb-4">
-        <div class="row">
-            <div class="col-md-3">
-                <label><strong>Desde:</strong></label>
-                <input type="date"
-                       id="fecha_desde"
-                       class="form-control"
-                       value="{{ fecha_desde }}"
-                       required>
-            </div>
 
-            <div class="col-md-3">
-                <label><strong>Hasta:</strong></label>
+<!-- ====================================================== -->
+<!-- FECHAS -->
+<!-- ====================================================== -->
 
-                <input type="date"
-                       id="fecha_hasta"
-                       class="form-control"
-                       value="{{ fecha_hasta }}"
-                       required>
-
-            </div>
-        </div>
-    </div>
+<div class="card p-4 shadow-sm mb-4">
 
     <div class="row">
-        <div class="col-md-6">
-            <div class="card p-4 shadow-sm">
-                <h4>Cargar Cenefas</h4>
 
-                <form method="POST"
-                      enctype="multipart/form-data"
-                      class="folder-form"
-                      action="{{ url_for('cenefas_sistemas.index') }}">
+        <div class="col-md-3">
 
-                    <input type="hidden" name="fecha_desde">
-                    <input type="hidden" name="fecha_hasta">
+            <label>
+                <strong>Desde:</strong>
+            </label>
 
-                    <label><strong>Grupo de sucursales:</strong></label>
-                    <select id="grupo_sucursales"
-                            name="grupo_sucursales"
-                            class="form-control mb-3">
-
-                        {% for nombre, codigos in sucursal_map.items() %}
-                            <option value="{{ nombre }}"
-                                    data-codigos="{{ codigos }}"
-                                    {% if grupo_sucursales == nombre %}selected{% endif %}>
-                                {{ nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
-
-                    <label><strong>Códigos de sucursales:</strong></label>
-                    <input type="text"
-                           id="codigos_sucursales"
-                           class="form-control mb-3"
-                           readonly
-                           placeholder="Se completará automáticamente">
-
-                    <input type="file"
-                           name="archivo"
-                           class="form-control mb-3"
-                           accept=".xlsx,.xls"> 
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Generar archivo
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {% if preview %}
-    <div class="mt-5">
-        <div class="card shadow-sm">
-
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">
-                    Previsualización - {{ grupo_sucursales }}
-                    {% if total_registros %}
-                        | Total: {{ total_registros }}
-                    {% endif %}
-                </h5>
-            </div>
-
-            <div class="card-body p-2">
-                <div style="max-height:600px; overflow:auto;">
-                    {{ preview|safe }}
-                </div>
-
-                <div class="text-end mt-4">
-                    <form method="POST" action="{{ url_for('cenefas_sistemas.descargar') }}">
-                        <button type="submit" class="btn btn-success px-4">
-                            Descargar archivo
-                        </button>
-                    </form>
-                </div>
-            </div>
+            <input
+                type="date"
+                id="fecha_desde"
+                class="form-control"
+                value="{{ fecha_desde }}"
+                required
+            >
 
         </div>
+
+
+        <div class="col-md-3">
+
+            <label>
+                <strong>Hasta:</strong>
+            </label>
+
+            <input
+                type="date"
+                id="fecha_hasta"
+                class="form-control"
+                value="{{ fecha_hasta }}"
+                required
+            >
+
+        </div>
+
     </div>
-    {% endif %}
+
 </div>
 
+
+<!-- ====================================================== -->
+<!-- CARGAR CENEFAS -->
+<!-- ====================================================== -->
+
+<div class="row">
+
+    <div class="col-md-8">
+
+        <div class="card p-4 shadow-sm">
+
+            <h4>
+                Cargar Cenefas
+            </h4>
+
+            <form
+                method="POST"
+                enctype="multipart/form-data"
+                class="folder-form"
+                action="{{ url_for('cenefas_sistemas.index') }}"
+            >
+
+                <input
+                    type="hidden"
+                    name="fecha_desde"
+                >
+
+                <input
+                    type="hidden"
+                    name="fecha_hasta"
+                >
+
+
+                <!-- ========================================== -->
+                <!-- GRUPO DE SUCURSALES -->
+                <!-- ========================================== -->
+
+                <label>
+                    <strong>Grupo de sucursales:</strong>
+                </label>
+
+                <select
+                    id="grupo_sucursales"
+                    name="grupo_sucursales"
+                    class="form-control mb-3"
+                    onchange="actualizarSeleccionSucursal()"
+                >
+
+                    {% for nombre, codigos in sucursal_map.items() %}
+
+                        <option
+                            value="{{ nombre }}"
+                            data-codigos="{{ codigos }}"
+                            {% if grupo_sucursales == nombre %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ nombre }}
+                        </option>
+
+                    {% endfor %}
+
+
+                    <!-- NUEVA OPCION -->
+
+                    <option
+                        value="__personalizada__"
+                        {% if grupo_sucursales == '__personalizada__' %}
+                            selected
+                        {% endif %}
+                    >
+                        Selección personalizada
+                    </option>
+
+                </select>
+
+
+                <!-- ========================================== -->
+                <!-- SELECCION PERSONALIZADA -->
+                <!-- ========================================== -->
+
+                <div
+                    id="contenedor_personalizado"
+                    class="border rounded p-3 mb-3"
+                    style="display:none;"
+                >
+
+                    <label class="mb-3">
+
+                        <strong>
+                            Seleccione las sucursales:
+                        </strong>
+
+                    </label>
+
+
+                    <div class="row">
+
+                        {% set sucursales_individuales = [
+                            'CO01',
+                            'CO02',
+                            'CO04',
+                            'CO05',
+                            'CO06',
+                            'CO07',
+                            'CO08',
+                            'CO09',
+                            'CO10',
+                            'CO11',
+                            'CO12',
+                            'CO14',
+                            'CO15',
+                            'CO16',
+                            'CO17',
+                            'CO18',
+                            'CO19',
+                            'CO20',
+                            'CO21',
+                            'CO22',
+                            'CO23',
+                            'CO24',
+                            'CO25',
+                            'CO26',
+                            'CO27',
+                            'CO28',
+                            'CO29',
+                            'MA02'
+                        ] %}
+
+
+                        {% for codigo in sucursales_individuales %}
+
+                            <div
+                                class="col-lg-2 col-md-3 col-sm-4 col-6 mb-2"
+                            >
+
+                                <div class="form-check">
+
+                                    <input
+                                        class="form-check-input sucursal-check"
+                                        type="checkbox"
+                                        value="{{ codigo }}"
+                                        id="sucursal_{{ codigo }}"
+                                        onchange="actualizarSeleccionSucursal()"
+                                    >
+
+                                    <label
+                                        class="form-check-label"
+                                        for="sucursal_{{ codigo }}"
+                                    >
+                                        {{ codigo }}
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- ========================================== -->
+                <!-- CODIGOS RESULTANTES -->
+                <!-- ========================================== -->
+
+                <label>
+                    <strong>
+                        Códigos de sucursales:
+                    </strong>
+                </label>
+
+                <input
+                    type="text"
+                    id="codigos_sucursales"
+                    name="codigos_sucursales"
+                    class="form-control mb-3"
+                    readonly
+                    placeholder="Se completará automáticamente"
+                >
+
+
+                <!-- ========================================== -->
+                <!-- ARCHIVO -->
+                <!-- ========================================== -->
+
+                <input
+                    type="file"
+                    name="archivo"
+                    class="form-control mb-3"
+                    accept=".xlsx,.xls"
+                >
+
+
+                <button
+                    type="submit"
+                    class="btn btn-primary w-100"
+                >
+                    Generar archivo
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- PREVIEW -->
+<!-- ====================================================== -->
+
+{% if preview %}
+
+<div class="mt-5">
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-dark text-white">
+
+            <h5 class="mb-0">
+
+                Previsualización
+
+                {% if grupo_sucursales == '__personalizada__' %}
+                    - Selección personalizada
+                {% else %}
+                    - {{ grupo_sucursales }}
+                {% endif %}
+
+                {% if total_registros %}
+                    | Total: {{ total_registros }}
+                {% endif %}
+
+            </h5>
+
+        </div>
+
+
+        <div class="card-body p-2">
+
+            <div
+                style="
+                    max-height:600px;
+                    overflow:auto;
+                "
+            >
+
+                {{ preview|safe }}
+
+            </div>
+
+
+            <div class="text-end mt-4">
+
+                <form
+                    method="POST"
+                    action="{{ url_for('cenefas_sistemas.descargar') }}"
+                >
+
+                    <button
+                        type="submit"
+                        class="btn btn-success px-4"
+                    >
+                        Descargar archivo
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
 <script>
-function actualizarCodigosSucursales() {
-    const select = document.getElementById("grupo_sucursales");
-    const input = document.getElementById("codigos_sucursales");
 
-    if (!select || !input) return;
+/* ============================================================
+   ACTUALIZAR GRUPO / SUCURSALES PERSONALIZADAS
+   ============================================================ */
 
-    const selected = select.options[select.selectedIndex];
-    input.value = selected.getAttribute("data-codigos") || "";
-}
+function actualizarSeleccionSucursal() {
 
-document.addEventListener("DOMContentLoaded", function() {
-    actualizarCodigosSucursales();
+    const grupo =
+        document.getElementById(
+            "grupo_sucursales"
+        );
 
-    const grupoSucursales = document.getElementById("grupo_sucursales");
+    const contenedor =
+        document.getElementById(
+            "contenedor_personalizado"
+        );
 
-    if (grupoSucursales) {
-        grupoSucursales.addEventListener("change", function() {
-            actualizarCodigosSucursales();
+    const codigosInput =
+        document.getElementById(
+            "codigos_sucursales"
+        );
 
-            const form = document.querySelector(".folder-form");
-            if (form) {
-                form.requestSubmit();
-            }
-        });
+
+    /* ========================================================
+       SELECCION PERSONALIZADA
+       ======================================================== */
+
+    if (
+        grupo.value
+        === "__personalizada__"
+    ) {
+
+        contenedor.style.display =
+            "block";
+
+
+        const seleccionadas = [];
+
+
+        document
+            .querySelectorAll(
+                ".sucursal-check:checked"
+            )
+            .forEach(
+                check => {
+
+                    seleccionadas.push(
+                        check.value
+                    );
+
+                }
+            );
+
+
+        codigosInput.value =
+            seleccionadas.join(",");
+
+
+        return;
     }
 
-    document.querySelectorAll(".folder-form").forEach(form => {
-        form.addEventListener("submit", function(event) {
-            const desde = document.getElementById("fecha_desde").value;
-            const hasta = document.getElementById("fecha_hasta").value;
 
-            if (!desde || !hasta) {
-                alert("Debe seleccionar las fechas Desde y Hasta.");
-                event.preventDefault();
-                return;
-            }
+    /* ========================================================
+       GRUPO NORMAL
+       ======================================================== */
 
-            form.querySelector("input[name='fecha_desde']").value = desde;
-            form.querySelector("input[name='fecha_hasta']").value = hasta;
-        });
-    });
-});
+    contenedor.style.display =
+        "none";
+
+
+    const opcion =
+        grupo.options[
+            grupo.selectedIndex
+        ];
+
+
+    codigosInput.value =
+        opcion.dataset.codigos || "";
+
+}
+
+
+/* ============================================================
+   FECHAS
+   ============================================================ */
+
+function cargarFechasEnFormulario(
+    form
+) {
+
+    const fechaDesde =
+        document.getElementById(
+            "fecha_desde"
+        ).value;
+
+    const fechaHasta =
+        document.getElementById(
+            "fecha_hasta"
+        ).value;
+
+
+    if (
+        !fechaDesde
+        || !fechaHasta
+    ) {
+
+        alert(
+            "Debe seleccionar fecha desde "
+            + "y fecha hasta."
+        );
+
+        return false;
+    }
+
+
+    form
+        .querySelector(
+            'input[name="fecha_desde"]'
+        )
+        .value = fechaDesde;
+
+
+    form
+        .querySelector(
+            'input[name="fecha_hasta"]'
+        )
+        .value = fechaHasta;
+
+
+    return true;
+}
+
+
+/* ============================================================
+   VALIDAR FORMULARIO
+   ============================================================ */
+
+document
+    .querySelectorAll(
+        ".folder-form"
+    )
+    .forEach(
+        form => {
+
+            form.addEventListener(
+                "submit",
+                function(event) {
+
+                    if (
+                        !cargarFechasEnFormulario(
+                            this
+                        )
+                    ) {
+
+                        event.preventDefault();
+                        return;
+
+                    }
+
+
+                    const grupo =
+                        document.getElementById(
+                            "grupo_sucursales"
+                        ).value;
+
+
+                    const codigos =
+                        document.getElementById(
+                            "codigos_sucursales"
+                        ).value.trim();
+
+
+                    if (
+                        grupo
+                        === "__personalizada__"
+                        && !codigos
+                    ) {
+
+                        alert(
+                            "Debe seleccionar "
+                            + "al menos una sucursal."
+                        );
+
+                        event.preventDefault();
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+/* ============================================================
+   INICIALIZAR
+   ============================================================ */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        actualizarSeleccionSucursal();
+
+    }
+);
+
 </script>
 
 {% endblock %}
