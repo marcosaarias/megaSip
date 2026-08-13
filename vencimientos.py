@@ -54,7 +54,7 @@ ALIAS = {
     "descripcion": ["descripcion", "description", "desc"],
     "desde": ["desde", "from"],
     "hasta": ["hasta", "to"],
-    "promo": ["acciones", "acciones a realizar", "actions"]
+    "promo": ["acciones", "acciones a realizar", "actions","Accion"]
 }
 
 MAYORISTA_CODES = set(MAYORISTA.values())
