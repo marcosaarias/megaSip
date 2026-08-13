@@ -4,7 +4,7 @@ SUCURSAL_MAP = {
     "Jujuy - Mayorista": "CO05,CO12,CO15,MA02",
     "Salta - Mayorista": "CO09,CO29,CO21",
     "Tucuman - Mayorista": "CO24,CO25",
-    "Oran - Mayorista": "CO21",git 
+    "Oran - Mayorista": "CO21",
     "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO26,CO27,CO28",
     "Jujuy - Minoristas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
     "Salta - Minoristas": "CO18,CO23",
