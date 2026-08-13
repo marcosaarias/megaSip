@@ -23,127 +23,262 @@ def preparar_df_sistemas(df):
 @cenefas_sistemas_bp.route("/", methods=["GET", "POST"])
 @login_requerido("sistemas")
 def index():
+
     preview = None
     mensaje_error = None
     total_registros = 0
 
-    fecha_desde = request.form.get("fecha_desde") or ""
-    fecha_hasta = request.form.get("fecha_hasta") or ""
-    grupo_sucursales = request.form.get("grupo_sucursales") or ""
+    fecha_desde = (
+        request.form.get("fecha_desde")
+        or ""
+    ).strip()
+
+    fecha_hasta = (
+        request.form.get("fecha_hasta")
+        or ""
+    ).strip()
+
+    grupo_sucursales = (
+        request.form.get("grupo_sucursales")
+        or ""
+    ).strip()
 
     codigos_sucursales = (
-    request.form.get("codigos_sucursales")
-    or ""
+        request.form.get("codigos_sucursales")
+        or ""
     ).strip().upper()
 
     if request.method == "POST":
-        archivo = request.files.get("archivo")
-        lote_id = session.get("cenefas_sistemas_lote_id")
+
+        archivo = request.files.get(
+            "archivo"
+        )
+
+        lote_id = session.get(
+            "cenefas_sistemas_lote_id"
+        )
 
         try:
+
             df = None
 
-            print("==== DEBUG CENEFAS SISTEMAS ====")
-            print("Grupo seleccionado:", grupo_sucursales)
-            print("Codigos del grupo:", SUCURSAL_MAP.get(grupo_sucursales, "NO ENCONTRADO"))
-            print("Lote actual:", lote_id)
+            print(
+                "==== DEBUG CENEFAS SISTEMAS ===="
+            )
+
+            print(
+                "Grupo seleccionado:",
+                repr(grupo_sucursales)
+            )
+
+            print(
+                "Códigos enviados:",
+                repr(codigos_sucursales)
+            )
+
+            # ==================================================
+            # ARCHIVO NUEVO
+            # ==================================================
 
             if archivo and archivo.filename:
-                print("Archivo recibido:", archivo.filename)
 
-                df, preview, mensaje_error, total_registros = procesar_archivo_cenefas(
+                print(
+                    "Archivo recibido:",
+                    archivo.filename
+                )
+
+                (
+                    df,
+                    _,
+                    mensaje_error,
+                    total_registros,
+                ) = procesar_archivo_cenefas(
                     archivo=archivo,
                     tipo="mayorista",
                     fecha_desde=fecha_desde,
-                    fecha_hasta=fecha_hasta
+                    fecha_hasta=fecha_hasta,
                 )
 
-                print("DF despues de procesar_archivo_cenefas:")
-                print("Columnas:", df.columns.tolist() if df is not None else None)
+                if df is None:
+                    raise ValueError(
+                        mensaje_error
+                        or (
+                            "No se pudo procesar "
+                            "el archivo."
+                        )
+                    )
 
-                if df is not None:
-                    print("Primeras filas ANTES de aplicar grupo:")
-                    print(df.head().to_string())
+                print(
+                    "Sucursales ANTES "
+                    "de aplicar selección:"
+                )
 
-                    lote_id = str(uuid.uuid4())
-                    session["cenefas_sistemas_lote_id"] = lote_id
+                if "sucursales" in df.columns:
+                    print(
+                        df["sucursales"]
+                        .head()
+                        .tolist()
+                    )
+
+                # Siempre generar un lote nuevo
+                lote_id = str(
+                    uuid.uuid4()
+                )
+
+                session[
+                    "cenefas_sistemas_lote_id"
+                ] = lote_id
+
+            # ==================================================
+            # RECUPERAR TEMPORAL
+            # ==================================================
 
             else:
-                print("No vino archivo. Recuperando temporal...")
-                df = recuperar_temporal(lote_id)
 
-                print("DF recuperado:")
-                print("Columnas:", df.columns.tolist() if df is not None else None)
+                print(
+                    "No vino archivo. "
+                    "Recuperando temporal..."
+                )
 
-                if df is not None:
-                    print("Primeras filas recuperadas:")
-                    print(df.head().to_string())
+                if not lote_id:
+                    raise ValueError(
+                        "No existe un archivo "
+                        "temporal para procesar."
+                    )
 
-#            if df is not None and grupo_sucursales:
-#                codigos = SUCURSAL_MAP.get(grupo_sucursales, "")
+                df = recuperar_temporal(
+                    lote_id
+                )
 
-#                print("Aplicando grupo:", grupo_sucursales)
-#                print("Codigos a aplicar:", codigos)
+                if df is None:
+                    raise ValueError(
+                        "El archivo temporal "
+                        "no existe o venció."
+                    )
 
-#                if codigos:
-#                    df["sucursales"] = codigos
+            # ==================================================
+            # APLICAR SUCURSALES
+            #
+            # IMPORTANTE:
+            # ESTE BLOQUE ESTÁ FUERA DEL IF/ELSE ANTERIOR
+            # ==================================================
 
-#                    print("Primeras filas DESPUES de aplicar grupo:")
-#                    print(df.head().to_string())
+            if (
+                df is not None
+                and grupo_sucursales
+            ):
 
+                # ----------------------------------------------
+                # SELECCIÓN PERSONALIZADA
+                # ----------------------------------------------
 
-                if df is not None and grupo_sucursales:
+                if (
+                    grupo_sucursales
+                    == "__personalizada__"
+                ):
 
-                    # Selección personalizada
-                    if grupo_sucursales == "__personalizada__":
-
-                        if not codigos_sucursales:
-                            raise ValueError(
-                                "Debe seleccionar al menos una sucursal."
-                            )
-
-                        codigos = codigos_sucursales
-
-                    # Grupo definido en SUCURSAL_MAP
-                    else:
-
-                        codigos = SUCURSAL_MAP.get(
-                            grupo_sucursales,
-                            ""
+                    if not codigos_sucursales:
+                        raise ValueError(
+                            "Debe seleccionar "
+                            "al menos una sucursal."
                         )
 
-                        if not codigos:
-                            raise ValueError(
-                                "El grupo de sucursales seleccionado no es válido."
-                            )
+                    codigos = (
+                        codigos_sucursales
+                    )
 
-                    print("Aplicando grupo:", grupo_sucursales)
-                    print("Codigos a aplicar:", codigos)
+                # ----------------------------------------------
+                # GRUPO PREDEFINIDO
+                # ----------------------------------------------
 
-                    df["sucursales"] = codigos
+                else:
 
-                    print("Primeras filas DESPUES de aplicar grupo:")
-                    print(df.head().to_string())
+                    codigos = SUCURSAL_MAP.get(
+                        grupo_sucursales,
+                        "",
+                    )
 
+                    if not codigos:
+                        raise ValueError(
+                            "El grupo de sucursales "
+                            "seleccionado no es válido."
+                        )
+
+                print(
+                    "Aplicando grupo:",
+                    grupo_sucursales
+                )
+
+                print(
+                    "Códigos finales:",
+                    codigos
+                )
+
+                # ESTE ES EL REEMPLAZO
+                df["sucursales"] = codigos
+
+                print(
+                    "Sucursales DESPUÉS "
+                    "de aplicar selección:"
+                )
+
+                print(
+                    df["sucursales"]
+                    .head()
+                    .tolist()
+                )
+
+            # ==================================================
+            # GENERAR PREVIEW
+            # ==================================================
 
             if df is not None:
 
-                df_salida = preparar_df_sistemas(df)
-
-                preview = df_salida.to_html(
-                    classes="table table-striped table-bordered",
-                    index=False
+                df_salida = (
+                    preparar_df_sistemas(
+                        df
+                    )
                 )
 
-                total_registros = len(df_salida)
-                guardar_temporal(lote_id, df_salida)
+                preview = (
+                    df_salida.to_html(
+                        classes=(
+                            "table "
+                            "table-striped "
+                            "table-bordered"
+                        ),
+                        index=False,
+                    )
+                )
 
-                session["cenefas_sistemas_fecha_desde"] = fecha_desde
-                session["cenefas_sistemas_fecha_hasta"] = fecha_hasta
+                total_registros = len(
+                    df_salida
+                )
+
+                # Guardamos YA CON las sucursales elegidas.
+                guardar_temporal(
+                    lote_id,
+                    df_salida,
+                )
+
+                session[
+                    "cenefas_sistemas_fecha_desde"
+                ] = fecha_desde
+
+                session[
+                    "cenefas_sistemas_fecha_hasta"
+                ] = fecha_hasta
 
         except Exception as e:
-            print("ERROR DEBUG:", e)
-            mensaje_error = f"Error de backend: {e}"
+
+            print(
+                "ERROR DEBUG:",
+                e
+            )
+
+            mensaje_error = (
+                f"Error de backend: {e}"
+            )
 
     return render_template(
         "cenefas_sistemas.html",
@@ -153,7 +288,7 @@ def index():
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta,
         grupo_sucursales=grupo_sucursales,
-        sucursal_map=SUCURSAL_MAP
+        sucursal_map=SUCURSAL_MAP,
     )
 
 @cenefas_sistemas_bp.route("/descargar", methods=["POST"])
