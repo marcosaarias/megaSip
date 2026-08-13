@@ -22,7 +22,7 @@ from werkzeug.utils import secure_filename
 
 SUCURSAL_MAP = {
     "Total Empresa": "CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02",
-    "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO24,CO29,MA02",
+    "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO24,CO25,CO29,MA02",
     "Jujuy - Mayorista": "CO05,CO12,CO15,MA02",
     "Salta - Mayorista": "CO09,CO29,CO21",
     "Oran - Mayorista": "CO21",
@@ -96,13 +96,15 @@ SUCURSAL_MAP = {
         "Total-empresa-minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO24,CO25,CO26,CO27,CO28",
         "tucuman": "CO24,CO25,CO26,CO27",
         "jujuy": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
-        "salta": "CO18,CO23"
+        "salta": "CO18,CO23",
+        "tucuman":"CO26,CO27"
     },
     "mayorista": {
         "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO29,MA02",
         "jujuy": "CO05,CO12,CO15,MA02",
         "salta": "CO09,CO29,CO21",
-        "oran": "CO21"
+        "oran": "CO21",
+        "tucuman":"CO24,CO25"
     }
 }
 
