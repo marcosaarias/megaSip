@@ -18,6 +18,8 @@ import unicodedata
 from psycopg2.extras import RealDictCursor
 from pathlib import Path
 from werkzeug.utils import secure_filename
+from openpyxl import load_workbook
+from io import BytesIO
 
 
 SUCURSAL_MAP = {
@@ -108,6 +110,76 @@ SUCURSAL_MAP = {
     }
 }
 
+def crear_dataframe_solo_valores(
+    archivo,
+    hoja_objetivo,
+    fila_header,
+):
+    """
+    Lee el Excel usando los valores calculados guardados
+    en el archivo.
+
+    Las fórmulas no se copian al DataFrame:
+    se toma únicamente su último resultado calculado.
+    """
+
+    archivo.seek(0)
+
+    contenido = archivo.read()
+
+    # Trabajamos sobre una copia en memoria.
+    buffer_valores = BytesIO(contenido)
+
+    workbook = load_workbook(
+        buffer_valores,
+        data_only=True,
+        read_only=True,
+    )
+
+    if hoja_objetivo not in workbook.sheetnames:
+        raise ValueError(
+            f"No existe la hoja '{hoja_objetivo}'."
+        )
+
+    hoja = workbook[hoja_objetivo]
+
+    filas = list(
+        hoja.iter_rows(
+            values_only=True
+        )
+    )
+
+    if not filas:
+        raise ValueError(
+            "La hoja seleccionada está vacía."
+        )
+
+    if fila_header >= len(filas):
+        raise ValueError(
+            "No se pudo localizar correctamente "
+            "la fila de encabezados."
+        )
+
+    # fila_header ya es índice base 0,
+    # igual que en tu procesamiento actual.
+    encabezados = list(
+        filas[fila_header]
+    )
+
+    datos = filas[
+        fila_header + 1:
+    ]
+
+    df = pd.DataFrame(
+        datos,
+        columns=encabezados,
+    )
+
+    # Volver a dejar disponible el archivo
+    # por si otra función necesita leerlo.
+    archivo.seek(0)
+
+    return df
 
 def limpiar_codigo(valor):
     if pd.isna(valor):
@@ -724,11 +796,17 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
             mensaje_error = "No se encontró la fila de encabezados (CODIGO)."
             return None, None, mensaje_error, 0
 
-        df = pd.read_excel(
-            excel_file,
-            sheet_name=hoja_objetivo,
-            header=fila_header,
-            dtype=str
+        #df = pd.read_excel(
+        #    excel_file,
+        #    sheet_name=hoja_objetivo,
+        #    header=fila_header,
+        #    dtype=str
+        #)
+
+        df = crear_dataframe_solo_valores(
+            archivo=archivo,
+            hoja_objetivo=hoja_objetivo,
+            fila_header=fila_header,
         )
 
         df.columns = [
