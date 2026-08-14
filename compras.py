@@ -84,7 +84,7 @@ ALIAS = {
     "DESCRIPCION": ["descripcion", "DESCRIPCION", "Descripción", "Descrip", "nombre", "texto breve de material", "Texto breve de material"],
     "Normal": ["normal", "precio normal", "precio unitario", "Precio", "PVN", "pvn", "Nrmal"],
     "Oferta": ["oferta"],
-    "cenefa": ["cenefa", "cenefas", "Cenefas","Promo"],
+    "cenefa": ["cenefa", "cenefas", "Cenefas","Promo","promo","PROMO"],
     "desde": ["desde", "inicio"],
     "hasta": ["hasta", "fin"],
     "sucursales": ["sucursales", "tiendas", "sap", "SAP", "Sap"],
