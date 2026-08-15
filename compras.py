@@ -116,18 +116,16 @@ def crear_dataframe_solo_valores(
     fila_header,
 ):
     """
-    Lee el Excel usando los valores calculados guardados
-    en el archivo.
+    Lee el Excel usando los valores calculados
+    almacenados en el archivo.
 
     Las fórmulas no se copian al DataFrame:
     se toma únicamente su último resultado calculado.
     """
 
     archivo.seek(0)
-
     contenido = archivo.read()
 
-    # Trabajamos sobre una copia en memoria.
     buffer_valores = BytesIO(contenido)
 
     workbook = load_workbook(
@@ -137,6 +135,9 @@ def crear_dataframe_solo_valores(
     )
 
     if hoja_objetivo not in workbook.sheetnames:
+        workbook.close()
+        archivo.seek(0)
+
         raise ValueError(
             f"No existe la hoja '{hoja_objetivo}'."
         )
@@ -149,6 +150,9 @@ def crear_dataframe_solo_valores(
         )
     )
 
+    workbook.close()
+    archivo.seek(0)
+
     if not filas:
         raise ValueError(
             "La hoja seleccionada está vacía."
@@ -160,11 +164,41 @@ def crear_dataframe_solo_valores(
             "la fila de encabezados."
         )
 
-    # fila_header ya es índice base 0,
-    # igual que en tu procesamiento actual.
-    encabezados = list(
+    encabezados_originales = list(
         filas[fila_header]
     )
+
+    # ---------------------------------------------
+    # NORMALIZAR ENCABEZADOS
+    # ---------------------------------------------
+
+    encabezados = []
+    contador = {}
+
+    for encabezado in encabezados_originales:
+
+        if encabezado is None:
+            encabezado = ""
+
+        encabezado = str(encabezado).strip()
+
+        # Evitar columnas duplicadas.
+        if encabezado in contador:
+
+            contador[encabezado] += 1
+
+            encabezado_final = (
+                f"{encabezado}."
+                f"{contador[encabezado]}"
+            )
+
+        else:
+            contador[encabezado] = 0
+            encabezado_final = encabezado
+
+        encabezados.append(
+            encabezado_final
+        )
 
     datos = filas[
         fila_header + 1:
@@ -174,10 +208,6 @@ def crear_dataframe_solo_valores(
         datos,
         columns=encabezados,
     )
-
-    # Volver a dejar disponible el archivo
-    # por si otra función necesita leerlo.
-    archivo.seek(0)
 
     return df
 
@@ -1911,7 +1941,7 @@ def sucursal():
         #print("DEBUG desde:", desde, "hasta:", hasta)
 
         #if sucursal_codigo in lista_suc and desde <= hoy <= hasta:
-        inicio_visualizacion = desde - timedelta(days=2)
+        inicio_visualizacion = desde - timedelta(days=3)
         if sucursal_codigo in lista_suc and inicio_visualizacion <= hoy <= hasta:
 
             filtradas.append({
