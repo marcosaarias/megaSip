@@ -654,115 +654,115 @@ def autocompletar_farmacia_desde_folder(df):
 # Obtener vigencias de folder farmacias
 #===============================================
 
-def obtener_vigencia_farmacia():
-    conn = get_db_connection()
-    cur = conn.cursor()
+#def obtener_vigencia_farmacia():
+#    conn = get_db_connection()
+#    cur = conn.cursor()
 
-    try:
-        cur.execute("""
-            SELECT
-                MIN(fecha_desde) AS desde_min,
-                MAX(fecha_hasta) AS hasta_max
-            FROM farmacia_folder
-            WHERE tipo_cenefa = 'folder'
-              AND fecha_desde IS NOT NULL
-              AND fecha_hasta IS NOT NULL
-              AND fecha_desde <> 'fecha_desde'
-              AND fecha_hasta <> 'fecha_hasta'
-              AND fecha_desde <> ''
-              AND fecha_hasta <> ''
-        """)
+#    try:
+#        cur.execute("""
+#            SELECT
+#                MIN(fecha_desde) AS desde_min,
+#                MAX(fecha_hasta) AS hasta_max
+#            FROM farmacia_folder
+#            WHERE tipo_cenefa = 'folder'
+#              AND fecha_desde IS NOT NULL
+#              AND fecha_hasta IS NOT NULL
+#              AND fecha_desde <> 'fecha_desde'
+#              AND fecha_hasta <> 'fecha_hasta'
+#              AND fecha_desde <> ''
+#              AND fecha_hasta <> ''
+#        """)
 
-        row = cur.fetchone()
+#        row = cur.fetchone()
 
-        print("================================", flush=True)
-        print("DEBUG VIGENCIA FARMACIA", flush=True)
-        print("ROW:", row, flush=True)
+#        print("================================", flush=True)
+#        print("DEBUG VIGENCIA FARMACIA", flush=True)
+#        print("ROW:", row, flush=True)
 
-    finally:
-        cur.close()
-        conn.close()
+#    finally:
+#        cur.close()
+#        conn.close()
 
-    if not row or not row["desde_min"] or not row["hasta_max"]:
-        return "-", "-"
+#    if not row or not row["desde_min"] or not row["hasta_max"]:
+#        return "-", "-"
 
-    return (
-        pd.to_datetime(row["desde_min"]).strftime("%d/%m/%Y"),
-        pd.to_datetime(row["hasta_max"]).strftime("%d/%m/%Y")
-    )
+#    return (
+#        pd.to_datetime(row["desde_min"]).strftime("%d/%m/%Y"),
+#        pd.to_datetime(row["hasta_max"]).strftime("%d/%m/%Y")
+#    )
 
-def obtener_vigencia_farmacia():
-    conn = get_db_connection()
-    cur = conn.cursor()
+#def obtener_vigencia_farmacia():
+#    conn = get_db_connection()
+#    cur = conn.cursor()
 
-    try:
-        cur.execute("""
-            SELECT
-                MIN(fecha_desde) AS desde_min,
-                MAX(fecha_hasta) AS hasta_max
-            FROM farmacia_folder
-            WHERE fecha_desde IS NOT NULL
-              AND fecha_hasta IS NOT NULL
-              AND fecha_desde <> 'fecha_desde'
-              AND fecha_hasta <> 'fecha_hasta'
-              AND fecha_desde <> ''
-              AND fecha_hasta <> ''
-        """)
+#    try:
+#        cur.execute("""
+#            SELECT
+#                MIN(fecha_desde) AS desde_min,
+#                MAX(fecha_hasta) AS hasta_max
+#            FROM farmacia_folder
+#            WHERE fecha_desde IS NOT NULL
+#              AND fecha_hasta IS NOT NULL
+#              AND fecha_desde <> 'fecha_desde'
+#              AND fecha_hasta <> 'fecha_hasta'
+#              AND fecha_desde <> ''
+#              AND fecha_hasta <> ''
+#        """)
 
-        row = cur.fetchone()
+#        row = cur.fetchone()
 
-        print("================================", flush=True)
-        print("DEBUG VIGENCIA FARMACIA", flush=True)
-        print("ROW:", row, flush=True)
-        print("TIPO:", type(row), flush=True)
+#        print("================================", flush=True)
+#        print("DEBUG VIGENCIA FARMACIA", flush=True)
+#        print("ROW:", row, flush=True)
+#        print("TIPO:", type(row), flush=True)
 
-        if row:
-            try:
-                print("KEYS:", list(row.keys()), flush=True)
-            except Exception as e:
-                print("NO TIENE KEYS():", e, flush=True)
+#        if row:
+#            try:
+#                print("KEYS:", list(row.keys()), flush=True)
+#            except Exception as e:
+#                print("NO TIENE KEYS():", e, flush=True)
 
-    finally:
-        cur.close()
-        conn.close()
+#    finally:
+#        cur.close()
+#        conn.close()
 
-    if not row:
-        print("SIN RESULTADOS", flush=True)
-        return "-", "-"
+#    if not row:
+#        print("SIN RESULTADOS", flush=True)
+#        return "-", "-"
 
-    try:
-        desde = row["desde_min"]
-        hasta = row["hasta_max"]
-    except Exception as e:
-        print("ERROR ACCEDIENDO POR NOMBRE:", e, flush=True)
+#    try:
+#        desde = row["desde_min"]
+#        hasta = row["hasta_max"]
+#    except Exception as e:
+#        print("ERROR ACCEDIENDO POR NOMBRE:", e, flush=True)
 
-        try:
-            desde = row[0]
-            hasta = row[1]
-            print("ACCESO POR INDICE OK", flush=True)
-        except Exception as e2:
-            print("ERROR ACCEDIENDO POR INDICE:", e2, flush=True)
-            return "-", "-"
+#        try:
+#            desde = row[0]
+#            hasta = row[1]
+#            print("ACCESO POR INDICE OK", flush=True)
+#        except Exception as e2:
+#            print("ERROR ACCEDIENDO POR INDICE:", e2, flush=True)
+#            return "-", "-"
 
-    print("DESDE RAW:", desde, flush=True)
-    print("HASTA RAW:", hasta, flush=True)
+#    print("DESDE RAW:", desde, flush=True)
+#    print("HASTA RAW:", hasta, flush=True)
 
-    if not desde or not hasta:
-        print("DESDE/HASTA VACIOS", flush=True)
-        return "-", "-"
+#    if not desde or not hasta:
+#        print("DESDE/HASTA VACIOS", flush=True)
+#        return "-", "-"
 
-    try:
-        desde_fmt = pd.to_datetime(desde).strftime("%d/%m/%Y")
-        hasta_fmt = pd.to_datetime(hasta).strftime("%d/%m/%Y")
+#    try:
+#        desde_fmt = pd.to_datetime(desde).strftime("%d/%m/%Y")
+#        hasta_fmt = pd.to_datetime(hasta).strftime("%d/%m/%Y")
 
-        print("DESDE FORMATEADO:", desde_fmt, flush=True)
-        print("HASTA FORMATEADO:", hasta_fmt, flush=True)
+#        print("DESDE FORMATEADO:", desde_fmt, flush=True)
+#        print("HASTA FORMATEADO:", hasta_fmt, flush=True)
 
-        return desde_fmt, hasta_fmt
+#        return desde_fmt, hasta_fmt
 
-    except Exception as e:
-        print("ERROR FORMATEANDO FECHAS:", e, flush=True)
-        return "-", "-"
+#    except Exception as e:
+#        print("ERROR FORMATEANDO FECHAS:", e, flush=True)
+#        return "-", "-"
 
 #================================================================
 # obtener vigencia super
@@ -822,6 +822,134 @@ def obtener_vigencia_farmacia():
 #        )
 
 #        return "-", "-"
+
+def obtener_vigencia_farmacia():
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute(
+            """
+            WITH ultimo_lote AS (
+                SELECT lote_carga
+                FROM farmacia_folder
+                WHERE tipo_cenefa = 'folder'
+                  AND lote_carga IS NOT NULL
+                  AND TRIM(lote_carga) <> ''
+                ORDER BY fecha_carga DESC
+                LIMIT 1
+            )
+
+            SELECT
+                MIN(
+                    CASE
+                        WHEN TRIM(fecha_desde)
+                             ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+                            THEN TO_DATE(
+                                TRIM(fecha_desde),
+                                'YYYY-MM-DD'
+                            )
+
+                        WHEN TRIM(fecha_desde)
+                             ~ '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'
+                            THEN TO_DATE(
+                                TRIM(fecha_desde),
+                                'DD/MM/YYYY'
+                            )
+
+                        ELSE NULL
+                    END
+                ) AS desde_min,
+
+                MAX(
+                    CASE
+                        WHEN TRIM(fecha_hasta)
+                             ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+                            THEN TO_DATE(
+                                TRIM(fecha_hasta),
+                                'YYYY-MM-DD'
+                            )
+
+                        WHEN TRIM(fecha_hasta)
+                             ~ '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'
+                            THEN TO_DATE(
+                                TRIM(fecha_hasta),
+                                'DD/MM/YYYY'
+                            )
+
+                        ELSE NULL
+                    END
+                ) AS hasta_max
+
+            FROM farmacia_folder
+
+            WHERE tipo_cenefa = 'folder'
+
+              AND lote_carga = (
+                    SELECT lote_carga
+                    FROM ultimo_lote
+              )
+
+              AND fecha_desde IS NOT NULL
+              AND fecha_hasta IS NOT NULL
+
+              AND TRIM(fecha_desde) <> ''
+              AND TRIM(fecha_hasta) <> ''
+            """
+        )
+
+        row = cur.fetchone()
+
+    finally:
+
+        cur.close()
+        conn.close()
+
+    if not row:
+        return "-", "-"
+
+    try:
+        desde = row["desde_min"]
+        hasta = row["hasta_max"]
+
+    except (
+        TypeError,
+        KeyError,
+    ):
+        desde = row[0]
+        hasta = row[1]
+
+    if not desde or not hasta:
+        return "-", "-"
+
+    try:
+
+        return (
+            pd.to_datetime(
+                desde
+            ).strftime(
+                "%d/%m/%Y"
+            ),
+
+            pd.to_datetime(
+                hasta
+            ).strftime(
+                "%d/%m/%Y"
+            ),
+        )
+
+    except Exception as error:
+
+        print(
+            "ERROR FORMATEANDO "
+            "VIGENCIA FARMACIA:",
+            repr(error),
+            flush=True,
+        )
+
+        return "-", "-"
 
 
 def obtener_vigencia_super():
