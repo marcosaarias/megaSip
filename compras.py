@@ -28,7 +28,7 @@ SUCURSAL_MAP = {
     "Jujuy - Mayorista": "CO05,CO12,CO15,MA02",
     "Salta - Mayorista": "CO09,CO29,CO21",
     "Oran - Mayorista": "CO21",
-    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO25,CO26,CO27,CO28",
+    "Total Empresa Minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO26,CO27,CO28",
     "Jujuy - Minoristas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
     "Salta - Minoristas": "CO18,CO23",
     "Jujuy, Salta - Minoritas": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO28",
@@ -95,14 +95,14 @@ ALIAS = {
 
 SUCURSAL_MAP = {
     "minorista": {
-        "Total-empresa-minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO24,CO25,CO26,CO27,CO28",
-        "tucuman": "CO24,CO25,CO26,CO27",
+        "Total-empresa-minorista": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO26,CO27,CO28",
+        "tucuman": "CO26,CO27",
         "jujuy": "CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28",
         "salta": "CO18,CO23",
         "tucuman":"CO26,CO27"
     },
     "mayorista": {
-        "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO29,MA02",
+        "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO24,CO25,CO29,MA02",
         "jujuy": "CO05,CO12,CO15,MA02",
         "salta": "CO09,CO29,CO21",
         "oran": "CO21",
