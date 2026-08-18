@@ -17,7 +17,12 @@ from database.db import get_db_connection
 rubros_bp = Blueprint("rubros", __name__)
 
 
+# ============================================================
+# GUARDAR / ACTUALIZAR RUBROS EN BASE DE DATOS
+# ============================================================
+
 def guardar_tabla_rubros_en_db(df):
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -26,19 +31,55 @@ def guardar_tabla_rubros_en_db(df):
     omitidos = 0
 
     try:
+
         for _, row in df.iterrows():
+
             idrubro = row.get("idrubro")
             nombre = row.get("nombre")
+
+            # ------------------------------------------------
+            # VALIDAR CAMPOS OBLIGATORIOS
+            # ------------------------------------------------
 
             if pd.isna(idrubro) or pd.isna(nombre):
                 omitidos += 1
                 continue
 
-            nombre = str(nombre).strip()
+            # ------------------------------------------------
+            # NORMALIZAR ID RUBRO
+            # ------------------------------------------------
+
+            try:
+
+                idrubro = int(
+                    float(
+                        str(idrubro).strip()
+                    )
+                )
+
+            except (
+                TypeError,
+                ValueError,
+            ):
+
+                omitidos += 1
+                continue
+
+            # ------------------------------------------------
+            # NORMALIZAR NOMBRE
+            # ------------------------------------------------
+
+            nombre = str(
+                nombre
+            ).strip()
 
             if not nombre:
                 omitidos += 1
                 continue
+
+            # ------------------------------------------------
+            # INSERT / UPDATE
+            # ------------------------------------------------
 
             cursor.execute(
                 """
@@ -47,13 +88,17 @@ def guardar_tabla_rubros_en_db(df):
                     nombre
                 )
                 VALUES (%s, %s)
+
                 ON CONFLICT (idrubro)
+
                 DO UPDATE SET
                     nombre = EXCLUDED.nombre
-                RETURNING (xmax = 0) AS insertado
+
+                RETURNING
+                    (xmax = 0) AS insertado
                 """,
                 (
-                    int(idrubro),
+                    idrubro,
                     nombre,
                 ),
             )
@@ -67,13 +112,22 @@ def guardar_tabla_rubros_en_db(df):
 
         conn.commit()
 
-        # Como se insertan IDs manualmente, se actualiza la secuencia.
+        # ----------------------------------------------------
+        # ACTUALIZAR SECUENCIA
+        # ----------------------------------------------------
+
         cursor.execute(
             """
             SELECT setval(
-                pg_get_serial_sequence('rubros', 'idrubro'),
+                pg_get_serial_sequence(
+                    'rubros',
+                    'idrubro'
+                ),
                 COALESCE(
-                    (SELECT MAX(idrubro) FROM rubros),
+                    (
+                        SELECT MAX(idrubro)
+                        FROM rubros
+                    ),
                     1
                 ),
                 true
@@ -90,86 +144,206 @@ def guardar_tabla_rubros_en_db(df):
         }
 
     except Exception:
+
         conn.rollback()
         raise
 
     finally:
+
         cursor.close()
         conn.close()
 
 
-@rubros_bp.route("/", methods=["GET", "POST"])
-def rubros_view():
-    if request.method == "POST":
-        archivo = request.files.get("archivo")
+# ============================================================
+# VISTA RUBROS
+# ============================================================
 
-        if not archivo or archivo.filename == "":
+@rubros_bp.route(
+    "/",
+    methods=["GET", "POST"],
+)
+def rubros_view():
+
+    # ========================================================
+    # POST - CARGAR EXCEL
+    # ========================================================
+
+    if request.method == "POST":
+
+        archivo = request.files.get(
+            "archivo"
+        )
+
+        if (
+            not archivo
+            or archivo.filename == ""
+        ):
+
             flash(
                 "Debe seleccionar un archivo Excel.",
                 "danger",
             )
+
             return redirect(
-                url_for("rubros.rubros_view")
+                url_for(
+                    "rubros.rubros_view"
+                )
             )
 
         try:
+
+            # ------------------------------------------------
+            # LEER EXCEL
+            # ------------------------------------------------
+
             df = pd.read_excel(
                 archivo,
                 dtype=object,
             )
+
+            # ------------------------------------------------
+            # NORMALIZAR ENCABEZADOS
+            # ------------------------------------------------
 
             df.columns = (
                 df.columns
                 .astype(str)
                 .str.strip()
                 .str.lower()
-                .str.replace(" ", "_", regex=False)
+                .str.replace(
+                    " ",
+                    "_",
+                    regex=False,
+                )
             )
+
+            # ------------------------------------------------
+            # VALIDAR COLUMNAS
+            # ------------------------------------------------
 
             columnas_requeridas = {
                 "idrubro",
                 "nombre",
             }
 
-            if not columnas_requeridas.issubset(df.columns):
+            if not columnas_requeridas.issubset(
+                df.columns
+            ):
+
                 flash(
                     (
-                        "El Excel debe contener las columnas "
+                        "El Excel debe contener "
+                        "las columnas "
                         "'idrubro' y 'nombre'."
                     ),
                     "danger",
                 )
+
                 return redirect(
-                    url_for("rubros.rubros_view")
+                    url_for(
+                        "rubros.rubros_view"
+                    )
                 )
 
-            resultado = guardar_tabla_rubros_en_db(df)
+            # ------------------------------------------------
+            # DEBUG TEMPORAL
+            # ------------------------------------------------
+
+            print(
+                "=== CARGA RUBROS ===",
+                flush=True,
+            )
+
+            print(
+                "COLUMNAS:",
+                df.columns.tolist(),
+                flush=True,
+            )
+
+            print(
+                "FILAS:",
+                len(df),
+                flush=True,
+            )
+
+            print(
+                df[
+                    [
+                        "idrubro",
+                        "nombre",
+                    ]
+                ]
+                .head(20)
+                .to_dict(
+                    orient="records"
+                ),
+                flush=True,
+            )
+
+            # ------------------------------------------------
+            # GUARDAR UNA SOLA VEZ
+            # ------------------------------------------------
+
+            resultado = (
+                guardar_tabla_rubros_en_db(
+                    df
+                )
+            )
+
+            print(
+                "RESULTADO GUARDADO:",
+                resultado,
+                flush=True,
+            )
+
+            # ------------------------------------------------
+            # MENSAJE
+            # ------------------------------------------------
 
             flash(
                 (
-                    "Tabla rubros actualizada correctamente. "
-                    f"Insertados: {resultado['insertados']}. "
-                    f"Actualizados: {resultado['actualizados']}. "
-                    f"Omitidos: {resultado['omitidos']}."
+                    "Tabla rubros actualizada "
+                    "correctamente. "
+                    f"Insertados: "
+                    f"{resultado['insertados']}. "
+                    f"Actualizados: "
+                    f"{resultado['actualizados']}. "
+                    f"Omitidos: "
+                    f"{resultado['omitidos']}."
                 ),
                 "success",
             )
 
             return redirect(
-                url_for("rubros.rubros_view")
+                url_for(
+                    "rubros.rubros_view"
+                )
             )
 
         except ValueError as error:
+
+            print(
+                "ERROR VALIDANDO EXCEL RUBROS:",
+                repr(error),
+                flush=True,
+            )
+
             flash(
-                f"El archivo Excel no es válido: {error}",
+                (
+                    "El archivo Excel "
+                    f"no es válido: {error}"
+                ),
                 "danger",
             )
 
             return redirect(
-                url_for("rubros.rubros_view")
+                url_for(
+                    "rubros.rubros_view"
+                )
             )
 
         except Exception as error:
+
             print(
                 "ERROR PROCESANDO RUBROS:",
                 repr(error),
@@ -177,20 +351,31 @@ def rubros_view():
             )
 
             flash(
-                f"Error al procesar el archivo: {error}",
+                (
+                    "Error al procesar "
+                    f"el archivo: {error}"
+                ),
                 "danger",
             )
 
             return redirect(
-                url_for("rubros.rubros_view")
+                url_for(
+                    "rubros.rubros_view"
+                )
             )
 
+    # ========================================================
+    # GET - CONSULTAR RUBROS
+    # ========================================================
+
     conn = get_db_connection()
+
     cursor = conn.cursor(
         cursor_factory=RealDictCursor
     )
 
     try:
+
         cursor.execute(
             """
             SELECT
@@ -211,11 +396,16 @@ def rubros_view():
 
         print(
             "PRIMER RUBRO:",
-            rubros[0] if rubros else None,
+            (
+                rubros[0]
+                if rubros
+                else None
+            ),
             flush=True,
         )
 
     except Exception as error:
+
         conn.rollback()
 
         print(
@@ -225,15 +415,23 @@ def rubros_view():
         )
 
         flash(
-            "No se pudo consultar la tabla de rubros.",
+            (
+                "No se pudo consultar "
+                "la tabla de rubros."
+            ),
             "danger",
         )
 
         rubros = []
 
     finally:
+
         cursor.close()
         conn.close()
+
+    # ========================================================
+    # RENDER
+    # ========================================================
 
     return render_template(
         "farmacia/rubros.html",
