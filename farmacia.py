@@ -806,7 +806,7 @@ def autocompletar_farmacia_desde_folder(df):
 #        hasta = row[1]
 
 #    if not desde or not hasta:
-        return "-", "-"
+#        return "-", "-"
 
 #    try:
 #        return (
