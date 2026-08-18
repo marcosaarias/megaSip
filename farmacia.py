@@ -187,19 +187,19 @@ def crear_tabla_metricas():
         conn.close()
 
 
-@farmacia_bp.route("/rubros")
-def rubros_view():
-    return render_template("farmacia/rubros.html")
+#@farmacia_bp.route("/rubros")
+#def rubros_view():
+#    return render_template("farmacia/rubros.html")
 
 
-@farmacia_bp.route("/subrubros")
-def subrubros_view():
-    return render_template("farmacia/subrubros.html")
+#@farmacia_bp.route("/subrubros")
+#def subrubros_view():
+#    return render_template("farmacia/subrubros.html")
 
 
-@farmacia_bp.route("/laboratorios")
-def laboratorios_view():
-    return render_template("farmacia/laboratorios.html")
+#@farmacia_bp.route("/laboratorios")
+#def laboratorios_view():
+#    return render_template("farmacia/laboratorios.html")
 
 
 @farmacia_bp.route("/archivo-maestro")
