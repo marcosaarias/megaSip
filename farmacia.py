@@ -768,30 +768,138 @@ def obtener_vigencia_farmacia():
 # obtener vigencia super
 #================================================================
 
+#def obtener_vigencia_super():
+#    conn = get_db_connection()
+#    cur = conn.cursor()
+
+#    try:
+#        cur.execute(
+#            """
+#            SELECT
+#                MIN(desde) AS desde_min,
+#                MAX(hasta) AS hasta_max
+#            FROM cenefas
+#            WHERE tipo_cenefa = 'minorista'
+#              AND desde IS NOT NULL
+#              AND hasta IS NOT NULL
+#              AND desde <> 'desde'
+#              AND hasta <> 'hasta'
+#              AND desde <> ''
+#              AND hasta <> ''
+#            """
+#        )
+
+#        row = cur.fetchone()
+
+#    finally:
+#        cur.close()
+#        conn.close()
+
+#    if not row:
+#        return "-", "-"
+
+#    try:
+#        desde = row["desde_min"]
+#        hasta = row["hasta_max"]
+#    except (TypeError, KeyError):
+#        desde = row[0]
+#        hasta = row[1]
+
+#    if not desde or not hasta:
+        return "-", "-"
+
+#    try:
+#        return (
+#            pd.to_datetime(desde).strftime("%d/%m/%Y"),
+#            pd.to_datetime(hasta).strftime("%d/%m/%Y"),
+#        )
+
+#    except Exception as error:
+#        print(
+#            "ERROR FORMATEANDO VIGENCIA SUPER:",
+#            repr(error),
+#            flush=True,
+#        )
+
+#        return "-", "-"
+
+
 def obtener_vigencia_super():
+
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
+
         cur.execute(
             """
+            WITH ultimo_lote AS (
+                SELECT lote_carga
+                FROM cenefas
+                WHERE tipo_cenefa = 'minorista'
+                  AND lote_carga IS NOT NULL
+                  AND TRIM(lote_carga) <> ''
+                ORDER BY fecha_carga DESC
+                LIMIT 1
+            )
             SELECT
-                MIN(desde) AS desde_min,
-                MAX(hasta) AS hasta_max
+                MIN(
+                    CASE
+                        WHEN TRIM(desde) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+                            THEN TO_DATE(
+                                TRIM(desde),
+                                'YYYY-MM-DD'
+                            )
+
+                        WHEN TRIM(desde) ~ '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'
+                            THEN TO_DATE(
+                                TRIM(desde),
+                                'DD/MM/YYYY'
+                            )
+
+                        ELSE NULL
+                    END
+                ) AS desde_min,
+
+                MAX(
+                    CASE
+                        WHEN TRIM(hasta) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+                            THEN TO_DATE(
+                                TRIM(hasta),
+                                'YYYY-MM-DD'
+                            )
+
+                        WHEN TRIM(hasta) ~ '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'
+                            THEN TO_DATE(
+                                TRIM(hasta),
+                                'DD/MM/YYYY'
+                            )
+
+                        ELSE NULL
+                    END
+                ) AS hasta_max
+
             FROM cenefas
+
             WHERE tipo_cenefa = 'minorista'
+
+              AND lote_carga = (
+                    SELECT lote_carga
+                    FROM ultimo_lote
+              )
+
               AND desde IS NOT NULL
               AND hasta IS NOT NULL
-              AND desde <> 'desde'
-              AND hasta <> 'hasta'
-              AND desde <> ''
-              AND hasta <> ''
+
+              AND TRIM(desde) <> ''
+              AND TRIM(hasta) <> ''
             """
         )
 
         row = cur.fetchone()
 
     finally:
+
         cur.close()
         conn.close()
 
@@ -801,7 +909,11 @@ def obtener_vigencia_super():
     try:
         desde = row["desde_min"]
         hasta = row["hasta_max"]
-    except (TypeError, KeyError):
+
+    except (
+        TypeError,
+        KeyError,
+    ):
         desde = row[0]
         hasta = row[1]
 
@@ -809,14 +921,26 @@ def obtener_vigencia_super():
         return "-", "-"
 
     try:
+
         return (
-            pd.to_datetime(desde).strftime("%d/%m/%Y"),
-            pd.to_datetime(hasta).strftime("%d/%m/%Y"),
+            pd.to_datetime(
+                desde
+            ).strftime(
+                "%d/%m/%Y"
+            ),
+
+            pd.to_datetime(
+                hasta
+            ).strftime(
+                "%d/%m/%Y"
+            ),
         )
 
     except Exception as error:
+
         print(
-            "ERROR FORMATEANDO VIGENCIA SUPER:",
+            "ERROR FORMATEANDO "
+            "VIGENCIA SUPER:",
             repr(error),
             flush=True,
         )
