@@ -203,6 +203,18 @@ def rubros_view():
 
         rubros = cursor.fetchall()
 
+        print(
+            "TOTAL RUBROS:",
+            len(rubros),
+            flush=True,
+        )
+
+        print(
+            "PRIMER RUBRO:",
+            rubros[0] if rubros else None,
+            flush=True,
+        )
+
     except Exception as error:
         conn.rollback()
 
