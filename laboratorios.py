@@ -20,28 +20,74 @@ laboratorios_bp = Blueprint(
 )
 
 
+# ============================================================
+# GUARDAR / ACTUALIZAR LABORATORIOS
+# ============================================================
+
 def guardar_tabla_laboratorios_en_db(df):
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+
+    cursor = conn.cursor(
+        cursor_factory=RealDictCursor
+    )
 
     insertados = 0
     actualizados = 0
     omitidos = 0
 
     try:
+
         for _, row in df.iterrows():
+
             codigo = row.get("codigo")
             nombre = row.get("nombre")
 
-            if pd.isna(codigo) or pd.isna(nombre):
+            # ------------------------------------------------
+            # VALIDAR VACIOS
+            # ------------------------------------------------
+
+            if (
+                pd.isna(codigo)
+                or pd.isna(nombre)
+            ):
                 omitidos += 1
                 continue
 
-            nombre = str(nombre).strip()
+            # ------------------------------------------------
+            # NORMALIZAR CODIGO
+            # ------------------------------------------------
+
+            try:
+
+                codigo = int(
+                    float(
+                        str(codigo).strip()
+                    )
+                )
+
+            except (
+                TypeError,
+                ValueError,
+            ):
+                omitidos += 1
+                continue
+
+            # ------------------------------------------------
+            # NORMALIZAR NOMBRE
+            # ------------------------------------------------
+
+            nombre = str(
+                nombre
+            ).strip()
 
             if not nombre:
                 omitidos += 1
                 continue
+
+            # ------------------------------------------------
+            # INSERT / UPDATE
+            # ------------------------------------------------
 
             cursor.execute(
                 """
@@ -50,20 +96,35 @@ def guardar_tabla_laboratorios_en_db(df):
                     nombre
                 )
                 VALUES (%s, %s)
+
                 ON CONFLICT (codigo)
+
                 DO UPDATE SET
                     nombre = EXCLUDED.nombre
-                RETURNING (xmax = 0) AS insertado
+
+                RETURNING
+                    (xmax = 0) AS insertado
                 """,
                 (
-                    int(codigo),
+                    codigo,
                     nombre,
                 ),
             )
 
             resultado = cursor.fetchone()
 
-            if resultado and resultado[0]:
+            fue_insertado = False
+
+            if resultado:
+
+                fue_insertado = bool(
+                    resultado.get(
+                        "insertado",
+                        False,
+                    )
+                )
+
+            if fue_insertado:
                 insertados += 1
             else:
                 actualizados += 1
@@ -76,21 +137,52 @@ def guardar_tabla_laboratorios_en_db(df):
             "omitidos": omitidos,
         }
 
-    except Exception:
+    except Exception as error:
+
         conn.rollback()
+
+        print(
+            "ERROR GUARDANDO LABORATORIOS:",
+            repr(error),
+            flush=True,
+        )
+
         raise
 
     finally:
+
         cursor.close()
         conn.close()
 
 
-@laboratorios_bp.route("/", methods=["GET", "POST"])
-def laboratorios_view():
-    if request.method == "POST":
-        archivo = request.files.get("archivo")
+# ============================================================
+# VISTA LABORATORIOS
+# ============================================================
 
-        if not archivo or archivo.filename == "":
+@laboratorios_bp.route(
+    "/",
+    methods=[
+        "GET",
+        "POST",
+    ],
+)
+def laboratorios_view():
+
+    # ========================================================
+    # POST - CARGAR EXCEL
+    # ========================================================
+
+    if request.method == "POST":
+
+        archivo = request.files.get(
+            "archivo"
+        )
+
+        if (
+            not archivo
+            or archivo.filename == ""
+        ):
+
             flash(
                 "Debe seleccionar un archivo Excel.",
                 "danger",
@@ -103,18 +195,48 @@ def laboratorios_view():
             )
 
         try:
+
+            # ------------------------------------------------
+            # LEER EXCEL
+            # ------------------------------------------------
+
             df = pd.read_excel(
                 archivo,
                 dtype=object,
             )
+
+            if df.empty:
+
+                flash(
+                    "El archivo Excel no contiene registros.",
+                    "danger",
+                )
+
+                return redirect(
+                    url_for(
+                        "laboratorios.laboratorios_view"
+                    )
+                )
+
+            # ------------------------------------------------
+            # NORMALIZAR ENCABEZADOS
+            # ------------------------------------------------
 
             df.columns = (
                 df.columns
                 .astype(str)
                 .str.strip()
                 .str.lower()
-                .str.replace(" ", "_", regex=False)
+                .str.replace(
+                    " ",
+                    "_",
+                    regex=False,
+                )
             )
+
+            # ------------------------------------------------
+            # VALIDAR COLUMNAS
+            # ------------------------------------------------
 
             columnas_requeridas = {
                 "codigo",
@@ -124,9 +246,17 @@ def laboratorios_view():
             if not columnas_requeridas.issubset(
                 df.columns
             ):
+
+                print(
+                    "COLUMNAS RECIBIDAS LABORATORIOS:",
+                    df.columns.tolist(),
+                    flush=True,
+                )
+
                 flash(
                     (
-                        "El Excel debe contener las columnas "
+                        "El Excel debe contener "
+                        "las columnas "
                         "'codigo' y 'nombre'."
                     ),
                     "danger",
@@ -138,9 +268,78 @@ def laboratorios_view():
                     )
                 )
 
-            resultado = (
-                guardar_tabla_laboratorios_en_db(df)
+            # ------------------------------------------------
+            # DEBUG TEMPORAL
+            # ------------------------------------------------
+
+            print(
+                "================================",
+                flush=True,
             )
+
+            print(
+                "=== CARGA LABORATORIOS ===",
+                flush=True,
+            )
+
+            print(
+                "ARCHIVO:",
+                archivo.filename,
+                flush=True,
+            )
+
+            print(
+                "COLUMNAS:",
+                df.columns.tolist(),
+                flush=True,
+            )
+
+            print(
+                "FILAS:",
+                len(df),
+                flush=True,
+            )
+
+            print(
+                (
+                    df[
+                        [
+                            "codigo",
+                            "nombre",
+                        ]
+                    ]
+                    .head(20)
+                    .to_dict(
+                        orient="records"
+                    )
+                ),
+                flush=True,
+            )
+
+            # ------------------------------------------------
+            # GUARDAR
+            # ------------------------------------------------
+
+            resultado = (
+                guardar_tabla_laboratorios_en_db(
+                    df
+                )
+            )
+
+            print(
+                "RESULTADO GUARDADO LABORATORIOS:",
+                resultado,
+                flush=True,
+            )
+
+            print(
+                "================================",
+                flush=True,
+            )
+
+            # ------------------------------------------------
+            # MENSAJE
+            # ------------------------------------------------
 
             flash(
                 (
@@ -163,6 +362,13 @@ def laboratorios_view():
             )
 
         except ValueError as error:
+
+            print(
+                "ERROR VALIDANDO EXCEL LABORATORIOS:",
+                repr(error),
+                flush=True,
+            )
+
             flash(
                 (
                     "El archivo Excel no es válido: "
@@ -178,6 +384,7 @@ def laboratorios_view():
             )
 
         except Exception as error:
+
             print(
                 "ERROR PROCESANDO LABORATORIOS:",
                 repr(error),
@@ -198,6 +405,10 @@ def laboratorios_view():
                 )
             )
 
+    # ========================================================
+    # GET - CONSULTAR LABORATORIOS
+    # ========================================================
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -205,6 +416,7 @@ def laboratorios_view():
     )
 
     try:
+
         cursor.execute(
             """
             SELECT
@@ -217,7 +429,24 @@ def laboratorios_view():
 
         laboratorios = cursor.fetchall()
 
+        print(
+            "TOTAL LABORATORIOS:",
+            len(laboratorios),
+            flush=True,
+        )
+
+        print(
+            "PRIMER LABORATORIO:",
+            (
+                laboratorios[0]
+                if laboratorios
+                else None
+            ),
+            flush=True,
+        )
+
     except Exception as error:
+
         conn.rollback()
 
         print(
@@ -228,8 +457,8 @@ def laboratorios_view():
 
         flash(
             (
-                "No se pudo consultar la tabla "
-                "de laboratorios."
+                "No se pudo consultar "
+                "la tabla de laboratorios."
             ),
             "danger",
         )
@@ -237,8 +466,13 @@ def laboratorios_view():
         laboratorios = []
 
     finally:
+
         cursor.close()
         conn.close()
+
+    # ========================================================
+    # RENDER
+    # ========================================================
 
     return render_template(
         "farmacia/laboratorios.html",
