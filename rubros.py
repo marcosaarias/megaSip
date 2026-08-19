@@ -14,17 +14,25 @@ from psycopg2.extras import RealDictCursor
 from database.db import get_db_connection
 
 
-rubros_bp = Blueprint("rubros", __name__)
+rubros_bp = Blueprint(
+    "rubros",
+    __name__,
+)
 
 
 # ============================================================
-# GUARDAR / ACTUALIZAR RUBROS EN BASE DE DATOS
+# GUARDAR / ACTUALIZAR RUBROS
 # ============================================================
 
 def guardar_tabla_rubros_en_db(df):
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+
+    # Usamos RealDictCursor explícitamente para que
+    # RETURNING pueda leerse por nombre.
+    cursor = conn.cursor(
+        cursor_factory=RealDictCursor
+    )
 
     insertados = 0
     actualizados = 0
@@ -34,26 +42,36 @@ def guardar_tabla_rubros_en_db(df):
 
         for _, row in df.iterrows():
 
-            idrubro = row.get("idrubro")
-            nombre = row.get("nombre")
+            idrubro = row.get(
+                "idrubro"
+            )
+
+            nombre = row.get(
+                "nombre"
+            )
 
             # ------------------------------------------------
-            # VALIDAR CAMPOS OBLIGATORIOS
+            # VALIDAR VACIOS
             # ------------------------------------------------
 
-            if pd.isna(idrubro) or pd.isna(nombre):
+            if (
+                pd.isna(idrubro)
+                or pd.isna(nombre)
+            ):
                 omitidos += 1
                 continue
 
             # ------------------------------------------------
-            # NORMALIZAR ID RUBRO
+            # NORMALIZAR ID
             # ------------------------------------------------
 
             try:
 
                 idrubro = int(
                     float(
-                        str(idrubro).strip()
+                        str(
+                            idrubro
+                        ).strip()
                     )
                 )
 
@@ -90,7 +108,6 @@ def guardar_tabla_rubros_en_db(df):
                 VALUES (%s, %s)
 
                 ON CONFLICT (idrubro)
-
                 DO UPDATE SET
                     nombre = EXCLUDED.nombre
 
@@ -103,12 +120,34 @@ def guardar_tabla_rubros_en_db(df):
                 ),
             )
 
-            resultado = cursor.fetchone()
+            resultado = (
+                cursor.fetchone()
+            )
 
-            if resultado and resultado[0]:
+            # ------------------------------------------------
+            # IMPORTANTE:
+            # resultado es un diccionario RealDictRow.
+            # ------------------------------------------------
+
+            fue_insertado = False
+
+            if resultado:
+
+                fue_insertado = bool(
+                    resultado.get(
+                        "insertado",
+                        False,
+                    )
+                )
+
+            if fue_insertado:
                 insertados += 1
             else:
                 actualizados += 1
+
+        # ----------------------------------------------------
+        # CONFIRMAR INSERT / UPDATE
+        # ----------------------------------------------------
 
         conn.commit()
 
@@ -143,9 +182,16 @@ def guardar_tabla_rubros_en_db(df):
             "omitidos": omitidos,
         }
 
-    except Exception:
+    except Exception as error:
 
         conn.rollback()
+
+        print(
+            "ERROR GUARDANDO RUBROS:",
+            repr(error),
+            flush=True,
+        )
+
         raise
 
     finally:
@@ -155,12 +201,15 @@ def guardar_tabla_rubros_en_db(df):
 
 
 # ============================================================
-# VISTA RUBROS
+# RUTA RUBROS
 # ============================================================
 
 @rubros_bp.route(
     "/",
-    methods=["GET", "POST"],
+    methods=[
+        "GET",
+        "POST",
+    ],
 )
 def rubros_view():
 
@@ -173,6 +222,10 @@ def rubros_view():
         archivo = request.files.get(
             "archivo"
         )
+
+        # ----------------------------------------------------
+        # VALIDAR ARCHIVO
+        # ----------------------------------------------------
 
         if (
             not archivo
@@ -202,6 +255,23 @@ def rubros_view():
             )
 
             # ------------------------------------------------
+            # VALIDAR QUE TENGA FILAS
+            # ------------------------------------------------
+
+            if df.empty:
+
+                flash(
+                    "El archivo Excel no contiene registros.",
+                    "danger",
+                )
+
+                return redirect(
+                    url_for(
+                        "rubros.rubros_view"
+                    )
+                )
+
+            # ------------------------------------------------
             # NORMALIZAR ENCABEZADOS
             # ------------------------------------------------
 
@@ -218,7 +288,7 @@ def rubros_view():
             )
 
             # ------------------------------------------------
-            # VALIDAR COLUMNAS
+            # COLUMNAS REQUERIDAS
             # ------------------------------------------------
 
             columnas_requeridas = {
@@ -229,6 +299,12 @@ def rubros_view():
             if not columnas_requeridas.issubset(
                 df.columns
             ):
+
+                print(
+                    "COLUMNAS RECIBIDAS:",
+                    df.columns.tolist(),
+                    flush=True,
+                )
 
                 flash(
                     (
@@ -250,7 +326,18 @@ def rubros_view():
             # ------------------------------------------------
 
             print(
+                "================================",
+                flush=True,
+            )
+
+            print(
                 "=== CARGA RUBROS ===",
+                flush=True,
+            )
+
+            print(
+                "ARCHIVO:",
+                archivo.filename,
                 flush=True,
             )
 
@@ -267,21 +354,24 @@ def rubros_view():
             )
 
             print(
-                df[
-                    [
-                        "idrubro",
-                        "nombre",
+                "DATOS:",
+                (
+                    df[
+                        [
+                            "idrubro",
+                            "nombre",
+                        ]
                     ]
-                ]
-                .head(20)
-                .to_dict(
-                    orient="records"
+                    .head(20)
+                    .to_dict(
+                        orient="records"
+                    )
                 ),
                 flush=True,
             )
 
             # ------------------------------------------------
-            # GUARDAR UNA SOLA VEZ
+            # GUARDAR EN POSTGRESQL
             # ------------------------------------------------
 
             resultado = (
@@ -293,6 +383,11 @@ def rubros_view():
             print(
                 "RESULTADO GUARDADO:",
                 resultado,
+                flush=True,
+            )
+
+            print(
+                "================================",
                 flush=True,
             )
 
@@ -313,6 +408,10 @@ def rubros_view():
                 ),
                 "success",
             )
+
+            # ------------------------------------------------
+            # POST / REDIRECT / GET
+            # ------------------------------------------------
 
             return redirect(
                 url_for(
@@ -365,7 +464,7 @@ def rubros_view():
             )
 
     # ========================================================
-    # GET - CONSULTAR RUBROS
+    # GET - CONSULTAR RUBROS ACTUALES
     # ========================================================
 
     conn = get_db_connection()
@@ -386,7 +485,9 @@ def rubros_view():
             """
         )
 
-        rubros = cursor.fetchall()
+        rubros = (
+            cursor.fetchall()
+        )
 
         print(
             "TOTAL RUBROS:",
@@ -430,7 +531,7 @@ def rubros_view():
         conn.close()
 
     # ========================================================
-    # RENDER
+    # RENDERIZAR
     # ========================================================
 
     return render_template(
