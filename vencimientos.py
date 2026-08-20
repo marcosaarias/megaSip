@@ -152,6 +152,9 @@ def standardize_dataframe(df):
     
     df_std = pd.DataFrame(new_data)
 
+    df_std["PROMO"] = df_std["PROMO"].replace("", pd.NA)
+    df_std["PROMO"] = df_std["PROMO"].ffill()
+    df_std["PROMO"] = df_std["PROMO"].fillna("")
     df_std[["accion", "descuento"]] = df_std["PROMO"].apply(lambda x: pd.Series(parse_promo_for_df(x)))
     df_std["cantidad"] = pd.to_numeric(df_std["cantidad"], errors="coerce")
     cantidad_promo = df_std["PROMO"].apply(cantidad_from_promo)
