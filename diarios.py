@@ -482,61 +482,244 @@ def transmitir_diario(hoja):
         flash("Cache inválido", "danger")
         return redirect(url_for("diarios.diario"))
 
-    data = redis_client.get(f"diario:{cache_id}:{hoja}")
+    # ==========================================================
+    # FUNCION INTERNA PARA RECONSTRUIR TODAS LAS HOJAS
+    # ==========================================================
+    def reconstruir_preview():
+        preview = {}
+        total_registros = {}
+        hojas_orden = []
+        estados_hojas = {}
 
-    if not data:
-        flash("No hay datos para transmitir", "danger")
-        return redirect(url_for("diarios.diario"))
+        patron = f"diario:{cache_id}:*"
 
-    df = pd.read_json(StringIO(data), orient="records")
+        for key in redis_client.scan_iter(match=patron):
+            key_str = (
+                key.decode()
+                if isinstance(key, bytes)
+                else str(key)
+            )
 
-    df = completar_ean(df)
+            partes = key_str.split(":", 2)
 
-    for col in ["departamento", "dep"]:
-        if col in df.columns:
-            df[col] = df[col].replace(["None", "none", "nan", "NaN", None], "")
+            if len(partes) != 3:
+                continue
 
-    df = completar_departamento(df)
-    df = completar_dep(df)
+            nombre_hoja = partes[2]
 
-    for col in ["Normal", "Oferta"]:
-        if col in df.columns:
-            df[col] = df[col].apply(limpiar_precio)
+            data_hoja = redis_client.get(key_str)
 
-    print(
-        df[["CODIGO", "EAN", "departamento", "dep"]]
-        .head(20)
-        .to_string(),
-        flush=True
-    )
+            if not data_hoja:
+                continue
 
-    usuario = session.get("usuario_nombre", "desconocido")
-    tipo_cenefa = "diario"
-    sobrescribir = request.form.get("sobrescribir") == "1"
+            df_hoja = pd.read_json(
+                StringIO(data_hoja),
+                orient="records"
+            )
 
-    repetidos = existen_cenefas_repetidas(df, tipo_cenefa)
-
-    if repetidos and not sobrescribir:
-        preview = {
-            hoja: df.to_html(
+            preview[nombre_hoja] = df_hoja.to_html(
                 classes="table table-sm table-striped",
                 index=False
             )
+
+            total_registros[nombre_hoja] = len(df_hoja)
+
+            hojas_orden.append(nombre_hoja)
+
+            estado = redis_client.get(
+                f"diario_estado:{cache_id}:{nombre_hoja}"
+            )
+
+            estados_hojas[nombre_hoja] = (
+                estado == "transmitida"
+            )
+
+        # Mantener orden visual
+        orden_preferido = {
+            "jujuy": 1,
+            "salta": 2,
+            "tucuman": 3,
         }
+
+        hojas_orden.sort(
+            key=lambda nombre: orden_preferido.get(
+                normalizar_texto(nombre),
+                99
+            )
+        )
+
+        return (
+            preview,
+            total_registros,
+            hojas_orden,
+            estados_hojas
+        )
+
+    # ==========================================================
+    # RECUPERAR HOJA DESDE REDIS
+    # ==========================================================
+    clave_hoja = f"diario:{cache_id}:{hoja}"
+
+    data = redis_client.get(clave_hoja)
+
+    if not data:
+        flash(
+            f"No hay datos para transmitir en la hoja {hoja}",
+            "danger"
+        )
+        return redirect(url_for("diarios.diario"))
+
+    # ==========================================================
+    # EVITAR DOBLE TRANSMISION ACCIDENTAL
+    # ==========================================================
+    estado_actual = redis_client.get(
+        f"diario_estado:{cache_id}:{hoja}"
+    )
+
+    if estado_actual == "transmitida":
+        flash(
+            f"La hoja {hoja} ya fue transmitida.",
+            "warning"
+        )
+
+        (
+            preview,
+            total_registros,
+            hojas_orden,
+            estados_hojas
+        ) = reconstruir_preview()
 
         return render_template(
             "diario.html",
             preview=preview,
-            total_registros={hoja: len(df)},
-            hojas_orden=[hoja],
+            total_registros=total_registros,
+            hojas_orden=hojas_orden,
+            estados_hojas=estados_hojas,
             cache_id=cache_id,
-            mensaje_error=(
-                f"Ya existen {len(repetidos)} registros para este período. "
-                "Si desea sobrescribirlos, confirme nuevamente."
-            ),
-            requiere_sobrescribir=True
+            mensaje_error=None
         )
 
+    # ==========================================================
+    # RECUPERAR DATAFRAME
+    # ==========================================================
+    df = pd.read_json(
+        StringIO(data),
+        orient="records"
+    )
+
+    # ==========================================================
+    # COMPLETAR EAN
+    # ==========================================================
+    df = completar_ean(df)
+
+    # ==========================================================
+    # LIMPIAR DEP / DEPARTAMENTO
+    # ==========================================================
+    for col in ["departamento", "dep"]:
+        if col in df.columns:
+            df[col] = df[col].replace(
+                ["None", "none", "nan", "NaN", None],
+                ""
+            )
+
+    df = completar_departamento(df)
+    df = completar_dep(df)
+
+    # ==========================================================
+    # LIMPIAR PRECIOS
+    # ==========================================================
+    for col in ["Normal", "Oferta"]:
+        if col in df.columns:
+            df[col] = df[col].apply(
+                limpiar_precio
+            )
+
+    # ==========================================================
+    # DEBUG
+    # ==========================================================
+    columnas_debug = [
+        "CODIGO",
+        "EAN",
+        "departamento",
+        "dep"
+    ]
+
+    if all(
+        col in df.columns
+        for col in columnas_debug
+    ):
+        print(
+            df[columnas_debug]
+            .head(20)
+            .to_string(),
+            flush=True
+        )
+
+    print(
+        "TRANSMITIENDO DIARIO:",
+        "hoja=",
+        repr(hoja),
+        "sucursales=",
+        (
+            df["sucursales"]
+            .drop_duplicates()
+            .tolist()
+            if "sucursales" in df.columns
+            else []
+        ),
+        flush=True
+    )
+
+    # ==========================================================
+    # DATOS TRANSMISION
+    # ==========================================================
+    usuario = session.get(
+        "usuario_nombre",
+        "desconocido"
+    )
+
+    tipo_cenefa = "diario"
+
+    sobrescribir = (
+        request.form.get("sobrescribir") == "1"
+    )
+
+    # ==========================================================
+    # VALIDAR REPETIDOS
+    # ==========================================================
+    repetidos = existen_cenefas_repetidas(
+        df,
+        tipo_cenefa
+    )
+
+    if repetidos and not sobrescribir:
+
+        (
+            preview,
+            total_registros,
+            hojas_orden,
+            estados_hojas
+        ) = reconstruir_preview()
+
+        return render_template(
+            "diario.html",
+            preview=preview,
+            total_registros=total_registros,
+            hojas_orden=hojas_orden,
+            estados_hojas=estados_hojas,
+            cache_id=cache_id,
+            mensaje_error=(
+                f"Ya existen {len(repetidos)} registros "
+                f"de la hoja {hoja} para este período. "
+                "Si desea sobrescribirlos, confirme nuevamente."
+            ),
+            requiere_sobrescribir=True,
+            hoja_sobrescribir=hoja
+        )
+
+    # ==========================================================
+    # GUARDAR EN POSTGRESQL
+    # ==========================================================
     guardar_cenefas_en_db(
         df,
         tipo_cenefa,
@@ -544,7 +727,47 @@ def transmitir_diario(hoja):
         sobrescribir=sobrescribir
     )
 
-    redis_client.delete(f"diario:{cache_id}:{hoja}")
+    # ==========================================================
+    # MARCAR HOJA COMO TRANSMITIDA
+    # NO ELIMINAMOS EL DATAFRAME
+    # ==========================================================
+    ttl = redis_client.ttl(clave_hoja)
 
-    flash(f"{hoja} transmitido correctamente", "success")
-    return redirect(url_for("diarios.diario"))
+    # Si por algún motivo no tiene TTL válido,
+    # dejamos el estado durante una hora.
+    if ttl is None or ttl <= 0:
+        ttl = 3600
+
+    redis_client.set(
+        f"diario_estado:{cache_id}:{hoja}",
+        "transmitida",
+        ex=ttl
+    )
+
+    # ==========================================================
+    # RECONSTRUIR TODAS LAS HOJAS
+    # ==========================================================
+    (
+        preview,
+        total_registros,
+        hojas_orden,
+        estados_hojas
+    ) = reconstruir_preview()
+
+    flash(
+        f"{hoja} transmitido correctamente",
+        "success"
+    )
+
+    # ==========================================================
+    # VOLVER A MOSTRAR TODAS LAS HOJAS
+    # ==========================================================
+    return render_template(
+        "diario.html",
+        preview=preview,
+        total_registros=total_registros,
+        hojas_orden=hojas_orden,
+        estados_hojas=estados_hojas,
+        cache_id=cache_id,
+        mensaje_error=None
+    )

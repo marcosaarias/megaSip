@@ -80,7 +80,6 @@
 
     <div class="card shadow-sm mb-4">
 
-        <!-- HEADER GENERAL -->
         <div
             class="card-header bg-dark text-white
                    d-flex justify-content-between
@@ -92,23 +91,18 @@
             </h5>
 
             <span class="badge bg-light text-dark fs-6">
-                {{ hojas_orden|length }} hoja(s) pendiente(s)
+                {{ hojas_orden|length }} hoja(s)
             </span>
 
         </div>
 
         <div class="card-body">
 
-            <!-- INFORMACION -->
             <div class="alert alert-info">
-
                 <strong>Importante:</strong>
-
                 cada hoja debe transmitirse de manera individual.
-
-                Las hojas que todavía no hayan sido transmitidas
-                permanecerán disponibles hasta completar el proceso.
-
+                Las hojas transmitidas permanecerán visibles para
+                identificar claramente cuáles ya fueron procesadas.
             </div>
 
 
@@ -117,10 +111,22 @@
             <!-- ========================= -->
             {% for hoja in hojas_orden %}
 
-            <div class="card mb-4 hoja-diario shadow-sm">
+            {% set transmitida = estados_hojas.get(hoja, false) if estados_hojas is defined else false %}
+
+            <div
+                class="card mb-4 hoja-diario shadow-sm
+                {% if transmitida %}hoja-transmitida{% endif %}"
+            >
 
                 <!-- HEADER HOJA -->
-                <div class="card-header bg-light">
+                <div
+                    class="card-header
+                    {% if transmitida %}
+                        bg-success-subtle
+                    {% else %}
+                        bg-light
+                    {% endif %}"
+                >
 
                     <div
                         class="d-flex
@@ -133,9 +139,23 @@
                         <!-- INFORMACION HOJA -->
                         <div>
 
-                            <h5 class="mb-1">
-                                {{ hoja }}
-                            </h5>
+                            <div class="d-flex align-items-center gap-2">
+
+                                <h5 class="mb-1">
+                                    {{ hoja }}
+                                </h5>
+
+                                {% if transmitida %}
+                                    <span class="badge bg-success">
+                                        ✓ Transmitida
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        Pendiente
+                                    </span>
+                                {% endif %}
+
+                            </div>
 
                             <span class="text-muted">
                                 Registros:
@@ -163,31 +183,45 @@
                             </a>
 
 
-                            <!-- TRANSMITIR -->
-                            <form
-                                method="POST"
-                                action="{{ url_for(
-                                    'diarios.transmitir_diario',
-                                    hoja=hoja
-                                ) }}"
-                                class="form-transmitir-diario"
-                                data-hoja="{{ hoja }}"
-                            >
-
-                                <input
-                                    type="hidden"
-                                    name="cache_id"
-                                    value="{{ cache_id }}"
-                                >
+                            <!-- TRANSMITIR / ESTADO -->
+                            {% if transmitida %}
 
                                 <button
-                                    type="submit"
-                                    class="btn btn-primary btn-sm btn-transmitir"
+                                    type="button"
+                                    class="btn btn-outline-success btn-sm"
+                                    disabled
                                 >
-                                    Transmitir {{ hoja }}
+                                    ✓ Ya transmitida
                                 </button>
 
-                            </form>
+                            {% else %}
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'diarios.transmitir_diario',
+                                        hoja=hoja
+                                    ) }}"
+                                    class="form-transmitir-diario"
+                                    data-hoja="{{ hoja }}"
+                                >
+
+                                    <input
+                                        type="hidden"
+                                        name="cache_id"
+                                        value="{{ cache_id }}"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary btn-sm btn-transmitir"
+                                    >
+                                        Transmitir {{ hoja }}
+                                    </button>
+
+                                </form>
+
+                            {% endif %}
 
                         </div>
 
@@ -200,9 +234,7 @@
                 <div class="card-body p-2">
 
                     <div class="tabla-scroll">
-
                         {{ preview[hoja] | safe }}
-
                     </div>
 
                 </div>
@@ -212,12 +244,9 @@
             {% endfor %}
 
 
-            <!-- INFO INFERIOR -->
             <div class="alert alert-secondary mt-4 mb-0 text-end">
-
                 Previsualización activa.
-                Se muestran únicamente las columnas procesadas.
-
+                Las hojas transmitidas permanecen visibles hasta que expire la sesión temporal.
             </div>
 
         </div>
@@ -232,20 +261,20 @@
     <!-- ========================= -->
     <style>
 
-        /* ============================= */
-        /* TARJETA DE CADA HOJA */
-        /* ============================= */
-
         .hoja-diario {
             border-radius: 8px;
             overflow: hidden;
             border: 1px solid #ced4da;
+            transition: opacity 0.2s ease;
         }
 
+        .hoja-transmitida {
+            border: 2px solid #198754;
+        }
 
-        /* ============================= */
-        /* CONTENEDOR CON SCROLL */
-        /* ============================= */
+        .hoja-transmitida .tabla-scroll {
+            opacity: 0.75;
+        }
 
         .tabla-scroll {
             max-height: 400px;
@@ -253,22 +282,12 @@
             position: relative;
         }
 
-
-        /* ============================= */
-        /* TABLA GENERADA POR PANDAS */
-        /* ============================= */
-
         .tabla-scroll table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             margin-bottom: 0;
         }
-
-
-        /* ============================= */
-        /* HEADER FIJO */
-        /* ============================= */
 
         .tabla-scroll thead th {
             position: sticky;
@@ -282,11 +301,6 @@
                 0 2px 2px rgba(0, 0, 0, 0.20);
         }
 
-
-        /* ============================= */
-        /* FALLBACK PARA TABLAS PANDAS */
-        /* ============================= */
-
         .tabla-scroll table tr:first-child th {
             position: sticky;
             top: 0;
@@ -299,22 +313,12 @@
                 0 2px 2px rgba(0, 0, 0, 0.20);
         }
 
-
-        /* ============================= */
-        /* CELDAS */
-        /* ============================= */
-
         .tabla-scroll td,
         .tabla-scroll th {
             padding: 0.4rem;
             white-space: nowrap;
             vertical-align: middle;
         }
-
-
-        /* ============================= */
-        /* BOTON TRANSMITIENDO */
-        /* ============================= */
 
         .btn-transmitir:disabled {
             cursor: not-allowed;
@@ -338,7 +342,6 @@
                         ".form-transmitir-diario"
                     );
 
-
                 formularios.forEach(function (form) {
 
                     form.addEventListener(
@@ -353,34 +356,20 @@
                                     `¿Está seguro que desea transmitir la hoja "${hoja}" a las sucursales?`
                                 );
 
-
                             if (!confirmar) {
-
                                 event.preventDefault();
-
                                 return;
-
                             }
-
-
-                            /*
-                             * Evita doble clic durante
-                             * la transmisión.
-                             */
 
                             const boton =
                                 this.querySelector(
                                     ".btn-transmitir"
                                 );
 
-
                             if (boton) {
-
                                 boton.disabled = true;
-
                                 boton.textContent =
                                     `Transmitiendo ${hoja}...`;
-
                             }
 
                         }
