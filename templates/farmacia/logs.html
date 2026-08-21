@@ -1,0 +1,734 @@
+{% extends "base.html" %}
+{% block title %}Monitoreo Farmacia{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="mb-1">Monitoreo de Transmisiones</h2>
+            <div class="text-muted">
+                Seguimiento de procesamiento y transmisión de archivos de Farmacia.
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- KPIs -->
+    <!-- ========================= -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">
+                        Archivos procesados
+                    </div>
+
+                    <div class="display-6 fw-bold">
+                        {{ kpis.procesados or 0 }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body">
+                    <div class="text-muted small">
+                        Transmisiones exitosas
+                    </div>
+
+                    <div class="display-6 fw-bold text-success">
+                        {{ kpis.transmitidos or 0 }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100 border-danger">
+                <div class="card-body">
+                    <div class="text-muted small">
+                        Errores
+                    </div>
+
+                    <div class="display-6 fw-bold text-danger">
+                        {{ kpis.errores or 0 }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100 border-warning">
+                <div class="card-body">
+                    <div class="text-muted small">
+                        Pendientes de transmisión
+                    </div>
+
+                    <div class="display-6 fw-bold text-warning">
+                        {{ pendientes|length }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- FILTROS -->
+    <!-- ========================= -->
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-dark text-white">
+            <strong>Filtros</strong>
+        </div>
+
+        <div class="card-body">
+
+            <form method="GET">
+
+                <div class="row g-3">
+
+                    <div class="col-md-2">
+                        <label class="form-label">
+                            Módulo
+                        </label>
+
+                        <select
+                            name="modulo"
+                            class="form-select"
+                        >
+                            <option value="">
+                                Todos
+                            </option>
+
+                            <option
+                                value="folder"
+                                {% if filtro_modulo == "folder" %}selected{% endif %}
+                            >
+                                Folder
+                            </option>
+
+                            <option
+                                value="diarios"
+                                {% if filtro_modulo == "diarios" %}selected{% endif %}
+                            >
+                                Diarios
+                            </option>
+
+                            <option
+                                value="nutricia"
+                                {% if filtro_modulo == "nutricia" %}selected{% endif %}
+                            >
+                                Nutricia
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">
+                            Acción
+                        </label>
+
+                        <select
+                            name="accion"
+                            class="form-select"
+                        >
+                            <option value="">
+                                Todas
+                            </option>
+
+                            <option
+                                value="procesar"
+                                {% if filtro_accion == "procesar" %}selected{% endif %}
+                            >
+                                Procesar
+                            </option>
+
+                            <option
+                                value="transmitir"
+                                {% if filtro_accion == "transmitir" %}selected{% endif %}
+                            >
+                                Transmitir
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">
+                            Estado
+                        </label>
+
+                        <select
+                            name="estado"
+                            class="form-select"
+                        >
+                            <option value="">
+                                Todos
+                            </option>
+
+                            <option
+                                value="exitoso"
+                                {% if filtro_estado == "exitoso" %}selected{% endif %}
+                            >
+                                Exitoso
+                            </option>
+
+                            <option
+                                value="error"
+                                {% if filtro_estado == "error" %}selected{% endif %}
+                            >
+                                Error
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">
+                            Usuario
+                        </label>
+
+                        <input
+                            type="text"
+                            name="usuario"
+                            class="form-control"
+                            value="{{ filtro_usuario }}"
+                            placeholder="Usuario"
+                        >
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">
+                            Desde
+                        </label>
+
+                        <input
+                            type="date"
+                            name="desde"
+                            class="form-control"
+                            value="{{ filtro_desde }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">
+                            Hasta
+                        </label>
+
+                        <input
+                            type="date"
+                            name="hasta"
+                            class="form-control"
+                            value="{{ filtro_hasta }}"
+                        >
+                    </div>
+
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Filtrar
+                    </button>
+
+                    <a
+                        href="{{ url_for('farmacia_logs.index') }}"
+                        class="btn btn-outline-secondary"
+                    >
+                        Limpiar filtros
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- PROCESOS -->
+    <!-- ========================= -->
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <strong>Estado de Procesos</strong>
+
+            <span class="badge bg-light text-dark">
+                {{ procesos|length }}
+            </span>
+        </div>
+
+        <div class="card-body p-0">
+
+            {% if procesos %}
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Módulo</th>
+                            <th>Archivo</th>
+                            <th>Usuario</th>
+                            <th>Registros</th>
+                            <th>Vigencia</th>
+                            <th>Estado</th>
+                            <th>Detalle</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for proceso in procesos %}
+
+                        <tr>
+
+                            <td class="text-nowrap">
+
+                                {% if proceso.fecha_transmitido %}
+                                    {{ proceso.fecha_transmitido.strftime("%d/%m/%Y %H:%M") }}
+                                {% elif proceso.fecha_procesado %}
+                                    {{ proceso.fecha_procesado.strftime("%d/%m/%Y %H:%M") }}
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                <span class="fw-semibold">
+                                    {{ proceso.modulo | capitalize }}
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ proceso.archivo or "-" }}
+                            </td>
+
+                            <td>
+                                {{ proceso.usuario or "-" }}
+                            </td>
+
+                            <td>
+                                {{ proceso.total_registros or 0 }}
+                            </td>
+
+                            <td class="text-nowrap">
+
+                                {% if proceso.fecha_desde %}
+                                    {{ proceso.fecha_desde.strftime("%d/%m/%Y") }}
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                                <span class="text-muted">
+                                    →
+                                </span>
+
+                                {% if proceso.fecha_hasta %}
+                                    {{ proceso.fecha_hasta.strftime("%d/%m/%Y") }}
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {% if proceso.estado_operativo == "transmitido" %}
+
+                                    <span class="badge bg-success">
+                                        ✓ Transmitido
+                                    </span>
+
+                                {% elif proceso.estado_operativo == "error" %}
+
+                                    <span class="badge bg-danger">
+                                        ✕ Error
+                                    </span>
+
+                                {% elif proceso.estado_operativo == "pendiente" %}
+
+                                    <span class="badge bg-warning text-dark">
+                                        Pendiente
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-secondary">
+                                        Desconocido
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {% if proceso.estado_operativo == "transmitido" %}
+
+                                    <div class="small">
+                                        Procesado:
+                                        {% if proceso.fecha_procesado %}
+                                            {{ proceso.fecha_procesado.strftime("%H:%M:%S") }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="small text-success">
+                                        Transmitido:
+                                        {% if proceso.fecha_transmitido %}
+                                            {{ proceso.fecha_transmitido.strftime("%H:%M:%S") }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+
+                                    {% if proceso.lote_carga %}
+                                        <div class="small text-muted">
+                                            Lote:
+                                            {{ proceso.lote_carga }}
+                                        </div>
+                                    {% endif %}
+
+                                {% elif proceso.estado_operativo == "error" %}
+
+                                    <div class="text-danger small">
+                                        {{ proceso.ultimo_error or "Se registró un error durante el proceso." }}
+                                    </div>
+
+                                {% elif proceso.estado_operativo == "pendiente" %}
+
+                                    <div class="text-warning-emphasis small">
+                                        Archivo procesado, pendiente de transmisión.
+                                    </div>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+                <div class="p-4 text-center text-muted">
+                    No se encontraron procesos registrados.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- PENDIENTES -->
+    <!-- ========================= -->
+    {% if pendientes %}
+
+    <div class="card shadow-sm mb-4 border-warning">
+
+        <div class="card-header bg-warning-subtle">
+
+            <strong>
+                Archivos procesados sin transmisión
+            </strong>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+                            <th>Procesado</th>
+                            <th>Módulo</th>
+                            <th>Archivo</th>
+                            <th>Usuario</th>
+                            <th>Registros</th>
+                            <th>Vigencia</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in pendientes %}
+
+                        <tr>
+
+                            <td class="text-nowrap">
+                                {{ item.fecha_evento.strftime("%d/%m/%Y %H:%M:%S") }}
+                            </td>
+
+                            <td>
+                                {{ item.modulo | capitalize }}
+                            </td>
+
+                            <td>
+                                {{ item.archivo or "-" }}
+                            </td>
+
+                            <td>
+                                {{ item.usuario or "-" }}
+                            </td>
+
+                            <td>
+                                {{ item.total_registros or 0 }}
+                            </td>
+
+                            <td class="text-nowrap">
+
+                                {% if item.fecha_desde %}
+                                    {{ item.fecha_desde.strftime("%d/%m/%Y") }}
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                                →
+
+                                {% if item.fecha_hasta %}
+                                    {{ item.fecha_hasta.strftime("%d/%m/%Y") }}
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ========================= -->
+    <!-- LOG TECNICO -->
+    <!-- ========================= -->
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+
+            <strong>
+                Historial de Eventos
+            </strong>
+
+            <span class="badge bg-light text-dark">
+                {{ logs|length }}
+            </span>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            {% if logs %}
+
+            <div class="table-responsive log-table-container">
+
+                <table class="table table-sm table-striped table-hover align-middle mb-0">
+
+                    <thead class="table-dark">
+
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Módulo</th>
+                            <th>Acción</th>
+                            <th>Estado</th>
+                            <th>Usuario</th>
+                            <th>Archivo</th>
+                            <th>Registros</th>
+                            <th>Detalle</th>
+                            <th>Error</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for log in logs %}
+
+                        <tr>
+
+                            <td class="text-nowrap">
+                                {{ log.fecha_evento.strftime("%d/%m/%Y %H:%M:%S") }}
+                            </td>
+
+                            <td>
+                                {{ log.modulo | capitalize }}
+                            </td>
+
+                            <td>
+
+                                {% if log.accion == "procesar" %}
+
+                                    <span class="badge bg-info text-dark">
+                                        Procesar
+                                    </span>
+
+                                {% elif log.accion == "transmitir" %}
+
+                                    <span class="badge bg-primary">
+                                        Transmitir
+                                    </span>
+
+                                {% else %}
+
+                                    {{ log.accion }}
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {% if log.estado == "exitoso" %}
+
+                                    <span class="badge bg-success">
+                                        Exitoso
+                                    </span>
+
+                                {% elif log.estado == "error" %}
+
+                                    <span class="badge bg-danger">
+                                        Error
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-secondary">
+                                        {{ log.estado }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                {{ log.usuario or "-" }}
+                            </td>
+
+                            <td>
+                                {{ log.archivo or "-" }}
+                            </td>
+
+                            <td>
+                                {{ log.total_registros or 0 }}
+                            </td>
+
+                            <td class="detalle-log">
+                                {{ log.detalle or "-" }}
+                            </td>
+
+                            <td class="error-log">
+
+                                {% if log.error %}
+
+                                    <span
+                                        class="text-danger"
+                                        title="{{ log.error }}"
+                                    >
+                                        {{ log.error }}
+                                    </span>
+
+                                {% else %}
+
+                                    -
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+                <div class="p-4 text-center text-muted">
+                    No hay eventos registrados.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<style>
+
+    .card {
+        border-radius: 8px;
+    }
+
+    .log-table-container {
+        max-height: 550px;
+        overflow: auto;
+    }
+
+    .log-table-container thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .detalle-log {
+        min-width: 220px;
+        max-width: 400px;
+    }
+
+    .error-log {
+        min-width: 200px;
+        max-width: 450px;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+</style>
+
+{% endblock %}
