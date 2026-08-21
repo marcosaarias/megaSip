@@ -497,7 +497,7 @@ def transmitir_diario(hoja):
     # ==========================================================
     # RECONSTRUIR TODAS LAS HOJAS
     # ==========================================================
-    def reconstruir_preview():
+    def reconstruir_preview(hoja_transmitida=None):
         preview = {}
         total_registros = {}
         hojas_orden = []
@@ -537,7 +537,6 @@ def transmitir_diario(hoja):
             )
 
             total_registros[nombre_hoja] = len(df_hoja)
-
             hojas_orden.append(nombre_hoja)
 
             # ==================================================
@@ -553,9 +552,18 @@ def transmitir_diario(hoja):
                 estado
             )
 
-            estados_hojas[nombre_hoja] = (
+            transmitida = (
                 estado_normalizado == "transmitida"
             )
+
+            # Reaseguro para la hoja recién transmitida
+            if (
+                hoja_transmitida
+                and nombre_hoja == hoja_transmitida
+            ):
+                transmitida = True
+
+            estados_hojas[nombre_hoja] = transmitida
 
             # DEBUG TEMPORAL
             print(
@@ -567,8 +575,10 @@ def transmitir_diario(hoja):
                 repr(estado),
                 "normalizado:",
                 repr(estado_normalizado),
+                "hoja_transmitida:",
+                repr(hoja_transmitida),
                 "transmitida:",
-                estados_hojas[nombre_hoja],
+                transmitida,
                 flush=True
             )
 
@@ -638,7 +648,9 @@ def transmitir_diario(hoja):
             total_registros,
             hojas_orden,
             estados_hojas
-        ) = reconstruir_preview()
+        ) = reconstruir_preview(
+            hoja_transmitida=hoja
+        )
 
         return render_template(
             "diario.html",
@@ -667,9 +679,7 @@ def transmitir_diario(hoja):
     # LIMPIAR DEPARTAMENTO / DEP
     # ==========================================================
     for col in ["departamento", "dep"]:
-
         if col in df.columns:
-
             df[col] = df[col].replace(
                 [
                     "None",
@@ -688,9 +698,7 @@ def transmitir_diario(hoja):
     # LIMPIAR PRECIOS
     # ==========================================================
     for col in ["Normal", "Oferta"]:
-
         if col in df.columns:
-
             df[col] = df[col].apply(
                 limpiar_precio
             )
@@ -709,7 +717,6 @@ def transmitir_diario(hoja):
         col in df.columns
         for col in columnas_debug
     ):
-
         print(
             df[columnas_debug]
             .head(20)
@@ -795,10 +802,6 @@ def transmitir_diario(hoja):
 
     # ==========================================================
     # MARCAR LA HOJA COMO TRANSMITIDA
-    #
-    # IMPORTANTE:
-    # NO eliminamos el DataFrame de Redis.
-    # La hoja debe continuar visible.
     # ==========================================================
     ttl = redis_client.ttl(
         clave_hoja
@@ -843,12 +846,9 @@ def transmitir_diario(hoja):
         total_registros,
         hojas_orden,
         estados_hojas
-    ) = reconstruir_preview()
-
-    # ==========================================================
-    # REASEGURO PARA ESTA MISMA RESPUESTA
-    # ==========================================================
-    estados_hojas[hoja] = True
+    ) = reconstruir_preview(
+        hoja_transmitida=hoja
+    )
 
     flash(
         f"{hoja} transmitido correctamente",
