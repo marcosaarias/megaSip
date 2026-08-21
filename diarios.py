@@ -483,7 +483,19 @@ def transmitir_diario(hoja):
         return redirect(url_for("diarios.diario"))
 
     # ==========================================================
-    # FUNCION INTERNA PARA RECONSTRUIR TODAS LAS HOJAS
+    # NORMALIZAR VALORES RECUPERADOS DESDE REDIS
+    # ==========================================================
+    def normalizar_valor_redis(valor):
+        if valor is None:
+            return ""
+
+        if isinstance(valor, bytes):
+            valor = valor.decode("utf-8")
+
+        return str(valor).strip().lower()
+
+    # ==========================================================
+    # RECONSTRUIR TODAS LAS HOJAS
     # ==========================================================
     def reconstruir_preview():
         preview = {}
@@ -494,12 +506,14 @@ def transmitir_diario(hoja):
         patron = f"diario:{cache_id}:*"
 
         for key in redis_client.scan_iter(match=patron):
-            key_str = (
-                key.decode()
-                if isinstance(key, bytes)
-                else str(key)
-            )
 
+            if isinstance(key, bytes):
+                key_str = key.decode("utf-8")
+            else:
+                key_str = str(key)
+
+            # Clave esperada:
+            # diario:<cache_id>:<nombre_hoja>
             partes = key_str.split(":", 2)
 
             if len(partes) != 3:
@@ -526,15 +540,41 @@ def transmitir_diario(hoja):
 
             hojas_orden.append(nombre_hoja)
 
-            estado = redis_client.get(
+            # ==================================================
+            # RECUPERAR ESTADO DE LA HOJA
+            # ==================================================
+            clave_estado = (
                 f"diario_estado:{cache_id}:{nombre_hoja}"
             )
 
-            estados_hojas[nombre_hoja] = (
-                estado == "transmitida"
+            estado = redis_client.get(clave_estado)
+
+            estado_normalizado = normalizar_valor_redis(
+                estado
             )
 
-        # Mantener orden visual
+            estados_hojas[nombre_hoja] = (
+                estado_normalizado == "transmitida"
+            )
+
+            # DEBUG TEMPORAL
+            print(
+                "ESTADO HOJA:",
+                repr(nombre_hoja),
+                "clave:",
+                repr(clave_estado),
+                "valor:",
+                repr(estado),
+                "normalizado:",
+                repr(estado_normalizado),
+                "transmitida:",
+                estados_hojas[nombre_hoja],
+                flush=True
+            )
+
+        # ======================================================
+        # MANTENER ORDEN VISUAL
+        # ======================================================
         orden_preferido = {
             "jujuy": 1,
             "salta": 2,
@@ -567,16 +607,27 @@ def transmitir_diario(hoja):
             f"No hay datos para transmitir en la hoja {hoja}",
             "danger"
         )
-        return redirect(url_for("diarios.diario"))
+        return redirect(
+            url_for("diarios.diario")
+        )
 
     # ==========================================================
-    # EVITAR DOBLE TRANSMISION ACCIDENTAL
+    # EVITAR DOBLE TRANSMISION
     # ==========================================================
-    estado_actual = redis_client.get(
+    clave_estado_actual = (
         f"diario_estado:{cache_id}:{hoja}"
     )
 
+    estado_actual = redis_client.get(
+        clave_estado_actual
+    )
+
+    estado_actual = normalizar_valor_redis(
+        estado_actual
+    )
+
     if estado_actual == "transmitida":
+
         flash(
             f"La hoja {hoja} ya fue transmitida.",
             "warning"
@@ -613,12 +664,20 @@ def transmitir_diario(hoja):
     df = completar_ean(df)
 
     # ==========================================================
-    # LIMPIAR DEP / DEPARTAMENTO
+    # LIMPIAR DEPARTAMENTO / DEP
     # ==========================================================
     for col in ["departamento", "dep"]:
+
         if col in df.columns:
+
             df[col] = df[col].replace(
-                ["None", "none", "nan", "NaN", None],
+                [
+                    "None",
+                    "none",
+                    "nan",
+                    "NaN",
+                    None
+                ],
                 ""
             )
 
@@ -629,13 +688,15 @@ def transmitir_diario(hoja):
     # LIMPIAR PRECIOS
     # ==========================================================
     for col in ["Normal", "Oferta"]:
+
         if col in df.columns:
+
             df[col] = df[col].apply(
                 limpiar_precio
             )
 
     # ==========================================================
-    # DEBUG
+    # DEBUG EAN / DEPARTAMENTO
     # ==========================================================
     columnas_debug = [
         "CODIGO",
@@ -648,6 +709,7 @@ def transmitir_diario(hoja):
         col in df.columns
         for col in columnas_debug
     ):
+
         print(
             df[columnas_debug]
             .head(20)
@@ -655,6 +717,9 @@ def transmitir_diario(hoja):
             flush=True
         )
 
+    # ==========================================================
+    # DEBUG SUCURSALES
+    # ==========================================================
     print(
         "TRANSMITIENDO DIARIO:",
         "hoja=",
@@ -671,7 +736,7 @@ def transmitir_diario(hoja):
     )
 
     # ==========================================================
-    # DATOS TRANSMISION
+    # DATOS DE TRANSMISION
     # ==========================================================
     usuario = session.get(
         "usuario_nombre",
@@ -711,7 +776,8 @@ def transmitir_diario(hoja):
             mensaje_error=(
                 f"Ya existen {len(repetidos)} registros "
                 f"de la hoja {hoja} para este período. "
-                "Si desea sobrescribirlos, confirme nuevamente."
+                "Si desea sobrescribirlos, "
+                "confirme nuevamente."
             ),
             requiere_sobrescribir=True,
             hoja_sobrescribir=hoja
@@ -728,20 +794,45 @@ def transmitir_diario(hoja):
     )
 
     # ==========================================================
-    # MARCAR HOJA COMO TRANSMITIDA
-    # NO ELIMINAMOS EL DATAFRAME
+    # MARCAR LA HOJA COMO TRANSMITIDA
+    #
+    # IMPORTANTE:
+    # NO eliminamos el DataFrame de Redis.
+    # La hoja debe continuar visible.
     # ==========================================================
-    ttl = redis_client.ttl(clave_hoja)
+    ttl = redis_client.ttl(
+        clave_hoja
+    )
 
-    # Si por algún motivo no tiene TTL válido,
-    # dejamos el estado durante una hora.
     if ttl is None or ttl <= 0:
         ttl = 3600
 
+    clave_estado = (
+        f"diario_estado:{cache_id}:{hoja}"
+    )
+
     redis_client.set(
-        f"diario_estado:{cache_id}:{hoja}",
+        clave_estado,
         "transmitida",
         ex=ttl
+    )
+
+    # ==========================================================
+    # VERIFICAR QUE REDIS GUARDO EL ESTADO
+    # ==========================================================
+    estado_guardado = redis_client.get(
+        clave_estado
+    )
+
+    print(
+        "ESTADO GUARDADO:",
+        "hoja=",
+        repr(hoja),
+        "clave=",
+        repr(clave_estado),
+        "valor=",
+        repr(estado_guardado),
+        flush=True
     )
 
     # ==========================================================
@@ -753,6 +844,11 @@ def transmitir_diario(hoja):
         hojas_orden,
         estados_hojas
     ) = reconstruir_preview()
+
+    # ==========================================================
+    # REASEGURO PARA ESTA MISMA RESPUESTA
+    # ==========================================================
+    estados_hojas[hoja] = True
 
     flash(
         f"{hoja} transmitido correctamente",
