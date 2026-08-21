@@ -7,150 +7,391 @@
     <h2 class="mb-4">Diarios</h2>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    {% endif %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
     {% endwith %}
 
-    <!-- 🔹 Carga archivo -->
+    <!-- ========================= -->
+    <!-- CARGA DE ARCHIVO -->
+    <!-- ========================= -->
     <div class="card p-4 shadow-sm mb-4">
+
         <form method="POST" enctype="multipart/form-data">
 
             <div class="row mb-3">
+
                 <div class="col-md-6">
-                    <label class="form-label">Vigencia Desde:</label>
-                    <input type="date" name="fecha_desde" class="form-control" required>
+                    <label class="form-label">
+                        Vigencia Desde:
+                    </label>
+
+                    <input
+                        type="date"
+                        name="fecha_desde"
+                        class="form-control"
+                        required
+                    >
                 </div>
+
                 <div class="col-md-6">
-                    <label class="form-label">Vigencia Hasta:</label>
-                    <input type="date" name="fecha_hasta" class="form-control" required>
+                    <label class="form-label">
+                        Vigencia Hasta:
+                    </label>
+
+                    <input
+                        type="date"
+                        name="fecha_hasta"
+                        class="form-control"
+                        required
+                    >
                 </div>
+
             </div>
 
-            <input type="file" name="archivo" class="form-control mb-3" required>
+            <input
+                type="file"
+                name="archivo"
+                class="form-control mb-3"
+                accept=".xlsx,.xls"
+                required
+            >
 
-            <button type="submit" class="btn-sys w-100">
+            <button
+                type="submit"
+                class="btn-sys w-100"
+            >
                 Cargar Excel Diario
             </button>
+
         </form>
+
     </div>
 
-    <!-- 🔹 PREVIEW MULTI HOJA -->
-    {% if preview %}
-    <div class="card shadow-sm">
 
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0">Previsualización de Hojas</h5>
+    <!-- ========================= -->
+    <!-- PREVISUALIZACION MULTIHOJA -->
+    <!-- ========================= -->
+    {% if preview %}
+
+    <div class="card shadow-sm mb-4">
+
+        <!-- HEADER GENERAL -->
+        <div
+            class="card-header bg-dark text-white
+                   d-flex justify-content-between
+                   align-items-center flex-wrap gap-2"
+        >
+
+            <h5 class="mb-0">
+                Previsualización de Hojas
+            </h5>
+
+            <span class="badge bg-light text-dark fs-6">
+                {{ hojas_orden|length }} hoja(s) pendiente(s)
+            </span>
+
         </div>
 
         <div class="card-body">
 
+            <!-- INFORMACION -->
+            <div class="alert alert-info">
+
+                <strong>Importante:</strong>
+
+                cada hoja debe transmitirse de manera individual.
+
+                Las hojas que todavía no hayan sido transmitidas
+                permanecerán disponibles hasta completar el proceso.
+
+            </div>
+
+
+            <!-- ========================= -->
+            <!-- HOJAS -->
+            <!-- ========================= -->
             {% for hoja in hojas_orden %}
-            <div class="mb-5">
 
-                <!-- 🔹 HEADER + BOTONES -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="card mb-4 hoja-diario shadow-sm">
 
-                    <h5 class="mb-0">
-                        {{ hoja | capitalize }}
-                        {% if total_registros[hoja] %}
-                            | Registros: {{ total_registros[hoja] }}
-                        {% endif %}
-                    </h5>
+                <!-- HEADER HOJA -->
+                <div class="card-header bg-light">
 
-                    <div class="d-flex gap-2">
+                    <div
+                        class="d-flex
+                               justify-content-between
+                               align-items-center
+                               flex-wrap
+                               gap-3"
+                    >
 
-                        <!-- 📥 Descargar -->
-                      <a href="{{ url_for('diarios.descargar_diario', hoja=hoja, cache_id=cache_id) }}"
-                        class="btn btn-success btn-sm">
-                            Descargar archivo
-                      </a>
+                        <!-- INFORMACION HOJA -->
+                        <div>
 
-                        <!-- 🚀 Transmitir -->
-                        <form method="POST"
-                            action="{{ url_for('diarios.transmitir_diario', hoja=hoja) }}"
-                            onsubmit="return confirm('¿Está seguro que desea transmitir Diario a las sucursales?');">
+                            <h5 class="mb-1">
+                                {{ hoja }}
+                            </h5>
 
-                            <input type="hidden" name="cache_id" value="{{ cache_id }}">
+                            <span class="text-muted">
+                                Registros:
+                                <strong>
+                                    {{ total_registros.get(hoja, 0) }}
+                                </strong>
+                            </span>
 
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                Transmitir
-                            </button>
-                        </form>
+                        </div>
+
+
+                        <!-- BOTONES -->
+                        <div class="d-flex gap-2 flex-wrap">
+
+                            <!-- DESCARGAR -->
+                            <a
+                                href="{{ url_for(
+                                    'diarios.descargar_diario',
+                                    hoja=hoja,
+                                    cache_id=cache_id
+                                ) }}"
+                                class="btn btn-success btn-sm"
+                            >
+                                Descargar archivo
+                            </a>
+
+
+                            <!-- TRANSMITIR -->
+                            <form
+                                method="POST"
+                                action="{{ url_for(
+                                    'diarios.transmitir_diario',
+                                    hoja=hoja
+                                ) }}"
+                                class="form-transmitir-diario"
+                                data-hoja="{{ hoja }}"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="cache_id"
+                                    value="{{ cache_id }}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary btn-sm btn-transmitir"
+                                >
+                                    Transmitir {{ hoja }}
+                                </button>
+
+                            </form>
+
+                        </div>
 
                     </div>
+
                 </div>
 
-                <!-- 🔹 TABLA -->
-                <div class="tabla-scroll">
-                    {{ preview[hoja] | safe }}
+
+                <!-- TABLA -->
+                <div class="card-body p-2">
+
+                    <div class="tabla-scroll">
+
+                        {{ preview[hoja] | safe }}
+
+                    </div>
+
                 </div>
 
             </div>
+
             {% endfor %}
 
-            <!-- 🔥 INFO -->
-            <div class="alert alert-info mt-4 text-end">
-                Previsualización activa. (Solo columnas filtradas)
+
+            <!-- INFO INFERIOR -->
+            <div class="alert alert-secondary mt-4 mb-0 text-end">
+
+                Previsualización activa.
+                Se muestran únicamente las columnas procesadas.
+
             </div>
 
         </div>
+
     </div>
+
     {% endif %}
- 
 
-   <style>
 
-/* CONTENEDOR SCROLL */
-.tabla-scroll {
-    max-height: 400px;
-    overflow: auto;
-    position: relative;
-}
+    <!-- ========================= -->
+    <!-- ESTILOS -->
+    <!-- ========================= -->
+    <style>
 
-/* TABLA GENERADA POR PANDAS */
-.tabla-scroll table {
-    width: 100%;
-    border-collapse: separate; /* CLAVE */
-    border-spacing: 0;
-}
+        /* ============================= */
+        /* TARJETA DE CADA HOJA */
+        /* ============================= */
 
-/* HEADER FIJO (caso normal) */
-.tabla-scroll thead th {
-    position: sticky;
-    top: 0;
-    z-index: 20; /* subo prioridad */
+        .hoja-diario {
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ced4da;
+        }
 
-    background: #212529;
-    color: white;
 
-    box-shadow: 0 2px 2px rgba(0,0,0,0.2); /* evita glitch visual */
-}
+        /* ============================= */
+        /* CONTENEDOR CON SCROLL */
+        /* ============================= */
 
-/* HEADER FIJO (caso pandas sin thead) */
-.tabla-scroll table tr:first-child th {
-    position: sticky;
-    top: 0;
-    z-index: 20;
+        .tabla-scroll {
+            max-height: 400px;
+            overflow: auto;
+            position: relative;
+        }
 
-    background: #212529;
-    color: white;
 
-    box-shadow: 0 2px 2px rgba(0,0,0,0.2);
-}
+        /* ============================= */
+        /* TABLA GENERADA POR PANDAS */
+        /* ============================= */
 
-/* OPCIONAL: mejora visual tipo bootstrap */
-.tabla-scroll td,
-.tabla-scroll th {
-    padding: 0.4rem;
-}
+        .tabla-scroll table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 0;
+        }
 
-</style>
 
+        /* ============================= */
+        /* HEADER FIJO */
+        /* ============================= */
+
+        .tabla-scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+
+            background: #212529 !important;
+            color: white !important;
+
+            box-shadow:
+                0 2px 2px rgba(0, 0, 0, 0.20);
+        }
+
+
+        /* ============================= */
+        /* FALLBACK PARA TABLAS PANDAS */
+        /* ============================= */
+
+        .tabla-scroll table tr:first-child th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+
+            background: #212529 !important;
+            color: white !important;
+
+            box-shadow:
+                0 2px 2px rgba(0, 0, 0, 0.20);
+        }
+
+
+        /* ============================= */
+        /* CELDAS */
+        /* ============================= */
+
+        .tabla-scroll td,
+        .tabla-scroll th {
+            padding: 0.4rem;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+
+        /* ============================= */
+        /* BOTON TRANSMITIENDO */
+        /* ============================= */
+
+        .btn-transmitir:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+    </style>
+
+
+    <!-- ========================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ========================= -->
+    <script>
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                const formularios =
+                    document.querySelectorAll(
+                        ".form-transmitir-diario"
+                    );
+
+
+                formularios.forEach(function (form) {
+
+                    form.addEventListener(
+                        "submit",
+                        function (event) {
+
+                            const hoja =
+                                this.dataset.hoja || "";
+
+                            const confirmar =
+                                confirm(
+                                    `¿Está seguro que desea transmitir la hoja "${hoja}" a las sucursales?`
+                                );
+
+
+                            if (!confirmar) {
+
+                                event.preventDefault();
+
+                                return;
+
+                            }
+
+
+                            /*
+                             * Evita doble clic durante
+                             * la transmisión.
+                             */
+
+                            const boton =
+                                this.querySelector(
+                                    ".btn-transmitir"
+                                );
+
+
+                            if (boton) {
+
+                                boton.disabled = true;
+
+                                boton.textContent =
+                                    `Transmitiendo ${hoja}...`;
+
+                            }
+
+                        }
+                    );
+
+                });
+
+            }
+        );
+
+    </script>
 
 </div>
 {% endblock %}
