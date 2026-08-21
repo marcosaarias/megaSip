@@ -6,6 +6,7 @@ from io import StringIO
 from flask import session
 import io
 
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 
 from compras import (
@@ -542,25 +543,6 @@ def transmitir_diario(hoja):
         usuario=usuario,
         sobrescribir=sobrescribir
     )
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT codigo, ean, dep, departamento
-        FROM cenefas
-        WHERE tipo_cenefa = %s
-        ORDER BY fecha_carga DESC
-        LIMIT 10
-    """, ("diario",))
-
-    print(
-        "ULTIMOS GUARDADOS:",
-        cursor.fetchall(),
-        flush=True
-    )
-
-    conn.close()
 
     redis_client.delete(f"diario:{cache_id}:{hoja}")
 
