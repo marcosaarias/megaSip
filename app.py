@@ -23,10 +23,12 @@ from cupones import cupones_bp
 from informes_ecommerce import informes_ecommerce_bp
 from modulos_farmacia.farmacia_diarios import farmacia_diarios_bp
 from modulos_farmacia.farmacia_nutricia import farmacia_nutricia_bp
+from farmacia_logs import farmacia_logs_bp
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta_demo"
 
+app.register_blueprint(farmacia_logs_bp)
 app.register_blueprint(farmacia_diarios_bp)
 app.register_blueprint(farmacia_nutricia_bp)
 app.register_blueprint(informes_ecommerce_bp)
