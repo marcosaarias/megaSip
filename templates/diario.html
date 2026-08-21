@@ -6,6 +6,9 @@
 
     <h2 class="mb-4">Diarios</h2>
 
+    <!-- ========================= -->
+    <!-- MENSAJES FLASH -->
+    <!-- ========================= -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -15,6 +18,15 @@
             {% endfor %}
         {% endif %}
     {% endwith %}
+
+    <!-- ========================= -->
+    <!-- MENSAJE DE ERROR BACKEND -->
+    <!-- ========================= -->
+    {% if mensaje_error %}
+        <div class="alert alert-danger">
+            {{ mensaje_error }}
+        </div>
+    {% endif %}
 
     <!-- ========================= -->
     <!-- CARGA DE ARCHIVO -->
@@ -194,7 +206,10 @@
                                     Descargar archivo
                                 </a>
 
-                                <!-- TRANSMITIR / ESTADO -->
+                                <!-- ========================= -->
+                                <!-- ESTADO / TRANSMISION -->
+                                <!-- ========================= -->
+
                                 {% if transmitida %}
 
                                     <button
@@ -205,8 +220,46 @@
                                         ✓ Ya transmitida
                                     </button>
 
+                                {% elif requiere_sobrescribir is defined
+                                      and requiere_sobrescribir
+                                      and hoja_sobrescribir is defined
+                                      and hoja_sobrescribir == hoja %}
+
+                                    <!-- CONFIRMAR SOBRESCRITURA -->
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'diarios.transmitir_diario',
+                                            hoja=hoja
+                                        ) }}"
+                                        class="form-transmitir-diario"
+                                        data-hoja="{{ hoja }}"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="cache_id"
+                                            value="{{ cache_id }}"
+                                        >
+
+                                        <input
+                                            type="hidden"
+                                            name="sobrescribir"
+                                            value="1"
+                                        >
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-danger btn-sm btn-transmitir"
+                                        >
+                                            Confirmar y sobrescribir {{ hoja }}
+                                        </button>
+
+                                    </form>
+
                                 {% else %}
 
+                                    <!-- TRANSMISION NORMAL -->
                                     <form
                                         method="POST"
                                         action="{{ url_for(
@@ -358,9 +411,34 @@
                             const hoja =
                                 this.dataset.hoja || "";
 
+                            const boton =
+                                this.querySelector(
+                                    ".btn-transmitir"
+                                );
+
+                            const esSobrescritura =
+                                this.querySelector(
+                                    'input[name="sobrescribir"][value="1"]'
+                                ) !== null;
+
+                            let mensajeConfirmacion;
+
+                            if (esSobrescritura) {
+
+                                mensajeConfirmacion =
+                                    `Ya existen registros para la hoja "${hoja}". ` +
+                                    `¿Está seguro que desea sobrescribirlos?`;
+
+                            } else {
+
+                                mensajeConfirmacion =
+                                    `¿Está seguro que desea transmitir la hoja "${hoja}" a las sucursales?`;
+
+                            }
+
                             const confirmar =
                                 confirm(
-                                    `¿Está seguro que desea transmitir la hoja "${hoja}" a las sucursales?`
+                                    mensajeConfirmacion
                                 );
 
                             if (!confirmar) {
@@ -368,15 +446,18 @@
                                 return;
                             }
 
-                            const boton =
-                                this.querySelector(
-                                    ".btn-transmitir"
-                                );
-
                             if (boton) {
+
                                 boton.disabled = true;
-                                boton.textContent =
-                                    `Transmitiendo ${hoja}...`;
+
+                                if (esSobrescritura) {
+                                    boton.textContent =
+                                        `Sobrescribiendo ${hoja}...`;
+                                } else {
+                                    boton.textContent =
+                                        `Transmitiendo ${hoja}...`;
+                                }
+
                             }
 
                         }
