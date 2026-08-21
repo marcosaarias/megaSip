@@ -66,9 +66,9 @@
     </div>
   </div>
 
-  <div class="menu-section 
+<div class="menu-section 
     {% if 'logs_compras' in request.path 
-          or 'logs_farmacia' in request.path %}
+          or '/farmacia/logs' in request.path %}
       active
     {% endif %}">
 
@@ -83,9 +83,12 @@
         Logs Compras
       </a>
 
-      <a href="{{ url_for('logs.logs_farmacia') }}"
-        class="submenu-item {% if 'logs_farmacia' in request.path %}active-link{% endif %}">
-        Logs Farmacia
+      <a href="{{ url_for('farmacia_logs.index') }}"
+          class="submenu-item
+          {% if '/farmacia/logs' in request.path %}
+              active-link
+          {% endif %}">
+            Logs Farmacia
       </a>
 
     </div>
