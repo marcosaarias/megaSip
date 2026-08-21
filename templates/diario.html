@@ -72,7 +72,6 @@
 
     </div>
 
-
     <!-- ========================= -->
     <!-- PREVISUALIZACION MULTIHOJA -->
     <!-- ========================= -->
@@ -105,144 +104,154 @@
                 identificar claramente cuáles ya fueron procesadas.
             </div>
 
-
-            <!-- ========================= -->
-            <!-- HOJAS -->
-            <!-- ========================= -->
             {% for hoja in hojas_orden %}
 
-            {% set transmitida = estados_hojas.get(hoja, false) if estados_hojas is defined else false %}
+                {% if estados_hojas is defined %}
+                    {% set transmitida = estados_hojas.get(hoja, False) %}
+                {% else %}
+                    {% set transmitida = False %}
+                {% endif %}
 
-            <div
-                class="card mb-4 hoja-diario shadow-sm
-                {% if transmitida %}hoja-transmitida{% endif %}"
-            >
-
-                <!-- HEADER HOJA -->
-                <div
-                    class="card-header
-                    {% if transmitida %}
-                        bg-success-subtle
+                <!-- DEBUG TEMPORAL -->
+                <div class="small text-muted mb-2">
+                    DEBUG {{ hoja }}:
+                    {% if estados_hojas is defined %}
+                        {{ estados_hojas.get(hoja, 'NO EXISTE') }}
                     {% else %}
-                        bg-light
-                    {% endif %}"
+                        estados_hojas NO DEFINIDO
+                    {% endif %}
+                </div>
+
+                <div
+                    class="card mb-4 hoja-diario shadow-sm
+                    {% if transmitida %}hoja-transmitida{% endif %}"
                 >
 
+                    <!-- HEADER HOJA -->
                     <div
-                        class="d-flex
-                               justify-content-between
-                               align-items-center
-                               flex-wrap
-                               gap-3"
+                        class="card-header
+                        {% if transmitida %}
+                            bg-success-subtle
+                        {% else %}
+                            bg-light
+                        {% endif %}"
                     >
 
-                        <!-- INFORMACION HOJA -->
-                        <div>
+                        <div
+                            class="d-flex
+                                   justify-content-between
+                                   align-items-center
+                                   flex-wrap
+                                   gap-3"
+                        >
 
-                            <div class="d-flex align-items-center gap-2">
+                            <!-- INFORMACION HOJA -->
+                            <div>
 
-                                <h5 class="mb-1">
-                                    {{ hoja }}
-                                </h5>
+                                <div class="d-flex align-items-center gap-2">
 
+                                    <h5 class="mb-1">
+                                        {{ hoja }}
+                                    </h5>
+
+                                    {% if transmitida %}
+
+                                        <span class="badge bg-success">
+                                            ✓ Transmitida
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-warning text-dark">
+                                            Pendiente
+                                        </span>
+
+                                    {% endif %}
+
+                                </div>
+
+                                <span class="text-muted">
+                                    Registros:
+                                    <strong>
+                                        {{ total_registros.get(hoja, 0) }}
+                                    </strong>
+                                </span>
+
+                            </div>
+
+                            <!-- BOTONES -->
+                            <div class="d-flex gap-2 flex-wrap">
+
+                                <!-- DESCARGAR -->
+                                <a
+                                    href="{{ url_for(
+                                        'diarios.descargar_diario',
+                                        hoja=hoja,
+                                        cache_id=cache_id
+                                    ) }}"
+                                    class="btn btn-success btn-sm"
+                                >
+                                    Descargar archivo
+                                </a>
+
+                                <!-- TRANSMITIR / ESTADO -->
                                 {% if transmitida %}
-                                    <span class="badge bg-success">
-                                        ✓ Transmitida
-                                    </span>
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-success btn-sm"
+                                        disabled
+                                    >
+                                        ✓ Ya transmitida
+                                    </button>
+
                                 {% else %}
-                                    <span class="badge bg-warning text-dark">
-                                        Pendiente
-                                    </span>
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'diarios.transmitir_diario',
+                                            hoja=hoja
+                                        ) }}"
+                                        class="form-transmitir-diario"
+                                        data-hoja="{{ hoja }}"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="cache_id"
+                                            value="{{ cache_id }}"
+                                        >
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary btn-sm btn-transmitir"
+                                        >
+                                            Transmitir {{ hoja }}
+                                        </button>
+
+                                    </form>
+
                                 {% endif %}
 
                             </div>
 
-                            <span class="text-muted">
-                                Registros:
-                                <strong>
-                                    {{ total_registros.get(hoja, 0) }}
-                                </strong>
-                            </span>
-
                         </div>
 
+                    </div>
 
-                        <!-- BOTONES -->
-                        <div class="d-flex gap-2 flex-wrap">
+                    <!-- TABLA -->
+                    <div class="card-body p-2">
 
-                            <!-- DESCARGAR -->
-                            <a
-                                href="{{ url_for(
-                                    'diarios.descargar_diario',
-                                    hoja=hoja,
-                                    cache_id=cache_id
-                                ) }}"
-                                class="btn btn-success btn-sm"
-                            >
-                                Descargar archivo
-                            </a>
-
-
-                            <!-- TRANSMITIR / ESTADO -->
-                            {% if transmitida %}
-
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-success btn-sm"
-                                    disabled
-                                >
-                                    ✓ Ya transmitida
-                                </button>
-
-                            {% else %}
-
-                                <form
-                                    method="POST"
-                                    action="{{ url_for(
-                                        'diarios.transmitir_diario',
-                                        hoja=hoja
-                                    ) }}"
-                                    class="form-transmitir-diario"
-                                    data-hoja="{{ hoja }}"
-                                >
-
-                                    <input
-                                        type="hidden"
-                                        name="cache_id"
-                                        value="{{ cache_id }}"
-                                    >
-
-                                    <button
-                                        type="submit"
-                                        class="btn btn-primary btn-sm btn-transmitir"
-                                    >
-                                        Transmitir {{ hoja }}
-                                    </button>
-
-                                </form>
-
-                            {% endif %}
-
+                        <div class="tabla-scroll">
+                            {{ preview[hoja] | safe }}
                         </div>
 
                     </div>
 
                 </div>
-
-
-                <!-- TABLA -->
-                <div class="card-body p-2">
-
-                    <div class="tabla-scroll">
-                        {{ preview[hoja] | safe }}
-                    </div>
-
-                </div>
-
-            </div>
 
             {% endfor %}
-
 
             <div class="alert alert-secondary mt-4 mb-0 text-end">
                 Previsualización activa.
@@ -254,7 +263,6 @@
     </div>
 
     {% endif %}
-
 
     <!-- ========================= -->
     <!-- ESTILOS -->
@@ -326,7 +334,6 @@
         }
 
     </style>
-
 
     <!-- ========================= -->
     <!-- JAVASCRIPT -->
