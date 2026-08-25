@@ -948,55 +948,237 @@ function imprimirTabla() {
             .filter(valor => valor !== "");
         }
 
+    //function marcarMultiples() {
+    //    const codigos = obtenerValoresMultiples("materialesMultiples");
+    //    const departamentos = obtenerValoresMultiples("departamentosMultiples");
+
+    //    if (codigos.length > 0 && departamentos.length > 0) {
+    //        alert("No podés buscar materiales y departamentos múltiples al mismo tiempo.");
+    //        return;
+    //    }
+
+    //    if (codigos.length === 0 && departamentos.length === 0) {
+    //        alert("Ingresá materiales o departamentos.");
+    //        return;
+    //    }
+
+    //    const setCodigos = new Set(codigos);
+    //    const setDepartamentos = new Set(departamentos);
+
+    //    let encontrados = 0;
+    //    const filas = document.querySelectorAll("#areaImpresion tbody tr");
+
+    //    filas.forEach(fila => {
+    //        const index = parseInt(fila.dataset.index, 10);
+
+    //        const codigoFila = fila.cells[2].innerText.trim().toLowerCase();
+    //        const departamentoFila = fila.cells[4].innerText.trim().toLowerCase();
+
+    //        const coincide = codigos.length > 0
+    //            ? setCodigos.has(codigoFila)
+    //            : setDepartamentos.has(departamentoFila);
+
+    //        fila.style.display = coincide ? "" : "none";
+
+    //        const checkbox = fila.querySelector(".chk-imprimir");
+    //        if (checkbox) checkbox.checked = coincide;
+
+    //        if (!isNaN(index) && datosCompletos[index]) {
+    //            datosCompletos[index].seleccionado = coincide;
+    //            if (coincide) {
+    //                datosCompletos[index].cantidad_imprimir =
+    //                    datosCompletos[index].cantidad_imprimir || 1;
+    //            }
+    //        }
+
+    //        if (coincide) encontrados++;
+    //    });
+
+    //    if (encontrados === 0) {
+    //        alert("No se encontraron registros con los valores ingresados.");
+    //    }
+    //}
+
+
     function marcarMultiples() {
-        const codigos = obtenerValoresMultiples("materialesMultiples");
-        const departamentos = obtenerValoresMultiples("departamentosMultiples");
 
-        if (codigos.length > 0 && departamentos.length > 0) {
-            alert("No podés buscar materiales y departamentos múltiples al mismo tiempo.");
+        const codigos =
+            obtenerValoresMultiples(
+                "materialesMultiples"
+            );
+
+        const departamentosRaw =
+            obtenerValoresMultiples(
+                "departamentosMultiples"
+            );
+
+        // Normalizamos los departamentos ingresados.
+        const departamentos =
+            departamentosRaw.map(
+                normalizarDepartamento
+            );
+
+
+        if (
+            codigos.length > 0
+            && departamentos.length > 0
+        ) {
+
+            alert(
+                "No podés buscar materiales "
+                + "y departamentos múltiples "
+                + "al mismo tiempo."
+            );
+
             return;
         }
 
-        if (codigos.length === 0 && departamentos.length === 0) {
-            alert("Ingresá materiales o departamentos.");
+
+        if (
+            codigos.length === 0
+            && departamentos.length === 0
+        ) {
+
+            alert(
+                "Ingresá materiales "
+                + "o departamentos."
+            );
+
             return;
         }
 
-        const setCodigos = new Set(codigos);
-        const setDepartamentos = new Set(departamentos);
+
+        const setCodigos =
+            new Set(codigos);
+
+        const setDepartamentos =
+            new Set(departamentos);
+
 
         let encontrados = 0;
-        const filas = document.querySelectorAll("#areaImpresion tbody tr");
+
+        const filas =
+            document.querySelectorAll(
+                "#areaImpresion tbody tr"
+            );
+
 
         filas.forEach(fila => {
-            const index = parseInt(fila.dataset.index, 10);
 
-            const codigoFila = fila.cells[2].innerText.trim().toLowerCase();
-            const departamentoFila = fila.cells[4].innerText.trim().toLowerCase();
+            const index =
+                parseInt(
+                    fila.dataset.index,
+                    10
+                );
 
-            const coincide = codigos.length > 0
-                ? setCodigos.has(codigoFila)
-                : setDepartamentos.has(departamentoFila);
 
-            fila.style.display = coincide ? "" : "none";
+            // Código / material
+            const codigoFila =
+                fila.cells[2]
+                .innerText
+                .trim()
+                .toLowerCase();
 
-            const checkbox = fila.querySelector(".chk-imprimir");
-            if (checkbox) checkbox.checked = coincide;
 
-            if (!isNaN(index) && datosCompletos[index]) {
-                datosCompletos[index].seleccionado = coincide;
-                if (coincide) {
-                    datosCompletos[index].cantidad_imprimir =
-                        datosCompletos[index].cantidad_imprimir || 1;
-                }
+            // Departamento (columna Dep)
+            const departamentoFila =
+                normalizarDepartamento(
+                    fila.cells[4]
+                    .innerText
+                );
+
+
+            const coincide =
+                codigos.length > 0
+                    ? setCodigos.has(
+                        codigoFila
+                    )
+                    : setDepartamentos.has(
+                        departamentoFila
+                    );
+
+
+            fila.style.display =
+                coincide
+                    ? ""
+                    : "none";
+
+
+            const checkbox =
+                fila.querySelector(
+                    ".chk-imprimir"
+                );
+
+
+            if (checkbox) {
+                checkbox.checked =
+                    coincide;
             }
 
-            if (coincide) encontrados++;
+
+            if (
+                !isNaN(index)
+                && datosCompletos[index]
+            ) {
+
+                datosCompletos[index]
+                    .seleccionado =
+                    coincide;
+
+
+                if (coincide) {
+
+                    datosCompletos[index]
+                        .cantidad_imprimir =
+                        datosCompletos[index]
+                            .cantidad_imprimir
+                        || 1;
+
+                }
+
+            }
+
+
+            if (coincide) {
+                encontrados++;
+            }
+
         });
 
+
         if (encontrados === 0) {
-            alert("No se encontraron registros con los valores ingresados.");
+
+            alert(
+                "No se encontraron registros "
+                + "con los valores ingresados."
+            );
+
         }
+    }
+
+    function obtenerValoresMultiples(id) {
+    const texto = document.getElementById(id).value || "";
+
+    return texto
+        .split(/[\n,;\s]+/)
+        .map(valor => valor.trim().toLowerCase())
+        .filter(valor => valor !== "");
+}
+
+
+    function normalizarDepartamento(valor) {
+        valor = String(valor ?? "").trim();
+
+        // Si es un departamento numérico:
+        // 30  -> 030
+        // 030 -> 030
+        // 5   -> 005
+        // 005 -> 005
+        if (/^\d+$/.test(valor)) {
+            return valor.padStart(3, "0");
+        }
+
+        return valor.toLowerCase();
     }
 
 
