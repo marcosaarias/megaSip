@@ -16,7 +16,7 @@ from compras import (
     completar_departamento,
     completar_dep,
     normalizar_texto,
-    guardar_cenefas_en_db,
+    guardar_cenefas_en_db
 )
 
 
@@ -165,7 +165,6 @@ def diario():
 
     if request.method == "POST":
 
-        
         # ================= PROCESAR ARCHIVO =================
         archivo = request.files.get("archivo")
         fecha_desde_raw = request.form.get("fecha_desde")
@@ -267,19 +266,20 @@ def diario():
                     df["desde"] = f_desde
                     df["hasta"] = f_hasta
 
-                    if "sucursales" not in df.columns:
-                        df["sucursales"] = detectar_sucursales(nombre_hoja)
-                    else:
-                        df["sucursales"] = (
-                            df["sucursales"]
-                            .replace(r"^\s*$", pd.NA, regex=True)
-                            .replace("nan", pd.NA)
-                            .ffill()
-                        )
+                    # IMPORTANTE:
+                    # En Diario las sucursales se determinan EXCLUSIVAMENTE
+                    # por el nombre de la hoja (Jujuy / Salta / Tucuman).
+                    sucursales_hoja = detectar_sucursales(nombre_hoja)
 
-                        df["sucursales"] = df["sucursales"].apply(
-                            lambda x: normalizar_sucursales(x, nombre_hoja)
+                    if not sucursales_hoja:
+                        print(
+                            "HOJA OMITIDA - NO SE PUDO DETERMINAR REGION:",
+                            repr(nombre_hoja),
+                            flush=True
                         )
+                        continue
+
+                    df["sucursales"] = sucursales_hoja
 
                     df = df.replace(r"^\s*$", pd.NA, regex=True).dropna(how="all")
 
@@ -307,13 +307,13 @@ def diario():
                         if col in df.columns:
                             df[col] = df[col].apply(limpiar_precio)
 
-                    columnas_validas = [
-                        col for col in HEADERS_DIARIO
-                        if col in df.columns
-                    ]
+                    # Garantizar que todas las columnas esperadas existan.
+                    # Así todas las hojas se previsualizan con la misma estructura.
+                    for col in HEADERS_DIARIO:
+                        if col not in df.columns:
+                            df[col] = ""
 
-                    df = df[columnas_validas]
-
+                    df = df[HEADERS_DIARIO]
                     df = df.fillna("")
 
                     redis_client.set(
@@ -657,7 +657,7 @@ def transmitir_diario(hoja):
     # GUARDAR EN POSTGRESQL
     # ==========================================================
     print(
-        "TRANSMITIENDO DIARIO A POSTGRES:",
+        "TRANSMITIENDO DIARIO:",
         "hoja=", repr(hoja),
         "registros=", len(df),
         "sucursales=",
