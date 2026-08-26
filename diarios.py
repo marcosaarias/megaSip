@@ -17,7 +17,6 @@ from compras import (
     completar_dep,
     normalizar_texto,
     guardar_cenefas_en_db,
-    existen_cenefas_repetidas
 )
 
 
@@ -166,105 +165,7 @@ def diario():
 
     if request.method == "POST":
 
-        accion = request.form.get("accion")
-
-        # ================= TRANSMITIR =================
-        if accion == "transmitir":
-
-            cache_id = request.form.get("cache_id")
-            hoja = request.form.get("hoja")
-
-            if not cache_id or not hoja:
-                mensaje_error = "Cache u hoja inválida."
-                return render_template(
-                    "diario.html",
-                    preview=preview,
-                    total_registros=total_registros,
-                    hojas_orden=hojas_orden,
-                    cache_id=None,
-                    mensaje_error=mensaje_error
-                )
-
-            data = redis_client.get(f"diario:{cache_id}:{hoja}")
-
-            if not data:
-                mensaje_error = "No hay datos para transmitir. Volvé a procesar el archivo."
-                return render_template(
-                    "diario.html",
-                    preview=preview,
-                    total_registros=total_registros,
-                    hojas_orden=hojas_orden,
-                    cache_id=None,
-                    mensaje_error=mensaje_error
-                )
-
-            try:
-                df = pd.read_json(StringIO(data), orient="records")
-
-                # Reaseguro por si Redis tiene datos viejos sin mapeo
-                df = completar_departamento(df)
-                df = completar_dep(df)
-
-                if "dep" not in df.columns:
-                    df["dep"] = ""
-
-                if "departamento" not in df.columns:
-                    df["departamento"] = ""
-
-                repetidos = existen_cenefas_repetidas(df, "diario")
-
-                if repetidos:
-                    mensaje_error = f"Ya existen {len(repetidos)} registros de Diario para este período."
-
-                    preview = {
-                        hoja: df.to_html(
-                            classes="table table-sm table-striped",
-                            index=False
-                        )
-                    }
-
-                    return render_template(
-                        "diario.html",
-                        preview=preview,
-                        total_registros={hoja: len(df)},
-                        hojas_orden=[hoja],
-                        cache_id=cache_id,
-                        mensaje_error=mensaje_error
-                    )
-
-                guardar_cenefas_en_db(
-                    df,
-                    "diario",
-                    usuario=session.get("usuario_nombre", "desconocido")
-                )
-
-                redis_client.delete(f"diario:{cache_id}:{hoja}")
-
-                preview = {
-                    hoja: "<div class='alert alert-success'>Diario transmitido correctamente a sucursales.</div>"
-                }
-
-                return render_template(
-                    "diario.html",
-                    preview=preview,
-                    total_registros={},
-                    hojas_orden=[hoja],
-                    cache_id=None,
-                    mensaje_error=None
-                )
-
-            except Exception as e:
-                traceback.print_exc()
-                mensaje_error = f"Error transmitiendo Diario: {repr(e)}"
-                return render_template(
-                    "diario.html",
-                    preview=preview,
-                    total_registros=total_registros,
-                    hojas_orden=hojas_orden,
-                    cache_id=cache_id,
-                    mensaje_error=mensaje_error
-                )
-
+        
         # ================= PROCESAR ARCHIVO =================
         archivo = request.files.get("archivo")
         fecha_desde_raw = request.form.get("fecha_desde")
@@ -752,52 +653,27 @@ def transmitir_diario(hoja):
 
     tipo_cenefa = "diario"
 
-    sobrescribir = (
-        request.form.get("sobrescribir") == "1"
-    )
-
-    # ==========================================================
-    # VALIDAR REPETIDOS
-    # ==========================================================
-    repetidos = existen_cenefas_repetidas(
-        df,
-        tipo_cenefa
-    )
-
-    if repetidos and not sobrescribir:
-
-        (
-            preview,
-            total_registros,
-            hojas_orden,
-            estados_hojas
-        ) = reconstruir_preview()
-
-        return render_template(
-            "diario.html",
-            preview=preview,
-            total_registros=total_registros,
-            hojas_orden=hojas_orden,
-            estados_hojas=estados_hojas,
-            cache_id=cache_id,
-            mensaje_error=(
-                f"Ya existen {len(repetidos)} registros "
-                f"de la hoja {hoja} para este período. "
-                "Si desea sobrescribirlos, "
-                "confirme nuevamente."
-            ),
-            requiere_sobrescribir=True,
-            hoja_sobrescribir=hoja
-        )
-
     # ==========================================================
     # GUARDAR EN POSTGRESQL
     # ==========================================================
+    print(
+        "TRANSMITIENDO DIARIO A POSTGRES:",
+        "hoja=", repr(hoja),
+        "registros=", len(df),
+        "sucursales=",
+        (
+            df["sucursales"].drop_duplicates().tolist()
+            if "sucursales" in df.columns
+            else []
+        ),
+        flush=True
+    )
+
     guardar_cenefas_en_db(
         df,
         tipo_cenefa,
         usuario=usuario,
-        sobrescribir=sobrescribir
+        sobrescribir=False
     )
 
     # ==========================================================
