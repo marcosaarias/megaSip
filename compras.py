@@ -1121,33 +1121,72 @@ def valor_db(valor):
 
 # Controlar cenefas repetidas
 
+#def existen_cenefas_repetidas(df, tipo_cenefa):
+#    #conn = sqlite3.connect(DB_PATH)
+#    conn = get_db_connection()
+#    cursor = conn.cursor()
+
+#    repetidos = []
+
+#    for _, row in df.iterrows():
+#        cursor.execute("""
+#            SELECT COUNT(*)
+#            FROM cenefas
+#            WHERE Codigo = %s
+#              AND tipo_cenefa = %s
+#              AND desde = %s
+#              AND hasta = %s
+#        """, (
+#            row.get("CODIGO"),
+#            tipo_cenefa,
+#            row.get("desde"),
+#            row.get("hasta")
+#        ))
+
+#        if cursor.fetchone()[0] > 0:
+#            repetidos.append(row.get("CODIGO"))
+
+#    conn.close()
+#    return repetidos
+
 def existen_cenefas_repetidas(df, tipo_cenefa):
-    #conn = sqlite3.connect(DB_PATH)
     conn = get_db_connection()
     cursor = conn.cursor()
 
     repetidos = []
 
-    for _, row in df.iterrows():
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM cenefas
-            WHERE Codigo = %s
-              AND tipo_cenefa = %s
-              AND desde = %s
-              AND hasta = %s
-        """, (
-            row.get("CODIGO"),
-            tipo_cenefa,
-            row.get("desde"),
-            row.get("hasta")
-        ))
+    try:
+        for _, row in df.iterrows():
 
-        if cursor.fetchone()[0] > 0:
-            repetidos.append(row.get("CODIGO"))
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM cenefas
+                WHERE Codigo = %s
+                  AND tipo_cenefa = %s
+                  AND desde = %s
+                  AND hasta = %s
+                  AND sucursales = %s
+                """,
+                (
+                    row.get("CODIGO"),
+                    tipo_cenefa,
+                    row.get("desde"),
+                    row.get("hasta"),
+                    row.get("sucursales"),
+                ),
+            )
 
-    conn.close()
-    return repetidos
+            if cursor.fetchone()[0] > 0:
+                repetidos.append(
+                    row.get("CODIGO")
+                )
+
+        return repetidos
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, sobrescribir=False):
     conn = get_db_connection()
