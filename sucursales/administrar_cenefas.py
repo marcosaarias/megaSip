@@ -17,6 +17,35 @@ from logs import guardar_log_compras
 from sistemas import login_requerido
 
 
+def fecha_para_input(valor):
+    if not valor:
+        return ""
+
+    if isinstance(valor, datetime):
+        return valor.date().isoformat()
+
+    if isinstance(valor, date):
+        return valor.isoformat()
+
+    valor = str(valor).strip()
+
+    formatos = (
+        "%Y-%m-%d",
+        "%d/%m/%Y",
+    )
+
+    for formato in formatos:
+        try:
+            return datetime.strptime(
+                valor,
+                formato,
+            ).date().isoformat()
+
+        except ValueError:
+            continue
+
+    return ""
+
 # ============================================================
 # CONFIGURACION
 # ============================================================
@@ -367,6 +396,16 @@ def registrar_rutas_administrar_cenefas(
             registros = (
                 cursor.fetchall()
             )
+
+            # Normalizar fechas para los input type="date"
+            for fila in registros:
+                fila["desde"] = fecha_para_input(
+                    fila.get("desde")
+                )
+
+                fila["hasta"] = fecha_para_input(
+                    fila.get("hasta")
+                )
 
         finally:
 
