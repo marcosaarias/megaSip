@@ -1493,6 +1493,11 @@ def transmitir_folder():
         # confirmar una sobrescritura en un segundo envío.
         guardar_temporal(lote_id, df)
 
+        print(
+            "DEBUG SUCURSALES FOLDER GENERAL:",
+            df["sucursales"].drop_duplicates().tolist()
+        )
+
         repetidos = existen_cenefas_repetidas(df, tipo)
 
         if repetidos and not sobrescribir:
