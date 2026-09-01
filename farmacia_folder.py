@@ -46,7 +46,7 @@ def normalizar_col(col):
 
 ALIAS_FOLDER_FARMACIA = {
     "troquel": ["troquel"],
-    "cod_barra": ["coddebarra", "codbarra", "codigobarra", "codebar"],
+    "cod_barra": ["coddebarra", "codbarra", "codigobarra", "codebar","ean","EAN"],
     "descripcion": ["descripcion", "descrip", "producto"],
     "normal": ["normal"],
     "oferta": ["oferta"],
