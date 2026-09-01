@@ -102,7 +102,7 @@ SUCURSAL_MAP = {
         "tucuman":"CO26,CO27"
     },
     "mayorista": {
-        "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO24,CO25,CO29,MA02",
+        "Total Empresa - Mayorista": "CO05,CO09,CO12,CO15,CO21,CO29,MA02",
         "jujuy": "CO05,CO12,CO15,MA02",
         "salta": "CO09,CO29,CO21",
         "oran": "CO21",
