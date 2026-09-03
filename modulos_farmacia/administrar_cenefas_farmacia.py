@@ -547,7 +547,7 @@ def administrar():
 
 
     return render_template(
-        "farmacia/administrar_cenefas.html",
+        "farmacia/administrar_cenefas_farmacia.html",
         registros=registros,
         filtro_troquel=filtro_troquel,
         filtro_descripcion=(
