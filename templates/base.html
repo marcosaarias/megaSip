@@ -205,6 +205,16 @@
     </a>
 
     <div class="submenu">
+       
+        <!-- ADMINISTRAR CENEFAS -->
+        <a href="{{ url_for('administrar_cenefas_farmacia.administrar') }}"
+           class="submenu-item
+           {% if '/farmacia/administrar-cenefas' in request.path %}
+           active-link
+           {% endif %}">
+            <i class="bi bi-pencil-square me-1"></i>
+            Administrar Cenefas
+        </a>
 
         <a href="{{ url_for('compras.farmacia_folder') }}"
            class="submenu-item

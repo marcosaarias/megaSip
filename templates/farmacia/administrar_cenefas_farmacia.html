@@ -1,0 +1,961 @@
+{% extends "base.html" %}
+
+{% block title %}
+Administrar Cenefas Farmacia
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ===================================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ===================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="mb-1">
+                Administrar Cenefas Farmacia
+            </h2>
+
+            <div class="text-muted">
+                Consulta y modificación de cenefas cargadas en Farmacia
+            </div>
+        </div>
+
+        <div class="badge bg-dark fs-6">
+            {{ registros|length }} registros
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- MENSAJES FLASH -->
+    <!-- ===================================================== -->
+
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% if mensajes %}
+
+            {% for categoria, mensaje in mensajes %}
+
+                <div
+                    class="alert alert-{{ categoria }}
+                           alert-dismissible fade show"
+                    role="alert"
+                >
+
+                    {{ mensaje }}
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                    ></button>
+
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+    {% endwith %}
+
+
+    <!-- ===================================================== -->
+    <!-- FILTROS -->
+    <!-- ===================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>
+                Buscar cenefas de Farmacia
+            </strong>
+        </div>
+
+        <div class="card-body">
+
+            <form
+                method="GET"
+                action="{{ url_for(
+                    'administrar_cenefas_farmacia.administrar'
+                ) }}"
+            >
+
+                <div class="row g-3 align-items-end">
+
+
+                    <!-- TROQUEL -->
+
+                    <div class="col-md-3">
+
+                        <label
+                            for="troquel"
+                            class="form-label"
+                        >
+                            Troquel
+                        </label>
+
+                        <input
+                            type="text"
+                            id="troquel"
+                            name="troquel"
+                            class="form-control"
+                            value="{{ filtro_troquel or '' }}"
+                            placeholder="Buscar troquel..."
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- DESCRIPCION -->
+
+                    <div class="col-md-4">
+
+                        <label
+                            for="descripcion"
+                            class="form-label"
+                        >
+                            Descripción
+                        </label>
+
+                        <input
+                            type="text"
+                            id="descripcion"
+                            name="descripcion"
+                            class="form-control"
+                            value="{{ filtro_descripcion or '' }}"
+                            placeholder="Buscar producto..."
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- TIPO -->
+
+                    <div class="col-md-3">
+
+                        <label
+                            for="tipo"
+                            class="form-label"
+                        >
+                            Tipo
+                        </label>
+
+                        <select
+                            id="tipo"
+                            name="tipo"
+                            class="form-select"
+                        >
+
+                            <option value="">
+                                Todos
+                            </option>
+
+                            {% for tipo in tipos_cenefa %}
+
+                                <option
+                                    value="{{ tipo }}"
+                                    {% if filtro_tipo == tipo %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ tipo|capitalize }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- BOTONES -->
+
+                    <div class="col-md-2">
+
+                        <div class="d-grid gap-2">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                            >
+                                <i class="bi bi-search me-1"></i>
+                                Buscar
+                            </button>
+
+                            <a
+                                href="{{ url_for(
+                                    'administrar_cenefas_farmacia.administrar'
+                                ) }}"
+                                class="btn btn-outline-secondary"
+                            >
+                                <i class="bi bi-x-circle me-1"></i>
+                                Limpiar
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- INFORMACION -->
+    <!-- ===================================================== -->
+
+    {% if filtro_troquel or filtro_descripcion or filtro_tipo %}
+
+        <div class="alert alert-light border mb-4">
+
+            <strong class="me-3">
+                Filtros activos:
+            </strong>
+
+            {% if filtro_troquel %}
+                <span class="me-3">
+                    Troquel:
+                    <strong>
+                        {{ filtro_troquel }}
+                    </strong>
+                </span>
+            {% endif %}
+
+            {% if filtro_descripcion %}
+                <span class="me-3">
+                    Descripción:
+                    <strong>
+                        {{ filtro_descripcion }}
+                    </strong>
+                </span>
+            {% endif %}
+
+            {% if filtro_tipo %}
+                <span>
+                    Tipo:
+                    <strong>
+                        {{ filtro_tipo }}
+                    </strong>
+                </span>
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- ===================================================== -->
+    <!-- TABLA -->
+    <!-- ===================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div
+            class="card-header bg-dark text-white
+                   d-flex justify-content-between
+                   align-items-center"
+        >
+
+            <strong>
+                Cenefas Farmacia
+            </strong>
+
+            <span>
+                {{ registros|length }} registros mostrados
+            </span>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            <div
+                class="table-responsive"
+                style="max-height: 650px; overflow: auto;"
+            >
+
+                <table
+                    class="table
+                           table-sm
+                           table-bordered
+                           table-hover
+                           align-middle
+                           mb-0"
+                    id="tabla-cenefas-farmacia"
+                >
+
+                    <thead class="table-dark sticky-top">
+
+                        <tr>
+
+                            <th>ID</th>
+
+                            <th style="min-width: 120px;">
+                                Troquel
+                            </th>
+
+                            <th style="min-width: 150px;">
+                                Código Barra
+                            </th>
+
+                            <th style="min-width: 300px;">
+                                Descripción
+                            </th>
+
+                            <th style="min-width: 120px;">
+                                Normal
+                            </th>
+
+                            <th style="min-width: 120px;">
+                                Oferta
+                            </th>
+
+                            <th style="min-width: 220px;">
+                                Promo
+                            </th>
+
+                            <th style="min-width: 145px;">
+                                Desde
+                            </th>
+
+                            <th style="min-width: 145px;">
+                                Hasta
+                            </th>
+
+                            <th style="min-width: 130px;">
+                                Tipo
+                            </th>
+
+                            <th style="min-width: 180px;">
+                                Lote
+                            </th>
+
+                            <th style="min-width: 160px;">
+                                Usuario
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for fila in registros %}
+
+                        <tr
+                            data-id="{{ fila.id }}"
+                            class="fila-cenefa"
+                        >
+
+                            <!-- ID PROTEGIDO -->
+
+                            <td>
+                                {{ fila.id }}
+                            </td>
+
+
+                            <!-- TROQUEL -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="troquel"
+                                    data-original="{{ fila.troquel or '' }}"
+                                    value="{{ fila.troquel or '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- CODIGO BARRA -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="cod_barra"
+                                    data-original="{{ fila.cod_barra or '' }}"
+                                    value="{{ fila.cod_barra or '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- DESCRIPCION -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="descripcion"
+                                    data-original="{{ fila.descripcion or '' }}"
+                                    value="{{ fila.descripcion or '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- NORMAL -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    inputmode="decimal"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="normal"
+                                    data-original="{{ fila.normal if fila.normal is not none else '' }}"
+                                    value="{{ fila.normal if fila.normal is not none else '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- OFERTA -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    inputmode="decimal"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="oferta"
+                                    data-original="{{ fila.oferta if fila.oferta is not none else '' }}"
+                                    value="{{ fila.oferta if fila.oferta is not none else '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- PROMO -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="promo"
+                                    data-original="{{ fila.promo or '' }}"
+                                    value="{{ fila.promo or '' }}"
+                                >
+
+                            </td>
+
+
+                            <!-- FECHA DESDE -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="fecha_desde"
+                                    data-original="{{ fila.fecha_desde or '' }}"
+                                    value="{{ fila.fecha_desde or '' }}"
+                                    placeholder="YYYY-MM-DD"
+                                >
+
+                            </td>
+
+
+                            <!-- FECHA HASTA -->
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="fecha_hasta"
+                                    data-original="{{ fila.fecha_hasta or '' }}"
+                                    value="{{ fila.fecha_hasta or '' }}"
+                                    placeholder="YYYY-MM-DD"
+                                >
+
+                            </td>
+
+
+                            <!-- TIPO -->
+
+                            <td>
+
+                                <select
+                                    class="form-select form-select-sm campo-editable"
+                                    data-id="{{ fila.id }}"
+                                    data-columna="tipo_cenefa"
+                                    data-original="{{ fila.tipo_cenefa or '' }}"
+                                >
+
+                                    {% for tipo in tipos_cenefa %}
+
+                                        <option
+                                            value="{{ tipo }}"
+                                            {% if fila.tipo_cenefa == tipo %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {{ tipo|capitalize }}
+                                        </option>
+
+                                    {% endfor %}
+
+                                </select>
+
+                            </td>
+
+
+                            <!-- DATOS PROTEGIDOS -->
+
+                            <td>
+                                <small>
+                                    {{ fila.lote_carga or '' }}
+                                </small>
+                            </td>
+
+                            <td>
+                                <small>
+                                    {{ fila.usuario_carga or '' }}
+                                </small>
+                            </td>
+
+                        </tr>
+
+
+                        {% else %}
+
+                        <tr>
+
+                            <td
+                                colspan="12"
+                                class="text-center py-5 text-muted"
+                            >
+
+                                <i
+                                    class="bi bi-search"
+                                    style="font-size: 2rem;"
+                                ></i>
+
+                                <div class="mt-2">
+                                    No se encontraron cenefas
+                                    para los filtros seleccionados.
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- GUARDAR CAMBIOS -->
+        <!-- ================================================= -->
+
+        {% if registros %}
+
+        <div class="card-footer">
+
+            <div
+                class="d-flex
+                       justify-content-between
+                       align-items-center"
+            >
+
+                <div
+                    id="contador-cambios"
+                    class="text-muted"
+                >
+                    Sin modificaciones
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn btn-warning px-4"
+                    id="btn-guardar"
+                    onclick="guardarCambios()"
+                    disabled
+                >
+
+                    <i class="bi bi-save me-1"></i>
+
+                    Guardar cambios
+
+                </button>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<style>
+
+.campo-editable {
+    min-width: 100px;
+}
+
+.campo-modificado {
+    border: 2px solid #f59e0b !important;
+    background: #fff8e1 !important;
+}
+
+#tabla-cenefas-farmacia th {
+    white-space: nowrap;
+}
+
+#tabla-cenefas-farmacia td {
+    vertical-align: middle;
+}
+
+</style>
+
+
+<script>
+
+/* ============================================================
+   CAMPOS EDITABLES
+   ============================================================ */
+
+const campos =
+    document.querySelectorAll(
+        ".campo-editable"
+    );
+
+const botonGuardar =
+    document.getElementById(
+        "btn-guardar"
+    );
+
+const contador =
+    document.getElementById(
+        "contador-cambios"
+    );
+
+
+/* ============================================================
+   DETECTAR MODIFICACIONES
+   ============================================================ */
+
+function estaModificado(campo) {
+
+    const actual =
+        String(
+            campo.value ?? ""
+        );
+
+    const original =
+        String(
+            campo.dataset.original ?? ""
+        );
+
+    return actual !== original;
+}
+
+
+/* ============================================================
+   OBTENER FILAS MODIFICADAS
+   ============================================================ */
+
+function obtenerIdsModificados() {
+
+    const ids =
+        new Set();
+
+    campos.forEach(campo => {
+
+        if (estaModificado(campo)) {
+
+            ids.add(
+                campo.dataset.id
+            );
+
+        }
+
+    });
+
+    return Array.from(ids);
+}
+
+
+/* ============================================================
+   ESTADO VISUAL
+   ============================================================ */
+
+function actualizarEstado() {
+
+    let totalCambios = 0;
+
+    campos.forEach(campo => {
+
+        if (estaModificado(campo)) {
+
+            totalCambios++;
+
+            campo.classList.add(
+                "campo-modificado"
+            );
+
+        } else {
+
+            campo.classList.remove(
+                "campo-modificado"
+            );
+
+        }
+
+    });
+
+
+    if (!contador) {
+        return;
+    }
+
+
+    if (totalCambios === 0) {
+
+        contador.textContent =
+            "Sin modificaciones";
+
+        contador.className =
+            "text-muted";
+
+
+        if (botonGuardar) {
+            botonGuardar.disabled = true;
+        }
+
+        return;
+    }
+
+
+    contador.textContent =
+        totalCambios +
+        (
+            totalCambios === 1
+                ? " modificación pendiente"
+                : " modificaciones pendientes"
+        );
+
+    contador.className =
+        "text-warning fw-bold";
+
+
+    if (botonGuardar) {
+        botonGuardar.disabled = false;
+    }
+
+}
+
+
+/* ============================================================
+   EVENTOS
+   ============================================================ */
+
+campos.forEach(campo => {
+
+    campo.addEventListener(
+        "input",
+        actualizarEstado
+    );
+
+    campo.addEventListener(
+        "change",
+        actualizarEstado
+    );
+
+});
+
+
+/* ============================================================
+   OBTENER DATOS COMPLETOS DE UNA FILA
+   ============================================================ */
+
+function obtenerDatosFila(id) {
+
+    const fila =
+        document.querySelector(
+            `tr[data-id="${id}"]`
+        );
+
+    const datos = {};
+
+    fila
+        .querySelectorAll(
+            ".campo-editable"
+        )
+        .forEach(campo => {
+
+            datos[
+                campo.dataset.columna
+            ] = campo.value;
+
+        });
+
+    return datos;
+}
+
+
+/* ============================================================
+   GUARDAR TODAS LAS FILAS MODIFICADAS
+   ============================================================ */
+
+async function guardarCambios() {
+
+    const ids =
+        obtenerIdsModificados();
+
+
+    if (ids.length === 0) {
+
+        alert(
+            "No existen modificaciones."
+        );
+
+        return;
+    }
+
+
+    const confirmar =
+        confirm(
+            "Se modificarán " +
+            ids.length +
+            (
+                ids.length === 1
+                    ? " registro"
+                    : " registros"
+            ) +
+            " de Farmacia.\n\n" +
+            "Los cambios actualizarán directamente " +
+            "la base de datos.\n\n" +
+            "¿Desea continuar?"
+        );
+
+
+    if (!confirmar) {
+        return;
+    }
+
+
+    botonGuardar.disabled = true;
+
+    const textoOriginal =
+        botonGuardar.innerHTML;
+
+
+    botonGuardar.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-1"></span>' +
+        'Guardando...';
+
+
+    try {
+
+        for (const id of ids) {
+
+            const datos =
+                obtenerDatosFila(id);
+
+            const formData =
+                new FormData();
+
+
+            Object.entries(datos).forEach(
+                ([columna, valor]) => {
+
+                    formData.append(
+                        columna,
+                        valor
+                    );
+
+                }
+            );
+
+
+            const respuesta =
+                await fetch(
+                    `/farmacia/administrar-cenefas/actualizar/${id}`,
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+
+            if (!respuesta.ok) {
+
+                throw new Error(
+                    "No se pudo actualizar " +
+                    "el registro ID " +
+                    id
+                );
+
+            }
+
+        }
+
+
+        alert(
+            "Cambios guardados correctamente."
+        );
+
+
+        window.location.reload();
+
+
+    } catch (error) {
+
+        alert(
+            "Error guardando cambios: " +
+            error.message
+        );
+
+
+        botonGuardar.disabled =
+            false;
+
+
+        botonGuardar.innerHTML =
+            textoOriginal;
+
+    }
+
+}
+
+</script>
+
+{% endblock %}
