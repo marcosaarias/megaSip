@@ -195,7 +195,8 @@
 <div class="menu-section
     {% if 'farmacia_folder' in request.path
        or 'diarios' in request.path
-       or 'nutricia' in request.path %}
+       or 'nutricia' in request.path 
+       or '/farmacia/administrar-cenefas' in request.path%}
     active
     {% endif %}">
 
@@ -207,7 +208,7 @@
     <div class="submenu">
        
         <!-- ADMINISTRAR CENEFAS -->
-         
+
         <a href="{{ url_for('administrar_cenefas_farmacia.administrar') }}"
            class="submenu-item
            {% if '/farmacia/administrar-cenefas' in request.path %}
