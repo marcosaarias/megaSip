@@ -7,6 +7,7 @@ import uuid
 
 from datetime import datetime, timedelta
 from pathlib import Path
+from utils.sucursales import SUCURSAL_MAP
 
 import numpy as np
 import pandas as pd
@@ -29,7 +30,9 @@ from sistemas import login_requerido
 # CONFIGURACIÓN
 # ============================================================
 
-SUCURSALES_MAYORISTA_TUCUMAN = "CO24,CO25"
+SUCURSALES_MAYORISTA_TUCUMAN = (
+    SUCURSAL_MAP["Tucuman - Mayorista"]
+)
 
 TIPO_CENEFA_MAYORISTA_TUCUMAN = "mayorista"
 
