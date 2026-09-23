@@ -340,6 +340,7 @@ function imprimirTabla() {
 
     const totalVisibles = visibles.length;
     let partes = [];
+    let paginaActual = [];
 
     visibles.forEach((row, index) => {
         const codigo = row.Codigo ?? "";
@@ -355,7 +356,7 @@ function imprimirTabla() {
         const etiquetaPrecioNormal = esOferta ? "Precio Normal" : "Precio Unitario";
 
         if (cantidad === 1) {
-            partes.push(`
+            paginaActual.push(`
                 <div class="cenefa-hoja-completa">
                     <div class="zona-encabezado"></div>
 
@@ -377,7 +378,7 @@ function imprimirTabla() {
                 </div>
             `);
         } else if (cantidad === 2) {
-            partes.push(`
+            paginaActual.push(`
                 <div class="cenefa-media-hoja">
                     <div class="contenido-media-hoja">
                         <div class="cenefa-titulo-media">${cenefa}</div>
@@ -395,7 +396,7 @@ function imprimirTabla() {
                 </div>
             `);
         } else if (cantidad === 3) {
-            partes.push(`
+            paginaActual.push(`
                 <div class="cenefa-tercio-hoja">
                     <div class="contenido-tercio-hoja">
                         <div class="cenefa-titulo-tercio">${cenefa}</div>
@@ -416,7 +417,7 @@ function imprimirTabla() {
                 </div>
             `);
         } else if (cantidad === 5) {
-            partes.push(`
+            paginaActual.push(`
                 <div class="cenefa-quinto-hoja">
                     <div class="contenido-quinto-hoja">
                         <div class="cenefa-titulo-quinto">${cenefa}</div>
@@ -437,8 +438,14 @@ function imprimirTabla() {
             `);
         }
 
-        if ((index + 1) % cantidad === 0 && (index + 1) < totalVisibles) {
-            partes.push('<div class="page-break"></div>');
+        // Cerramos una hoja cuando llega a la cantidad elegida
+        // (1, 2, 3 o 5 cenefas) o cuando llegamos al ultimo registro.
+        const hojaCompleta = paginaActual.length === cantidad;
+        const ultimoRegistro = index === totalVisibles - 1;
+
+        if (hojaCompleta || ultimoRegistro) {
+            partes.push(`<div class="pagina-impresion">${paginaActual.join("")}</div>`);
+            paginaActual = [];
         }
     });
 
@@ -484,10 +491,30 @@ function imprimirTabla() {
                 }
 
                 body {
+                    display: block;
+                }
+
+                /*
+                   Cada bloque representa UNA hoja.
+                   La alineacion visual se conserva a la derecha,
+                   pero el salto de pagina ahora se aplica al bloque completo
+                   y no a un elemento dentro de un contenedor flex.
+                */
+                .pagina-impresion {
+                    width: 100%;
+                    height: 277mm;
+                    box-sizing: border-box;
                     display: flex;
                     flex-direction: column;
                     align-items: flex-end;
-                    gap: 0;
+                    overflow: hidden;
+                    page-break-after: always;
+                    break-after: page;
+                }
+
+                .pagina-impresion:last-child {
+                    page-break-after: auto;
+                    break-after: auto;
                 }
 
                 .cenefa {
@@ -679,14 +706,6 @@ function imprimirTabla() {
                     line-height: 1.3;
                     text-align: center;
                     white-space: nowrap;
-                }
-
-                .page-break {
-                    page-break-after: always;
-                    break-after: page;
-                    width: 100%;
-                    height: 0;
-                    flex: 0 0 0;
                 }
 
                 .cenefa-tercio-hoja {
