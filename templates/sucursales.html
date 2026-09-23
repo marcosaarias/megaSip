@@ -481,31 +481,13 @@ function imprimirTabla() {
                     padding: 0;
                     font-family: Arial, sans-serif;
                 }
-
-                html {
-                    background: #e9e9e9;
-                }
-
                 body {
-                    width: 210mm;
-                    min-height: 297mm;
-                    margin: 0 auto;
-                    background: #ffffff;
                     display: flex;
                     flex-direction: column;
                     align-items: flex-end;
                     gap: 0;
-                    box-sizing: border-box;
                 }
 
-                /* Vista previa en navegador */
-                @media screen {
-                    body {
-                        box-shadow: 0 0 12px rgba(0, 0, 0, 0.18);
-                    }
-                }
-
-                /* Impresión real */
                 @media print {
                     html, body {
                         width: 210mm;
@@ -515,7 +497,6 @@ function imprimirTabla() {
 
                     body {
                         margin: 0;
-                        box-shadow: none;
                     }
                 }
 
