@@ -472,7 +472,7 @@ function imprimirTabla() {
                 }
 
                @page {
-                    size: A4 portrait; 
+                    size: A4 portrait;
                     margin: 0;
                 }
 
@@ -480,14 +480,43 @@ function imprimirTabla() {
                     margin: 0;
                     padding: 0;
                     font-family: Arial, sans-serif;
-                    overflow: hidden;
+                }
+
+                html {
+                    background: #e9e9e9;
                 }
 
                 body {
+                    width: 210mm;
+                    min-height: 297mm;
+                    margin: 0 auto;
+                    background: #ffffff;
                     display: flex;
                     flex-direction: column;
-                    align-items: flex-end;
+                    align-items: center;
                     gap: 0;
+                    box-sizing: border-box;
+                }
+
+                /* Vista previa en navegador */
+                @media screen {
+                    body {
+                        box-shadow: 0 0 12px rgba(0, 0, 0, 0.18);
+                    }
+                }
+
+                /* Impresión real */
+                @media print {
+                    html, body {
+                        width: 210mm;
+                        min-height: 297mm;
+                        background: #ffffff;
+                    }
+
+                    body {
+                        margin: 0;
+                        box-shadow: none;
+                    }
                 }
 
                 .cenefa {
@@ -535,7 +564,7 @@ function imprimirTabla() {
 
                 .cenefa-hoja-completa {
                     width: 100%;
-                    height: calc(100vh - 20mm);
+                    height: 277mm;
                     box-sizing: border-box;
                     display: flex;
                     flex-direction: column;
@@ -623,7 +652,7 @@ function imprimirTabla() {
 
                 .cenefa-media-hoja {
                     width: 100%;
-                    height: calc((100vh - 20mm) / 2);
+                    height: calc(277mm / 2);
                     box-sizing: border-box;
                     display: flex;
                     page-break-inside: avoid;
@@ -683,18 +712,21 @@ function imprimirTabla() {
 
                 .page-break {
                     page-break-after: always;
+                    break-after: page;
+                    width: 100%;
                     height: 0;
+                    flex: 0 0 0;
                 }
 
                 .cenefa-tercio-hoja {
                     width: calc(100% - 25px);
                     max-width: 420px;
-                    height: calc((100vh - 20mm) / 3);
+                    height: calc(277mm / 3);
                     box-sizing: border-box;
                     display: flex;
                     page-break-inside: avoid;
                     margin-left: auto;
-                    margin-right: 20px;
+                    margin-right: auto;
                 }
 
                 .contenido-tercio-hoja {
@@ -769,12 +801,12 @@ function imprimirTabla() {
                 .cenefa-quinto-hoja {
                     width: calc(100% - 25px);
                     max-width: 420px;
-                    height: calc((100vh - 20mm) / 5);
+                    height: calc(277mm / 5);
                     box-sizing: border-box;
                     display: flex;
                     page-break-inside: avoid;
                     margin-left: auto;
-                    margin-right: 20px;
+                    margin-right: auto;
                 }
 
                 .contenido-quinto-hoja {
