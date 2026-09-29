@@ -1603,12 +1603,6 @@ def transmitir_folder():
         ), 500
 
 
-@compras_bp.route("/cenefas", methods=["GET", "POST"])
-def cenefas():
-    tipo = request.args.get("tipo") or "minorista"
-    return render_template("cenefas.html", tipo=tipo)
-
-
 @compras_bp.route("/ofertas/<modo>", methods=["GET", "POST"])
 @login_requerido("compras")
 def ofertas(modo):
