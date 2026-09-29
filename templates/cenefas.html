@@ -1,111 +1,208 @@
 {% extends "base.html" %}
-{% block title %}Folder{% endblock %}
-
+{% block title %}Folder Mayorista{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <h2 class="mb-4">Gestión de Cenefas</h2>
+<div class="container-fluid folder-container">
+<!-- ======================================================
+TITULO
+======================================================= -->
+<h2 class="folder-page-title">
+Gestión de Folder Mayorista
+</h2>
 
-    <!-- 🔹 Selector global de fechas -->
-    <div class="card p-4 shadow-sm mb-4">
-        <div class="row">
-            <div class="col-md-3">
-                <label><strong>Desde:</strong></label>
-                <input type="date"
-                       id="fecha_desde"
-                       class="form-control"
-                       value="{{ fecha_desde }}"
-                       required>
-            </div>
-
-            <div class="col-md-3">
-                <label><strong>Hasta:</strong></label>
-                <input type="date"
-                       id="fecha_hasta"
-                       class="form-control"
-                       value="{{ fecha_hasta }}"
-                       required>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Cenefa -->
-        <div class="col-md-6">
-            <div class="card p-4 shadow-sm">
-                <h4>Cargar Cenefas</h4>
-
-                <form method="POST" enctype="multipart/form-data" class="folder-form">
-                    <input type="hidden" name="tipo" value="mayorista">
-                    <input type="hidden" name="fecha_desde">
-                    <input type="hidden" name="fecha_hasta">
-
-                    <input type="file" name="archivo" class="form-control mb-3" required>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Cargar Cenefas
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🔹 Preview -->
-    {% if preview %}
-    <div class="mt-5">
-        <div class="card shadow-sm">
-
-            <!-- Header -->
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">
-                    Previsualización - {{ tipo|capitalize }}
-                    {% if total_registros %}
-                        | Total: {{ total_registros }}
-                    {% endif %}
-                </h5>
-            </div>
-
-            <!-- Body -->
-            <div class="card-body p-2">
-                <div style="max-height:600px; overflow:auto;">
-                    {{ preview|safe }}
-                </div>
-
-                <!-- 🔥 Botón Transmitir al final -->
-                <div class="text-end mt-4">
-                    <form method="POST" action="{{ url_for('compras.transmitir') }}">
-                        <input type="hidden" name="tipo" value="{{ tipo }}">
-                        <input type="hidden" name="fecha_desde" value="{{ fecha_desde }}">
-                        <input type="hidden" name="fecha_hasta" value="{{ fecha_hasta }}">
-
-                        <button type="submit" class="btn btn-success px-4">
-                            Transmitir
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-        </div>
-    </div>
-    {% endif %}
+<!-- ======================================================
+INFORMACION
+======================================================= -->
+<div class="folder-info">
+<div class="folder-info-icon">
+ℹ️
+</div>
+<div>
+<strong>Gestión del Folder Mayorista</strong>
+<br>
+Cargá el nuevo folder con su período de vigencia.
+Cuando corresponda reemplazar el folder actual,
+podrás archivarlo indicando su período de vigencia.
+</div>
 </div>
 
-<!-- 🔥 Script simple para copiar fechas -->
-<script>
-document.querySelectorAll(".folder-form").forEach(form => {
-    form.addEventListener("submit", function(event) {
-        const desde = document.getElementById("fecha_desde").value;
-        const hasta = document.getElementById("fecha_hasta").value;
+<!-- ======================================================
+OPERACIONES
+======================================================= -->
+<div class="row g-4">
 
-        if (!desde || !hasta) {
-            alert("Debe seleccionar las fechas Desde y Hasta.");
-            event.preventDefault();
-            return;
-        }
+<!-- ==================================================
+CARGAR NUEVO FOLDER
+=================================================== -->
+<div class="col-lg-6 col-md-6">
+<div class="folder-card">
+<div class="folder-card-header load">
+<span>⬆</span>
+<span>1. Cargar nuevo folder</span>
+</div>
 
-        form.querySelector("input[name='fecha_desde']").value = desde;
-        form.querySelector("input[name='fecha_hasta']").value = hasta;
-    });
-});
-</script>
+<div class="folder-card-body">
+<p class="folder-help">
+Seleccioná el archivo Excel del nuevo folder
+mayorista y definí su período de vigencia.
+</p>
 
+<!--
+Se mantiene el POST actual.
+No modificamos backend todavía.
+-->
+<form method="POST"
+enctype="multipart/form-data"
+class="folder-form">
+<input type="hidden"
+name="tipo"
+value="mayorista">
+
+<!-- Archivo Excel -->
+<div class="mb-3">
+<label class="folder-label">
+Archivo Excel:
+</label>
+<input type="file"
+name="archivo"
+class="form-control"
+accept=".xls,.xlsx"
+required>
+</div>
+
+<!-- Vigencia -->
+<div class="row g-3">
+<div class="col-md-6">
+<label class="folder-label">
+Vigencia desde:
+</label>
+<input type="date"
+name="fecha_desde"
+class="form-control"
+value="{{ fecha_desde }}"
+required>
+</div>
+
+<div class="col-md-6">
+<label class="folder-label">
+Vigencia hasta:
+</label>
+<input type="date"
+name="fecha_hasta"
+class="form-control"
+value="{{ fecha_hasta }}"
+required>
+</div>
+</div>
+
+<!-- Cargar -->
+<button type="submit"
+class="folder-btn-load">
+Cargar Folder Mayorista
+</button>
+</form>
+</div>
+</div>
+</div>
+
+<!-- ==================================================
+ARCHIVAR FOLDER
+SOLO VISUAL POR AHORA
+=================================================== -->
+<div class="col-lg-6 col-md-6">
+<div class="folder-card">
+<div class="folder-card-header archive">
+<span>🗑</span>
+<span>2. Archivar folder vigente</span>
+</div>
+
+<div class="folder-card-body">
+<p class="folder-help">
+Cuando el nuevo folder ya esté listo para
+reemplazar al actual, indicá la vigencia
+del folder que querés archivar.
+</p>
+
+<!-- Vigencia del folder a archivar -->
+<div class="row g-3">
+<div class="col-md-6">
+<label class="folder-label">
+Vigencia desde:
+</label>
+<input type="date"
+id="archivar_desde"
+class="form-control">
+</div>
+
+<div class="col-md-6">
+<label class="folder-label">
+Vigencia hasta:
+</label>
+<input type="date"
+id="archivar_hasta"
+class="form-control">
+</div>
+</div>
+
+<!--
+Todavía no tiene backend.
+Lo dejamos deshabilitado.
+-->
+<button type="button"
+class="folder-btn-archive"
+disabled>
+Archivar Folder Vigente
+</button>
+
+<div class="folder-disabled-note">
+Funcionalidad pendiente de implementar.
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ======================================================
+PREVISUALIZACION
+======================================================= -->
+{% if preview %}
+<div class="folder-preview">
+<div class="folder-preview-header">
+Previsualización - {{ tipo|capitalize }}
+{% if total_registros %}
+| Total: {{ total_registros }}
+{% endif %}
+</div>
+
+<div class="folder-preview-body">
+<div class="folder-preview-table">
+{{ preview|safe }}
+</div>
+
+<!-- =================================================
+TRANSMITIR
+Se mantiene exactamente el endpoint actual
+================================================== -->
+<div class="folder-transmitir">
+<form method="POST"
+action="{{ url_for('compras.transmitir') }}">
+<input type="hidden"
+name="tipo"
+value="{{ tipo }}">
+<input type="hidden"
+name="fecha_desde"
+value="{{ fecha_desde }}">
+<input type="hidden"
+name="fecha_hasta"
+value="{{ fecha_hasta }}">
+
+<button type="submit"
+class="btn btn-success px-4">
+Transmitir
+</button>
+</form>
+</div>
+</div>
+</div>
+{% endif %}
+</div>
 {% endblock %}

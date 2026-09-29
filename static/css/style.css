@@ -334,3 +334,249 @@ button:hover, .btn:hover {
 .submenu-group.open .submenu-nested {
   display: block;
 }
+/* =========================
+   FOLDER MAYORISTA
+========================= */
+
+.folder-container {
+  padding: 10px 15px 30px 15px;
+}
+
+.folder-page-title {
+  font-size: 2rem;
+  font-weight: 500;
+  margin-bottom: 24px;
+  color: #222;
+}
+
+
+/* =========================
+   MENSAJE INFORMATIVO
+========================= */
+
+.folder-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  background: #eaf4ff;
+  border: 1px solid #b9dcff;
+  border-radius: 8px;
+
+  padding: 14px 18px;
+  margin-bottom: 24px;
+
+  color: #174a7a;
+  font-size: 0.95rem;
+}
+
+.folder-info-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+
+/* =========================
+   CARDS FOLDER
+========================= */
+
+.folder-card {
+  height: 100%;
+  background: #fff;
+
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+
+
+/* =========================
+   HEADER CARDS
+========================= */
+
+.folder-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 13px 18px;
+
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.folder-card-header.load {
+  background: #e7f3ff;
+  color: #165fa7;
+}
+
+.folder-card-header.archive {
+  background: #ffe5e5;
+  color: #c62828;
+}
+
+
+/* =========================
+   BODY CARDS
+========================= */
+
+.folder-card-body {
+  padding: 20px;
+}
+
+.folder-help {
+  color: #6c757d;
+  font-size: 0.92rem;
+  margin-bottom: 18px;
+}
+
+.folder-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  color: #343a40;
+}
+
+
+/* =========================
+   INPUTS
+========================= */
+
+.folder-card .form-control {
+  min-height: 42px;
+  border-radius: 6px;
+}
+
+.folder-card input[type="file"] {
+  min-height: auto;
+}
+
+
+/* =========================
+   BOTON CARGAR
+========================= */
+
+.folder-btn-load {
+  width: 100%;
+
+  margin-top: 20px;
+  padding: 11px 15px;
+
+  border: none;
+  border-radius: 7px;
+
+  background: #F9BC20;
+  color: #231F20;
+
+  font-weight: 700;
+}
+
+.folder-btn-load:hover {
+  background: #231F20;
+  color: #F9BC20;
+}
+
+
+/* =========================
+   BOTON ARCHIVAR
+========================= */
+
+.folder-btn-archive {
+  width: 100%;
+
+  margin-top: 20px;
+  padding: 11px 15px;
+
+  border: none;
+  border-radius: 7px;
+
+  background: #dc3545;
+  color: #fff;
+
+  font-weight: 700;
+}
+
+.folder-btn-archive:hover:not(:disabled) {
+  background: #bb2d3b;
+  color: #fff;
+}
+
+.folder-btn-archive:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+
+/* =========================
+   NOTA ARCHIVADO
+========================= */
+
+.folder-disabled-note {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: #888;
+}
+
+
+/* =========================
+   PREVISUALIZACION
+========================= */
+
+.folder-preview {
+  margin-top: 32px;
+
+  border: 1px solid #ddd;
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  background: #fff;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+
+.folder-preview-header {
+  background: #231F20;
+  color: #fff;
+
+  padding: 14px 18px;
+
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.folder-preview-body {
+  padding: 12px;
+}
+
+.folder-preview-table {
+  max-height: 600px;
+  overflow: auto;
+}
+
+.folder-transmitir {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+
+/* =========================
+   RESPONSIVE FOLDER
+========================= */
+
+@media (max-width: 768px) {
+
+  .folder-page-title {
+    font-size: 1.6rem;
+  }
+
+  .folder-card-body {
+    padding: 15px;
+  }
+
+}
