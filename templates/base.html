@@ -456,7 +456,7 @@
 {% if session.get("usuario_rol") == "sucursal" %}
 
   {% set suc = session.get("usuario_nombre", "").strip().upper() %}
-  {% set sucursales_mayoristas = ['CO05', 'CO09', 'CO12', 'CO15', 'CO21', 'CO24','CO25','CO29', 'MA02'] %}
+  {% set sucursales_mayoristas = ['CO05', 'CO09', 'CO12', 'CO15', 'CO21', 'CO24','CO25','CO27','CO29', 'MA02'] %}
   {% set sucursales_sorteo = ['CO05', 'CO24', 'CO29'] %}
 
   <!-- CENEFAS -->
@@ -482,7 +482,7 @@
               active-link
           {% endif %}"
         >
-          {% if suc in ['CO24', 'CO25'] %}
+          {% if suc in ['CO24', 'CO25','CO27'] %}
               Folder Mayorista Tucumán
           {% else %}
               Folder Mayorista
