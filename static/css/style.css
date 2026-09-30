@@ -334,3 +334,273 @@ button:hover, .btn:hover {
 .submenu-group.open .submenu-nested {
   display: block;
 }
+
+
+
+/* =========================================================
+   FOLDER MAYORISTA - CARDS DE ESTADO
+========================================================= */
+
+.folder-status-wrapper {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.folder-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+
+/* =========================================================
+   CARD BASE
+========================================================= */
+
+.folder-status-card {
+  width: 100%;
+  min-width: 0;
+
+  padding: 14px 16px;
+
+  border-radius: 9px;
+
+  background: #fff;
+
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+
+/* Vigente */
+
+.folder-status-card.vigente {
+  border: 1px solid #3cad55;
+  background: #f7fff8;
+}
+
+
+/* Próximo */
+
+.folder-status-card.proximo {
+  border: 1px solid #f5b31b;
+  background: #fffaf0;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.folder-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 14px;
+}
+
+.folder-status-title {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  min-width: 0;
+}
+
+.folder-status-title-text {
+  color: #1f1f1f;
+
+  font-size: 1rem;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   ICONOS DE ESTADO
+========================================================= */
+
+.folder-status-icon {
+  width: 28px;
+  height: 28px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 28px;
+
+  border-radius: 50%;
+
+  color: #fff;
+
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.folder-status-icon.vigente {
+  background: #2eaa4f;
+}
+
+.folder-status-icon.proximo {
+  background: #f5ad00;
+}
+
+
+/* =========================================================
+   BADGES
+========================================================= */
+
+.folder-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 3px 11px;
+
+  border-radius: 20px;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+
+  line-height: 1.2;
+}
+
+.folder-status-badge.activo {
+  background: #54c96e;
+  color: #fff;
+}
+
+.folder-status-badge.pendiente {
+  background: #ffe082;
+  color: #a56600;
+}
+
+
+/* =========================================================
+   VER DETALLE
+
+   Se usa <a>, no <button>, para evitar el estilo global
+   button, .btn de la aplicación.
+========================================================= */
+
+.folder-status-detail {
+  color: #0d6efd;
+
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  text-decoration: none;
+
+  white-space: nowrap;
+}
+
+.folder-status-detail:hover {
+  color: #084298;
+  text-decoration: underline;
+
+  background: transparent;
+}
+
+
+/* =========================================================
+   CONTENIDO
+========================================================= */
+
+.folder-status-body {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 13px 24px;
+}
+
+.folder-status-field {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 9px;
+
+  min-width: 0;
+}
+
+
+/* Icono */
+
+.folder-status-field-icon {
+  width: 22px;
+
+  flex: 0 0 22px;
+
+  color: #333;
+
+  font-size: 17px;
+  line-height: 1.3;
+
+  text-align: center;
+}
+
+
+/* Texto */
+
+.folder-status-field-content {
+  min-width: 0;
+}
+
+.folder-status-label {
+  display: block;
+
+  margin-bottom: 2px;
+
+  color: #6b6b6b;
+
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+.folder-status-value {
+  display: block;
+
+  color: #222;
+
+  font-size: 0.84rem;
+  font-weight: 700;
+
+  line-height: 1.25;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .folder-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 600px) {
+
+  .folder-status-body {
+    grid-template-columns: 1fr;
+  }
+
+  .folder-status-header {
+    align-items: flex-start;
+  }
+
+  .folder-status-title {
+    flex-wrap: wrap;
+  }
+
+}
