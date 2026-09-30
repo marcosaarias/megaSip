@@ -1,860 +1,545 @@
 {% extends "base.html" %}
-
 {% block title %}Folder Mayorista{% endblock %}
 
 {% block content %}
 
-<div class="container-fluid folder-container">
+<div class="container-fluid">
 
-    <!-- ======================================================
-         TITULO
-    ======================================================= -->
+    <h2 class="mb-4">
+        Gestión de Folder Mayorista
+    </h2>
 
-    <h2 class="folder-page-title">
-        Gestión de Folder Mayorista
-    </h2>
+    <!-- ====================================================== -->
+    <!-- FECHAS -->
+    <!-- ====================================================== -->
 
+    <div class="card p-4 shadow-sm mb-4">
 
-    <!-- ======================================================
-         INFORMACION
-    ======================================================= -->
+        <div class="row">
 
-    <div class="folder-info">
+            <div class="col-md-3">
 
-        <div class="folder-info-icon">
-            ℹ️
-        </div>
+                <label>
+                    <strong>Desde:</strong>
+                </label>
 
-        <div>
-            <strong>Gestión del Folder Mayorista</strong>
-            <br>
-            Cargá el nuevo folder con su período de vigencia.
-            El próximo folder puede cargarse con anticipación para
-            que las sucursales dispongan del tiempo necesario para
-            imprimir y preparar las nuevas cenefas.
-        </div>
+                <input
+                    type="date"
+                    id="fecha_desde"
+                    class="form-control"
+                    value="{{ fecha_desde }}"
+                    required
+                >
 
-    </div>
+            </div>
 
 
-    <!-- ======================================================
-         ESTADO DE FOLDERS
-         SOLO VISUAL - DATOS DE PRUEBA
-    ======================================================= -->
+            <div class="col-md-3">
 
-    <div class="folder-status-grid">
+                <label>
+                    <strong>Hasta:</strong>
+                </label>
 
-        <!-- ==================================================
-             FOLDER VIGENTE
-        =================================================== -->
+                <input
+                    type="date"
+                    id="fecha_hasta"
+                    class="form-control"
+                    value="{{ fecha_hasta }}"
+                    required
+                >
 
-        <div class="folder-status-card vigente">
+            </div>
 
-            <div class="folder-status-header">
+        </div>
 
-                <div class="folder-status-title">
+    </div>
 
-                    <span class="folder-status-icon vigente-icon">
-                        ✓
-                    </span>
 
-                    <strong>
-                        Folder Vigente
-                    </strong>
+    <!-- ====================================================== -->
+    <!-- CARGAR ARCHIVO -->
+    <!-- ====================================================== -->
 
-                    <span class="folder-status-badge activo">
-                        ACTIVO
-                    </span>
+    <div class="row">
 
-                </div>
+        <div class="col-md-6">
 
+            <div class="card p-4 shadow-sm">
 
-                <button
-                    type="button"
-                    class="folder-detail-link"
-                    disabled
-                    title="Detalle pendiente de implementar"
-                >
-                    Ver detalle →
-                </button>
+                <h4>
+                    Folder Mayorista
+                </h4>
 
-            </div>
+                <form
+                    method="POST"
+                    action="{{ url_for('compras.folder_mayorista') }}"
+                    enctype="multipart/form-data"
+                    class="folder-form"
+                >
 
+                    <input
+                        type="hidden"
+                        name="tipo"
+                        value="mayorista"
+                    >
 
-            <div class="folder-status-content">
+                    <input
+                        type="hidden"
+                        name="fecha_desde"
+                    >
 
-                <!-- Vigencia -->
+                    <input
+                        type="hidden"
+                        name="fecha_hasta"
+                    >
 
-                <div class="folder-status-item">
+                    <input
+                        type="file"
+                        name="archivo"
+                        class="form-control mb-3"
+                        required
+                    >
 
-                    <div class="folder-item-icon">
-                        📅
-                    </div>
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
+                        Cargar Folder Mayorista
+                    </button>
 
-                    <div>
+                </form>
 
-                        <span class="folder-item-label">
-                            Vigencia:
-                        </span>
+            </div>
 
-                        <strong>
-                            01/10/2026 - 15/10/2026
-                        </strong>
+        </div>
 
-                    </div>
+    </div>
 
-                </div>
 
+    <!-- ====================================================== -->
+    <!-- MENSAJE ERROR -->
+    <!-- ====================================================== -->
 
-                <!-- Archivo -->
+    {% if mensaje_error %}
 
-                <div class="folder-status-item">
+        <div class="alert alert-danger mt-4">
+            {{ mensaje_error }}
+        </div>
 
-                    <div class="folder-item-icon">
-                        📄
-                    </div>
+    {% endif %}
 
-                    <div>
 
-                        <span class="folder-item-label">
-                            Archivo:
-                        </span>
+    <!-- ====================================================== -->
+    <!-- MENSAJE EXITO -->
+    <!-- ====================================================== -->
 
-                        <strong>
-                            Folder_Mayorista_01_10_2026.xlsx
-                        </strong>
+    {% if mensaje_exito %}
 
-                    </div>
+        <div class="alert alert-success mt-4">
+            {{ mensaje_exito }}
+        </div>
 
-                </div>
+    {% endif %}
 
 
-                <!-- Sucursales -->
+    <!-- ====================================================== -->
+    <!-- PREVISUALIZACION EDITABLE -->
+    <!-- ====================================================== -->
 
-                <div class="folder-status-item">
+    {% if preview %}
 
-                    <div class="folder-item-icon">
-                        🏪
-                    </div>
+    <div class="mt-5">
 
-                    <div>
+        <div class="card shadow-sm">
 
-                        <span class="folder-item-label">
-                            Sucursales:
-                        </span>
+            <div class="card-header bg-dark text-white">
 
-                        <strong>
-                            CO24, CO25, CO27
-                        </strong>
+                <h5 class="mb-0">
 
-                    </div>
+                    Previsualización - {{ tipo|capitalize }}
 
-                </div>
+                    {% if total_registros %}
+                        | Total: {{ total_registros }}
+                    {% endif %}
 
+                </h5>
 
-                <!-- Fecha carga -->
+            </div>
 
-                <div class="folder-status-item">
 
-                    <div class="folder-item-icon">
-                        🕐
-                    </div>
+            <div class="card-body p-2">
 
-                    <div>
+                <div
+                    style="
+                        max-height:600px;
+                        overflow:auto;
+                    "
+                >
 
-                        <span class="folder-item-label">
-                            Cargado el:
-                        </span>
+                    <table
+                        class="
+                            table
+                            table-sm
+                            table-bordered
+                            table-hover
+                            align-middle
+                        "
+                    >
 
-                        <strong>
-                            28/09/2026 10:32 por sistemas
-                        </strong>
+                        <!-- ================================================== -->
+                        <!-- CABECERA -->
+                        <!-- ================================================== -->
 
-                    </div>
+                        <thead class="table-dark sticky-top">
 
-                </div>
+                            <tr>
 
-            </div>
+                                {% for columna in preview[0].keys() %}
 
-        </div>
+                                    <th>
+                                        {{ columna }}
+                                    </th>
 
+                                {% endfor %}
 
-        <!-- ==================================================
-             PROXIMO FOLDER
-        =================================================== -->
+                            </tr>
 
-        <div class="folder-status-card proximo">
+                        </thead>
 
-            <div class="folder-status-header">
 
-                <div class="folder-status-title">
+                        <!-- ================================================== -->
+                        <!-- FILAS -->
+                        <!-- ================================================== -->
 
-                    <span class="folder-status-icon proximo-icon">
-                        ◷
-                    </span>
+                        <tbody>
 
-                    <strong>
-                        Próximo Folder
-                    </strong>
+                            {% for fila in preview %}
 
-                    <span class="folder-status-badge pendiente">
-                        PENDIENTE
-                    </span>
+                                {% set indice = loop.index0 %}
 
-                </div>
+                                <tr>
 
+                                    {% for columna, valor in fila.items() %}
 
-                <button
-                    type="button"
-                    class="folder-detail-link"
-                    disabled
-                    title="Detalle pendiente de implementar"
-                >
-                    Ver detalle →
-                </button>
+                                        <td>
 
-            </div>
+                                            {% if columna in columnas_editables %}
 
+                                                <!-- ========================== -->
+                                                <!-- FECHAS -->
+                                                <!-- ========================== -->
 
-            <div class="folder-status-content">
+                                                {% if columna in ['desde', 'hasta'] %}
 
-                <!-- Vigencia -->
+                                                    <input
+                                                        type="date"
+                                                        class="
+                                                            form-control
+                                                            form-control-sm
+                                                            campo-editable
+                                                        "
+                                                        data-fila="{{ indice }}"
+                                                        data-columna="{{ columna }}"
+                                                        data-original="{{ valor }}"
+                                                        value="{{ valor }}"
+                                                    >
 
-                <div class="folder-status-item">
 
-                    <div class="folder-item-icon">
-                        📅
-                    </div>
+                                                <!-- ========================== -->
+                                                <!-- PRECIOS -->
+                                                <!-- ========================== -->
 
-                    <div>
+                                                {% elif columna in ['Normal', 'Oferta'] %}
 
-                        <span class="folder-item-label">
-                            Vigencia:
-                        </span>
+                                                    <input
+                                                        type="text"
+                                                        class="
+                                                            form-control
+                                                            form-control-sm
+                                                            campo-editable
+                                                        "
+                                                        data-fila="{{ indice }}"
+                                                        data-columna="{{ columna }}"
+                                                        data-original="{{ valor }}"
+                                                        value="{{ valor }}"
+                                                        inputmode="decimal"
+                                                    >
 
-                        <strong>
-                            16/10/2026 - 31/10/2026
-                        </strong>
 
-                    </div>
+                                                <!-- ========================== -->
+                                                <!-- OTROS CAMPOS -->
+                                                <!-- ========================== -->
 
-                </div>
+                                                {% else %}
 
+                                                    <input
+                                                        type="text"
+                                                        class="
+                                                            form-control
+                                                            form-control-sm
+                                                            campo-editable
+                                                        "
+                                                        data-fila="{{ indice }}"
+                                                        data-columna="{{ columna }}"
+                                                        data-original="{{ valor }}"
+                                                        value="{{ valor }}"
+                                                    >
 
-                <!-- Archivo -->
+                                                {% endif %}
 
-                <div class="folder-status-item">
+                                            {% else %}
 
-                    <div class="folder-item-icon">
-                        📄
-                    </div>
+                                                {{ valor }}
 
-                    <div>
+                                            {% endif %}
 
-                        <span class="folder-item-label">
-                            Archivo:
-                        </span>
+                                        </td>
 
-                        <strong>
-                            Folder_Mayorista_16_10_2026.xlsx
-                        </strong>
+                                    {% endfor %}
 
-                    </div>
+                                </tr>
 
-                </div>
+                            {% endfor %}
 
+                        </tbody>
 
-                <!-- Sucursales -->
+                    </table>
 
-                <div class="folder-status-item">
+                </div>
 
-                    <div class="folder-item-icon">
-                        🏪
-                    </div>
 
-                    <div>
+                <!-- ========================================================== -->
+                <!-- TRANSMITIR -->
+                <!-- ========================================================== -->
 
-                        <span class="folder-item-label">
-                            Sucursales:
-                        </span>
+                <div class="text-end mt-4">
 
-                        <strong>
-                            CO24, CO25, CO27
-                        </strong>
+                    <form
+                        method="POST"
+                        action="{{ url_for('compras.transmitir_folder') }}"
+                        id="form-transmitir-folder"
+                        onsubmit="return prepararTransmision(this);"
+                    >
 
-                    </div>
+                        <input
+                            type="hidden"
+                            name="cambios"
+                            value="[]"
+                        >
 
-                </div>
+                        <input
+                            type="hidden"
+                            name="sobrescribir"
+                            value="0"
+                        >
 
+                        <button
+                            type="submit"
+                            class="btn btn-warning px-4"
+                        >
+                            Transmitir Folder
+                        </button>
 
-                <!-- Fecha carga -->
+                    </form>
 
-                <div class="folder-status-item">
+                </div>
 
-                    <div class="folder-item-icon">
-                        🕐
-                    </div>
+            </div>
 
-                    <div>
+        </div>
 
-                        <span class="folder-item-label">
-                            Cargado el:
-                        </span>
+    </div>
 
-                        <strong>
-                            13/10/2026 09:15 por co27
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ======================================================
-         OPERACIONES
-    ======================================================= -->
-
-    <div class="row g-4">
-
-        <!-- ==================================================
-             1. CARGAR NUEVO FOLDER
-        =================================================== -->
-
-        <div class="col-lg-6 col-md-6">
-
-            <div class="folder-card">
-
-                <div class="folder-card-header load">
-
-                    <span>
-                        ⬆
-                    </span>
-
-                    <span>
-                        1. Cargar nuevo folder
-                    </span>
-
-                </div>
-
-
-                <div class="folder-card-body">
-
-                    <p class="folder-help">
-                        Seleccioná el archivo Excel del nuevo folder
-                        mayorista y definí su período de vigencia.
-                    </p>
-
-
-                    <form
-                        method="POST"
-                        action="{{ url_for('compras.folder_mayorista') }}"
-                        enctype="multipart/form-data"
-                        class="folder-form"
-                    >
-
-                        <input
-                            type="hidden"
-                            name="tipo"
-                            value="mayorista"
-                        >
-
-
-                        <!-- Archivo -->
-
-                        <div class="mb-3">
-
-                            <label class="folder-label">
-                                Archivo Excel:
-                            </label>
-
-                            <input
-                                type="file"
-                                name="archivo"
-                                class="form-control"
-                                accept=".xls,.xlsx"
-                                required
-                            >
-
-                        </div>
-
-
-                        <!-- Vigencia -->
-
-                        <div class="row g-3">
-
-                            <div class="col-md-6">
-
-                                <label class="folder-label">
-                                    Vigencia desde:
-                                </label>
-
-                                <input
-                                    type="date"
-                                    name="fecha_desde"
-                                    class="form-control"
-                                    value="{{ fecha_desde }}"
-                                    required
-                                >
-
-                            </div>
-
-
-                            <div class="col-md-6">
-
-                                <label class="folder-label">
-                                    Vigencia hasta:
-                                </label>
-
-                                <input
-                                    type="date"
-                                    name="fecha_hasta"
-                                    class="form-control"
-                                    value="{{ fecha_hasta }}"
-                                    required
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <button
-                            type="submit"
-                            class="folder-btn-load"
-                        >
-                            Cargar Folder Mayorista
-                        </button>
-
-                    </form>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- ==================================================
-             2. ARCHIVAR FOLDER
-             SOLO VISUAL
-        =================================================== -->
-
-        <div class="col-lg-6 col-md-6">
-
-            <div class="folder-card">
-
-                <div class="folder-card-header archive">
-
-                    <span>
-                        🗑
-                    </span>
-
-                    <span>
-                        2. Archivar folder vigente
-                    </span>
-
-                </div>
-
-
-                <div class="folder-card-body">
-
-                    <p class="folder-help">
-                        Cuando el nuevo folder ya esté listo para
-                        reemplazar al actual, indicá la vigencia
-                        del folder que querés archivar.
-                    </p>
-
-
-                    <div class="row g-3">
-
-                        <div class="col-md-6">
-
-                            <label class="folder-label">
-                                Vigencia desde:
-                            </label>
-
-                            <input
-                                type="date"
-                                id="archivar_desde"
-                                class="form-control"
-                            >
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <label class="folder-label">
-                                Vigencia hasta:
-                            </label>
-
-                            <input
-                                type="date"
-                                id="archivar_hasta"
-                                class="form-control"
-                            >
-
-                        </div>
-
-                    </div>
-
-
-                    <button
-                        type="button"
-                        class="folder-btn-archive"
-                        disabled
-                    >
-                        Archivar Folder Vigente
-                    </button>
-
-
-                    <div class="folder-disabled-note">
-                        Funcionalidad pendiente de implementar.
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ======================================================
-         MENSAJE ERROR
-    ======================================================= -->
-
-    {% if mensaje_error %}
-
-        <div class="alert alert-danger mt-4">
-            {{ mensaje_error }}
-        </div>
-
-    {% endif %}
-
-
-    <!-- ======================================================
-         MENSAJE EXITO
-    ======================================================= -->
-
-    {% if mensaje_exito %}
-
-        <div class="alert alert-success mt-4">
-            {{ mensaje_exito }}
-        </div>
-
-    {% endif %}
-
-
-    <!-- ======================================================
-         PREVISUALIZACION EDITABLE
-    ======================================================= -->
-
-    {% if preview %}
-
-    <div class="folder-preview">
-
-        <div class="folder-preview-header">
-
-            Previsualización - {{ tipo|capitalize }}
-
-            {% if total_registros %}
-                | Total: {{ total_registros }}
-            {% endif %}
-
-        </div>
-
-
-        <div class="folder-preview-body">
-
-            <div class="folder-preview-table">
-
-                <table
-                    class="
-                        table
-                        table-sm
-                        table-bordered
-                        table-hover
-                        align-middle
-                    "
-                >
-
-                    <!-- ==================================================
-                         CABECERA
-                    =================================================== -->
-
-                    <thead class="table-dark sticky-top">
-
-                        <tr>
-
-                            {% for columna in preview[0].keys() %}
-
-                                <th>
-                                    {{ columna }}
-                                </th>
-
-                            {% endfor %}
-
-                        </tr>
-
-                    </thead>
-
-
-                    <!-- ==================================================
-                         FILAS
-                    =================================================== -->
-
-                    <tbody>
-
-                        {% for fila in preview %}
-
-                            {% set indice = loop.index0 %}
-
-                            <tr>
-
-                                {% for columna, valor in fila.items() %}
-
-                                    <td>
-
-                                        {% if columna in columnas_editables %}
-
-
-                                            <!-- FECHAS -->
-
-                                            {% if columna in ['desde', 'hasta'] %}
-
-                                                <input
-                                                    type="date"
-                                                    class="
-                                                        form-control
-                                                        form-control-sm
-                                                        campo-editable
-                                                    "
-                                                    data-fila="{{ indice }}"
-                                                    data-columna="{{ columna }}"
-                                                    data-original="{{ valor }}"
-                                                    value="{{ valor }}"
-                                                >
-
-
-                                            <!-- PRECIOS -->
-
-                                            {% elif columna in ['Normal', 'Oferta'] %}
-
-                                                <input
-                                                    type="text"
-                                                    class="
-                                                        form-control
-                                                        form-control-sm
-                                                        campo-editable
-                                                    "
-                                                    data-fila="{{ indice }}"
-                                                    data-columna="{{ columna }}"
-                                                    data-original="{{ valor }}"
-                                                    value="{{ valor }}"
-                                                    inputmode="decimal"
-                                                >
-
-
-                                            <!-- OTROS -->
-
-                                            {% else %}
-
-                                                <input
-                                                    type="text"
-                                                    class="
-                                                        form-control
-                                                        form-control-sm
-                                                        campo-editable
-                                                    "
-                                                    data-fila="{{ indice }}"
-                                                    data-columna="{{ columna }}"
-                                                    data-original="{{ valor }}"
-                                                    value="{{ valor }}"
-                                                >
-
-                                            {% endif %}
-
-                                        {% else %}
-
-                                            {{ valor }}
-
-                                        {% endif %}
-
-                                    </td>
-
-                                {% endfor %}
-
-                            </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-
-            <!-- =================================================
-                 TRANSMITIR
-            ================================================== -->
-
-            <div class="folder-transmitir">
-
-                <form
-                    method="POST"
-                    action="{{ url_for('compras.transmitir_folder') }}"
-                    id="form-transmitir-folder"
-                    onsubmit="return prepararTransmision(this);"
-                >
-
-                    <input
-                        type="hidden"
-                        name="cambios"
-                        value="[]"
-                    >
-
-                    <input
-                        type="hidden"
-                        name="sobrescribir"
-                        value="0"
-                    >
-
-
-                    <button
-                        type="submit"
-                        class="btn btn-warning px-4"
-                    >
-                        Transmitir Folder
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    {% endif %}
+    {% endif %}
 
 </div>
 
 
-<!-- ==========================================================
-     JAVASCRIPT
-=========================================================== -->
+<!-- ========================================================== -->
+<!-- JAVASCRIPT -->
+<!-- ========================================================== -->
 
 <script>
 
 /* ============================================================
-   OBTENER CAMPOS MODIFICADOS
-============================================================ */
+   COPIAR FECHAS AL FORMULARIO DE CARGA
+   ============================================================ */
 
-function obtenerCambiosPreview() {
+function cargarFechasEnFormulario(form) {
 
-    const cambios = [];
+    const fechaDesde =
+        document.getElementById("fecha_desde").value;
 
-    document
-        .querySelectorAll(".campo-editable")
-        .forEach(input => {
+    const fechaHasta =
+        document.getElementById("fecha_hasta").value;
 
-            const actual =
-                String(
-                    input.value ?? ""
-                );
+    if (!fechaDesde || !fechaHasta) {
 
-            const original =
-                String(
-                    input.dataset.original ?? ""
-                );
+        alert(
+            "Debe seleccionar fecha desde "
+            + "y fecha hasta."
+        );
 
-            if (actual !== original) {
+        return false;
+    }
 
-                cambios.push({
+    const inputDesde =
+        form.querySelector(
+            'input[name="fecha_desde"]'
+        );
 
-                    fila:
-                        parseInt(
-                            input.dataset.fila,
-                            10
-                        ),
+    const inputHasta =
+        form.querySelector(
+            'input[name="fecha_hasta"]'
+        );
 
-                    columna:
-                        input.dataset.columna,
+    if (inputDesde) {
+        inputDesde.value = fechaDesde;
+    }
 
-                    valor:
-                        input.value
+    if (inputHasta) {
+        inputHasta.value = fechaHasta;
+    }
 
-                });
-
-            }
-
-        });
-
-    return cambios;
+    return true;
 }
 
 
 /* ============================================================
-   PREPARAR TRANSMISION
-============================================================ */
+   FORMULARIO CARGAR ARCHIVO
+   ============================================================ */
+
+document
+    .querySelectorAll(".folder-form")
+    .forEach(form => {
+
+        form.addEventListener(
+            "submit",
+            function(event) {
+
+                if (
+                    !cargarFechasEnFormulario(
+                        this
+                    )
+                ) {
+                    event.preventDefault();
+                }
+
+            }
+        );
+
+    });
+
+
+/* ============================================================
+   OBTENER CAMPOS MODIFICADOS
+   ============================================================ */
+
+function obtenerCambiosPreview() {
+
+    const cambios = [];
+
+    document
+        .querySelectorAll(
+            ".campo-editable"
+        )
+        .forEach(input => {
+
+            const actual =
+                String(
+                    input.value ?? ""
+                );
+
+            const original =
+                String(
+                    input.dataset.original ?? ""
+                );
+
+            if (actual !== original) {
+
+                cambios.push({
+
+                    fila:
+                        parseInt(
+                            input.dataset.fila,
+                            10
+                        ),
+
+                    columna:
+                        input.dataset.columna,
+
+                    valor:
+                        input.value
+
+                });
+
+            }
+
+        });
+
+    return cambios;
+}
+
+
+/* ============================================================
+   PREPARAR TRANSMISION
+   ============================================================ */
 
 function prepararTransmision(form) {
 
-    const cambios =
-        obtenerCambiosPreview();
+    const cambios =
+        obtenerCambiosPreview();
 
-    const inputCambios =
-        form.querySelector(
-            'input[name="cambios"]'
-        );
+    const inputCambios =
+        form.querySelector(
+            'input[name="cambios"]'
+        );
 
-    inputCambios.value =
-        JSON.stringify(
-            cambios
-        );
-
-
-    const requiereSobrescribir =
-        "{{ requiere_sobrescribir|default(false)|lower }}"
-        === "true";
+    inputCambios.value =
+        JSON.stringify(
+            cambios
+        );
 
 
-    if (requiereSobrescribir) {
+    /* --------------------------------------------------------
+       SOBRESCRITURA
+       -------------------------------------------------------- */
 
-        const confirmar =
-            confirm(
-                "Ya existen registros "
-                + "para este período. "
-                + "¿Desea sobrescribirlos?"
-            );
-
-        if (!confirmar) {
-            return false;
-        }
-
-        form
-            .querySelector(
-                'input[name="sobrescribir"]'
-            )
-            .value = "1";
-
-        return true;
-    }
+    const requiereSobrescribir =
+        "{{ requiere_sobrescribir|default(false)|lower }}"
+        === "true";
 
 
-    return confirm(
-        "¿Está seguro que desea "
-        + "transmitir el folder?"
-    );
+    if (requiereSobrescribir) {
+
+        const confirmar =
+            confirm(
+                "Ya existen registros "
+                + "para este período. "
+                + "¿Desea sobrescribirlos?"
+            );
+
+        if (!confirmar) {
+            return false;
+        }
+
+        form
+            .querySelector(
+                'input[name="sobrescribir"]'
+            )
+            .value = "1";
+
+        return true;
+    }
+
+
+    /* --------------------------------------------------------
+       CONFIRMACION NORMAL
+       -------------------------------------------------------- */
+
+    return confirm(
+        "¿Está seguro que desea "
+        + "transmitir el folder?"
+    );
 }
 
 </script>
