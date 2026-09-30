@@ -1,483 +1,336 @@
 /* =========================
-   FOLDER MAYORISTA
+   RESET / BASE
 ========================= */
-
-.folder-container {
-  width: 100%;
-  padding: 10px 15px 30px 15px;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-.folder-page-title {
-  font-size: 2rem;
-  font-weight: 500;
-  margin-bottom: 24px;
-  color: #222;
-}
-
-
-/* =========================
-   MENSAJE INFORMATIVO
-========================= */
-
-.folder-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-
-  width: 100%;
-
-  background: #eaf4ff;
-  border: 1px solid #b9dcff;
-  border-radius: 8px;
-
-  padding: 14px 16px;
-  margin-bottom: 24px;
-
-  color: #174a7a;
-  font-size: 0.92rem;
-  line-height: 1.45;
-}
-
-.folder-info-icon {
-  flex: 0 0 auto;
-  font-size: 1.2rem;
-  line-height: 1.2;
-}
-
-.folder-info > div:last-child {
-  flex: 1;
-  min-width: 0;
-}
-
-
-/* =========================
-   ESTADO DE FOLDERS
-========================= */
-
-.folder-status-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-
-  width: 100%;
-  margin-bottom: 24px;
-}
-
-.folder-status-card {
-  min-width: 0;
-  padding: 16px 18px;
-
-  border-radius: 10px;
-
+body {
+  font-family: Arial, sans-serif;
   background: #fff;
-
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  color: #333;
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
-
-.folder-status-card.vigente {
-  border: 1px solid #42a956;
-  background: #f6fff8;
-}
-
-.folder-status-card.proximo {
-  border: 1px solid #f2b01e;
-  background: #fffaf1;
-}
-
 
 /* =========================
-   HEADER ESTADO
+   SIDEBAR
 ========================= */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 240px;
+  background: #231F20;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 10px;
+  box-shadow: 2px 0 8px rgba(0,0,0,.2);
+  overflow-y: auto;
+}
 
-.folder-status-header {
+.sidebar h2 {
+  color: #F9BC20;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* =========================
+   MENU BASE
+========================= */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 10px;
+}
+
+.menu a {
+  text-decoration: none;
+}
+
+/* =========================
+   OPCION PRINCIPAL (PADRE)
+========================= */
+.menu-section {
+  margin-top: 5px;
+}
+
+.menu-toggle {
+  background: #ffc107;
+  color: #000;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 12px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-
-  gap: 12px;
-  margin-bottom: 14px;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
-.folder-status-title {
+.menu-toggle:hover {
+  background: #e0a800;
+}
+
+/* =========================
+   SUBMENU
+========================= */
+.submenu {
+  display: none;
+  flex-direction: column;
+  margin-left: 14px;
+  padding-left: 14px;
+  border-left: 3px solid #444;
+}
+
+.menu-section.active .submenu {
   display: flex;
-  align-items: center;
-  gap: 10px;
-
-  min-width: 0;
-  flex-wrap: wrap;
 }
-
-.folder-status-title strong {
-  font-size: 1rem;
-  color: #222;
-}
-
-.folder-status-icon {
-  width: 28px;
-  height: 28px;
-
-  border-radius: 50%;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #fff;
-
-  font-size: 0.9rem;
-  font-weight: 700;
-
-  flex: 0 0 auto;
-}
-
-.vigente-icon {
-  background: #2da84a;
-}
-
-.proximo-icon {
-  background: #f5ad00;
-}
-
 
 /* =========================
-   BADGES ESTADO
+   SUBITEMS (HIJOS)
 ========================= */
-
-.folder-status-badge {
-  display: inline-flex;
-  align-items: center;
-
-  padding: 3px 10px;
-
-  border-radius: 999px;
-
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.folder-status-badge.activo {
-  background: #52c96c;
-  color: #fff;
-}
-
-.folder-status-badge.pendiente {
-  background: #ffe080;
-  color: #9a6500;
-}
-
-
-/* =========================
-   LINK VER DETALLE
-   IMPORTANTE:
-   PISA EL ESTILO GLOBAL button
-========================= */
-
-button.folder-detail-link {
-  all: unset;
-
-  display: inline-block;
-
-  color: #0d6efd;
-
-  font-size: 0.82rem;
-  font-weight: 600;
-
-  cursor: default;
-  white-space: nowrap;
-}
-
-button.folder-detail-link:hover,
-button.folder-detail-link:focus {
-  color: #0d6efd;
-  background: transparent;
-}
-
-
-/* =========================
-   CONTENIDO ESTADO
-========================= */
-
-.folder-status-content {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 12px 20px;
-}
-
-.folder-status-item {
-  display: flex;
-  align-items: flex-start;
-
-  gap: 8px;
-
-  min-width: 0;
-}
-
-.folder-item-icon {
-  width: 22px;
-
-  flex: 0 0 22px;
-
-  font-size: 1rem;
-  line-height: 1.4;
-
-  text-align: center;
-}
-
-.folder-status-item > div:last-child {
-  min-width: 0;
-}
-
-.folder-item-label {
+.submenu-item {
   display: block;
-
-  margin-bottom: 1px;
-
-  font-size: 0.78rem;
-
-  color: #6c757d;
-}
-
-.folder-status-item strong {
-  display: block;
-
-  font-size: 0.85rem;
-  line-height: 1.3;
-
-  color: #222;
-
-  word-break: break-word;
-}
-
-
-/* =========================
-   CARDS DE OPERACION
-========================= */
-
-.folder-card {
-  height: 100%;
-
-  background: #fff;
-
-  border: 1px solid #dcdcdc;
-  border-radius: 8px;
-
-  overflow: hidden;
-
-  box-shadow: 0 2px 6px rgba(0,0,0,.08);
-}
-
-.folder-card-header {
-  display: flex;
-  align-items: center;
-
-  gap: 10px;
-
-  padding: 13px 18px;
-
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.folder-card-header.load {
-  background: #e7f3ff;
-  color: #165fa7;
-}
-
-.folder-card-header.archive {
-  background: #ffe5e5;
-  color: #c62828;
-}
-
-.folder-card-body {
-  padding: 20px;
-}
-
-.folder-help {
-  margin-bottom: 18px;
-
-  color: #6c757d;
-
-  font-size: 0.92rem;
-  line-height: 1.4;
-}
-
-.folder-label {
-  display: block;
-
-  margin-bottom: 6px;
-
-  color: #343a40;
-
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-
-/* =========================
-   INPUTS
-========================= */
-
-.folder-card .form-control {
-  width: 100%;
-  min-height: 42px;
-
+  padding: 8px 12px;
+  margin: 3px 0;
+  color: #bbb;
   border-radius: 6px;
+  font-size: 0.9rem;
+  position: relative;
+  transition: all 0.2s ease;
 }
 
-.folder-card input[type="file"] {
-  min-height: auto;
+/* Hover */
+.submenu-item:hover {
+  background: #1f1f1f;
+  color: #fff;
+  transform: translateX(4px);
 }
-
 
 /* =========================
-   BOTON CARGAR
+   ITEM ACTIVO
 ========================= */
+.active-link {
+  background: #2a2a2a !important;
+  color: #fff !important;
+  font-weight: 600;
+}
 
-button.folder-btn-load {
-  width: 100%;
+/* 🔥 INDICADOR VISUAL FUERTE */
+.active-link::before {
+  content: "";
+  position: absolute;
+  left: -17px;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: #ffc107;
+  border-radius: 2px;
+}
 
-  margin-top: 20px;
+/* =========================
+   FLECHA
+========================= */
+.arrow {
+  transition: transform 0.3s ease;
+}
 
-  padding: 11px 15px;
+.menu-section.active .arrow {
+  transform: rotate(180deg);
+}
 
-  border: none;
-  border-radius: 7px;
+/* =========================
+   LOGOUT
+========================= */
+.logout {
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,.2);
+  padding-top: 15px;
+}
 
+.logout a {
+  display: inline-block;
   background: #F9BC20;
   color: #231F20;
-
-  font-weight: 700;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: .2s;
 }
 
-button.folder-btn-load:hover {
+.logout a:hover {
+  background: #A7ABAB;
+  color: #ffd700;
+}
+
+/* =========================
+   MAIN CONTENT
+========================= */
+.main-content {
+  margin-left: 240px;
+  min-height: 100vh;
+  padding: 30px;
+  width: calc(100% - 240px);
+}
+
+/* =========================
+   CONTENEDORES
+========================= */
+.container,
+.container-cenefas {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+/* =========================
+   TABLAS
+========================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 12px;
+}
+
+th {
+  background: #F9BC20;
+  color: #231F20;
+}
+
+/* =========================
+   FORMULARIOS
+========================= */
+.form-group {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  width: 150px;
+  font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+  flex: 1;
+  padding: 8px;
+}
+
+/* =========================
+   BOTONES
+========================= */
+button, .btn {
+  background: #F9BC20;
+  color: #231F20;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover, .btn:hover {
   background: #231F20;
   color: #F9BC20;
 }
 
-
-/* =========================
-   BOTON ARCHIVAR
-========================= */
-
-button.folder-btn-archive {
-  width: 100%;
-
-  margin-top: 20px;
-
-  padding: 11px 15px;
-
-  border: none;
-  border-radius: 7px;
-
-  background: #dc3545;
-  color: #fff;
-
-  font-weight: 700;
-}
-
-button.folder-btn-archive:hover:not(:disabled) {
-  background: #bb2d3b;
-  color: #fff;
-}
-
-button.folder-btn-archive:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.folder-disabled-note {
-  margin-top: 8px;
-
-  color: #888;
-
-  font-size: 0.82rem;
-}
-
-
-/* =========================
-   PREVISUALIZACION
-========================= */
-
-.folder-preview {
-  margin-top: 32px;
-
-  border: 1px solid #ddd;
-  border-radius: 8px;
-
-  overflow: hidden;
-
-  background: #fff;
-
-  box-shadow: 0 2px 6px rgba(0,0,0,.08);
-}
-
-.folder-preview-header {
-  background: #231F20;
-  color: #fff;
-
-  padding: 14px 18px;
-
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.folder-preview-body {
-  padding: 12px;
-}
-
-.folder-preview-table {
-  max-height: 600px;
-  overflow: auto;
-}
-
-.folder-transmitir {
-  display: flex;
-  justify-content: flex-end;
-
-  margin-top: 20px;
-}
-
-
 /* =========================
    RESPONSIVE
 ========================= */
-
-@media (max-width: 1100px) {
-
-  .folder-status-grid {
-    grid-template-columns: 1fr;
-  }
-
-}
-
 @media (max-width: 768px) {
-
-  .folder-page-title {
-    font-size: 1.6rem;
+  .sidebar {
+    width: 100%;
+    position: relative;
   }
 
-  .folder-card-body {
-    padding: 15px;
+  .main-content {
+    margin-left: 0;
+    width: 100%;
   }
-
 }
 
-@media (max-width: 650px) {
+/* =========================
+   BOTONES SISTEMAS (INTEGRADOS AL MENU)
+========================= */
+/* =========================
+   BOTONES SISTEMAS (FIX REAL)
+========================= */
 
-  .folder-status-content {
-    grid-template-columns: 1fr;
-  }
+.menu a.btn-sys {
+  display: block;
+  width: 100%;
+  text-align: left;
 
-  .folder-status-header {
-    align-items: flex-start;
-  }
+  background: var(--amarillo-base) !important;
+  color: var(--texto-oscuro) !important;
 
-  .folder-status-title {
-    flex-wrap: wrap;
-  }
+  border-radius: 10px;
+  padding: 12px 15px;
+  font-weight: 700;
+  text-decoration: none;
 
+  transition: all 0.2s ease;
+}
+
+/* Hover */
+.menu a.btn-sys:hover {
+  background: var(--amarillo-hover) !important;
+  color: var(--texto-oscuro) !important;
+}
+
+/* Click */
+.menu a.btn-sys:active {
+  background: var(--amarillo-active) !important;
+  transform: scale(0.98);
+}
+
+/* Focus */
+.menu a.btn-sys:focus,
+.menu a.btn-sys:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Activo */
+.menu a.btn-sys.active {
+  background: var(--amarillo-active) !important;
+}
+
+/* Espaciado */
+.menu .btn-sys {
+  margin-bottom: 6px;
+}
+
+
+/*sub menu farmacia*/
+
+.submenu-nested {
+  display: none;
+  padding-left: 18px;
+  margin-top: 6px;
+  border-left: 1px solid rgba(255,255,255,0.2);
+}
+
+.submenu-group.open .submenu-nested {
+  display: block;
 }
