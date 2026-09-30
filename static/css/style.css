@@ -578,5 +578,383 @@ button:hover, .btn:hover {
   .folder-card-body {
     padding: 15px;
   }
+}
 
+/* =========================
+   FOLDER MAYORISTA
+========================= */
+
+.folder-container {
+  padding: 10px 15px 30px 15px;
+}
+
+.folder-page-title {
+  font-size: 2rem;
+  font-weight: 500;
+  margin-bottom: 24px;
+  color: #222;
+}
+
+
+/* =========================
+   MENSAJE INFORMATIVO
+========================= */
+
+.folder-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #eaf4ff;
+  border: 1px solid #b9dcff;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  color: #174a7a;
+  font-size: 0.95rem;
+}
+
+.folder-info-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+
+/* =========================
+   CARDS DE OPERACION
+========================= */
+
+.folder-card {
+  height: 100%;
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+
+.folder-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 18px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.folder-card-header.load {
+  background: #e7f3ff;
+  color: #165fa7;
+}
+
+.folder-card-header.archive {
+  background: #ffe5e5;
+  color: #c62828;
+}
+
+.folder-card-body {
+  padding: 20px;
+}
+
+.folder-help {
+  color: #6c757d;
+  font-size: 0.92rem;
+  margin-bottom: 18px;
+}
+
+.folder-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  color: #343a40;
+}
+
+.folder-card .form-control {
+  min-height: 42px;
+  border-radius: 6px;
+}
+
+.folder-card input[type="file"] {
+  min-height: auto;
+}
+
+
+/* =========================
+   BOTON CARGAR
+========================= */
+
+.folder-btn-load {
+  width: 100%;
+  margin-top: 20px;
+  padding: 11px 15px;
+  border: none;
+  border-radius: 7px;
+  background: #F9BC20;
+  color: #231F20;
+  font-weight: 700;
+}
+
+.folder-btn-load:hover {
+  background: #231F20;
+  color: #F9BC20;
+}
+
+
+/* =========================
+   BOTON ARCHIVAR
+========================= */
+
+.folder-btn-archive {
+  width: 100%;
+  margin-top: 20px;
+  padding: 11px 15px;
+  border: none;
+  border-radius: 7px;
+  background: #dc3545;
+  color: #fff;
+  font-weight: 700;
+}
+
+.folder-btn-archive:hover:not(:disabled) {
+  background: #bb2d3b;
+  color: #fff;
+}
+
+.folder-btn-archive:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.folder-disabled-note {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: #888;
+}
+
+
+/* =========================
+   ESTADO DE FOLDERS
+========================= */
+
+.folder-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.folder-status-card {
+  border-radius: 10px;
+  padding: 18px 20px;
+  background: #fff;
+  min-width: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,.05);
+}
+
+.folder-status-card.vigente {
+  border: 1px solid #42a956;
+  background: #f5fff7;
+}
+
+.folder-status-card.proximo {
+  border: 1px solid #f2b01e;
+  background: #fffaf0;
+}
+
+
+/* Header */
+
+.folder-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.folder-status-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.folder-status-title strong {
+  font-size: 1.05rem;
+  color: #222;
+}
+
+.folder-status-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.vigente-icon {
+  background: #2da84a;
+}
+
+.proximo-icon {
+  background: #f5ad00;
+}
+
+
+/* Badges */
+
+.folder-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.folder-status-badge.activo {
+  background: #52c96c;
+  color: #fff;
+}
+
+.folder-status-badge.pendiente {
+  background: #ffe080;
+  color: #b36b00;
+}
+
+
+/* Link detalle */
+
+.folder-detail-link {
+  background: transparent !important;
+  border: none;
+  color: #0d6efd !important;
+  padding: 4px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.folder-detail-link:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+
+/* Contenido */
+
+.folder-status-content {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+  row-gap: 18px;
+}
+
+.folder-status-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.folder-item-icon {
+  width: 25px;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.folder-status-item > div:last-child {
+  min-width: 0;
+}
+
+.folder-item-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.82rem;
+  color: #696969;
+}
+
+.folder-status-item strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #222;
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================
+   PREVISUALIZACION
+========================= */
+
+.folder-preview {
+  margin-top: 32px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+
+.folder-preview-header {
+  background: #231F20;
+  color: #fff;
+  padding: 14px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.folder-preview-body {
+  padding: 12px;
+}
+
+.folder-preview-table {
+  max-height: 600px;
+  overflow: auto;
+}
+
+.folder-transmitir {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+
+/* =========================
+   RESPONSIVE FOLDER
+========================= */
+
+@media (max-width: 1100px) {
+  .folder-status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .folder-page-title {
+    font-size: 1.6rem;
+  }
+
+  .folder-card-body {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 600px) {
+  .folder-status-content {
+    grid-template-columns: 1fr;
+  }
+
+  .folder-status-header {
+    align-items: flex-start;
+  }
+
+  .folder-status-title {
+    flex-wrap: wrap;
+  }
 }
