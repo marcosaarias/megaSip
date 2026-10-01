@@ -109,6 +109,130 @@
                         name="fecha_hasta"
                     >
 
+                    <!-- ====================================================== -->
+                    <!-- GRUPO DE SUCURSALES -->
+                    <!-- ====================================================== -->
+
+                    <label>
+                        <strong>Grupo de sucursales:</strong>
+                    </label>
+
+                    <select
+                        id="grupo_sucursales"
+                        name="grupo_sucursales"
+                        class="form-control mb-3"
+                        onchange="actualizarSeleccionSucursal()"
+                        required
+                    >
+
+                        <option
+                            value="Total Empresa"
+                            data-codigos="CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,MA02"
+                        >
+                            Total Empresa
+                        </option>
+
+                        <option
+                            value="Total Empresa - Mayorista"
+                            data-codigos="CO05,CO09,CO12,CO15,CO21,CO24,CO25,CO27,CO29,MA02"
+                        >
+                            Total Empresa - Mayorista
+                        </option>
+
+                        <option
+                            value="Jujuy - Mayorista"
+                            data-codigos="CO05,CO12,CO15,MA02"
+                        >
+                            Jujuy - Mayorista
+                        </option>
+
+                        <option
+                            value="Salta - Mayorista"
+                            data-codigos="CO09,CO29,CO21"
+                        >
+                            Salta - Mayorista
+                        </option>
+
+                        <option
+                            value="Oran - Mayorista"
+                            data-codigos="CO21"
+                        >
+                            Oran - Mayorista
+                        </option>
+
+                        <option
+                            value="Total Empresa Minorista"
+                            data-codigos="CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO26,CO28"
+                        >
+                            Total Empresa Minorista
+                        </option>
+
+                        <option
+                            value="Jujuy - Minoristas"
+                            data-codigos="CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO19,CO20,CO22,CO28"
+                        >
+                            Jujuy - Minoristas
+                        </option>
+
+                        <option
+                            value="Salta - Minoristas"
+                            data-codigos="CO18,CO23"
+                        >
+                            Salta - Minoristas
+                        </option>
+
+                        <option
+                            value="Jujuy, Salta - Minoritas"
+                            data-codigos="CO01,CO02,CO04,CO06,CO07,CO08,CO10,CO11,CO14,CO16,CO17,CO18,CO19,CO20,CO22,CO23,CO28"
+                        >
+                            Jujuy, Salta - Minoritas
+                        </option>
+
+                        <option
+                            value="Jujuy, Salta - Minoritas y Mayoristas"
+                            data-codigos="CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO28,CO29,MA02"
+                        >
+                            Jujuy, Salta - Minoritas y Mayoristas
+                        </option>
+
+                        <option
+                            value="Jujuy - Minorista Y Mayorista"
+                            data-codigos="CO01,CO02,CO04,CO05,CO06,CO07,CO08,CO10,CO11,CO12,CO14,CO15,CO16,CO17,CO19,CO20,CO22,CO28,MA02"
+                        >
+                            Jujuy - Minorista Y Mayorista
+                        </option>
+
+                        <option
+                            value="Tucuman - Minoristas"
+                            data-codigos="CO26,CO27"
+                        >
+                            Tucuman - Minoristas
+                        </option>
+
+                        <option
+                            value="Jujuy Capital"
+                            data-codigos="CO01,CO02,CO05,CO07,CO11,CO16,CO19,CO20,CO22"
+                        >
+                            Jujuy Capital
+                        </option>
+
+                    </select>
+
+
+                    <label>
+                        <strong>Códigos de sucursales:</strong>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigos_sucursales"
+                        name="codigos_sucursales"
+                        class="form-control mb-3"
+                        readonly
+                        placeholder="Se completará automáticamente"
+                    >
+
+
                     <input
                         type="file"
                         name="archivo"
@@ -362,6 +486,44 @@
 
 
 <script>
+
+/* ============================================================
+   GRUPO DE SUCURSALES
+   ============================================================ */
+
+function actualizarSeleccionSucursal() {
+
+    const grupo =
+        document.getElementById(
+            "grupo_sucursales"
+        );
+
+    const codigosInput =
+        document.getElementById(
+            "codigos_sucursales"
+        );
+
+    if (!grupo || !codigosInput) {
+        return;
+    }
+
+    const opcion =
+        grupo.options[
+            grupo.selectedIndex
+        ];
+
+    codigosInput.value =
+        opcion.dataset.codigos || "";
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+        actualizarSeleccionSucursal();
+    }
+);
+
 
 /* ============================================================
    COPIAR FECHAS AL FORMULARIO DE CARGA
