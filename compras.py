@@ -20,6 +20,7 @@ from pathlib import Path
 from werkzeug.utils import secure_filename
 from openpyxl import load_workbook
 from io import BytesIO
+from sucursales import SUCURSAL_MAP as SUCURSAL_MAP_GRUPOS
 
 
 SUCURSAL_MAP = {
@@ -1634,6 +1635,10 @@ def ofertas(modo):
         fecha_hasta = request.form.get("fecha_hasta", "").strip()
         tipo = request.form.get("tipo", "mayorista")
         usuario = session.get("usuario_nombre", "desconocido")
+        codigos_sucursales = request.form.get(
+            "codigos_sucursales",
+            ""
+        ).strip()
 
         try:
             df, _, mensaje_error, total_registros = procesar_archivo_cenefas(
@@ -1650,6 +1655,11 @@ def ofertas(modo):
 
             if df.empty:
                 raise ValueError("El archivo no contiene registros válidos.")
+            
+            if not codigos_sucursales:
+                raise ValueError("Debe seleccionar las sucursales.")
+
+            df["sucursales"] = codigos_sucursales
 
             df = df.reset_index(drop=True)
             lote_id = uuid.uuid4().hex
