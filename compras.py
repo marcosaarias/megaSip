@@ -1634,6 +1634,11 @@ def ofertas(modo):
         fecha_hasta = request.form.get("fecha_hasta", "").strip()
         tipo = request.form.get("tipo", "mayorista")
         usuario = session.get("usuario_nombre", "desconocido")
+        #Agrega seleccion de sucursales
+        codigos_sucursales = request.form.get(
+            "codigos_sucursales",
+            ""
+        ).strip().upper() 
 
         try:
             df, _, mensaje_error, total_registros = procesar_archivo_cenefas(
@@ -1650,6 +1655,35 @@ def ofertas(modo):
 
             if df.empty:
                 raise ValueError("El archivo no contiene registros válidos.")
+            
+            # =====================================================
+            # APLICAR SUCURSALES SELECCIONADAS EN LA VISTA
+            # =====================================================
+
+            if not codigos_sucursales:
+                raise ValueError(
+                    "Debe seleccionar un grupo de sucursales."
+                )
+
+            sucursales = [
+                codigo.strip()
+                for codigo in codigos_sucursales.split(",")
+                if codigo.strip()
+            ]
+
+            for sucursal in sucursales:
+                if not re.fullmatch(r"(CO|MA)[0-9]{2}", sucursal):
+                    raise ValueError(
+                        f"Código de sucursal inválido: {sucursal}"
+                    )
+
+            # Evitar códigos duplicados
+            sucursales = list(dict.fromkeys(sucursales))
+
+            codigos_sucursales = ",".join(sucursales)
+
+            # La selección realizada en la vista tiene prioridad
+            df["sucursales"] = codigos_sucursales
 
             df = df.reset_index(drop=True)
             lote_id = uuid.uuid4().hex
