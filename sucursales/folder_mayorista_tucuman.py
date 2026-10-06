@@ -31,7 +31,7 @@ from sistemas import login_requerido
 # ============================================================
 
 SUCURSALES_MAYORISTA_TUCUMAN = (
-    SUCURSAL_MAP["Tucuman - Mayorista"]
+    SUCURSAL_MAP["Tucuman - Mayoristas"]
 )
 
 TIPO_CENEFA_MAYORISTA_TUCUMAN = "mayorista"
