@@ -794,6 +794,48 @@ def aplicar_cambios_preview(
     return df
 
 
+def validar_precios_obligatorios(df):
+    columnas = ["Normal", "Oferta"]
+
+    for columna in columnas:
+        if columna not in df.columns:
+            raise ValueError(
+                f"Falta la columna obligatoria '{columna}' en el Excel."
+            )
+
+    if df.empty:
+        raise ValueError("El archivo no contiene productos.")
+
+    precios = df[columnas].copy()
+
+    for columna in columnas:
+        precios[columna] = pd.to_numeric(
+            precios[columna].replace(
+                r"^\s*$", float("nan"), regex=True
+            ),
+            errors="coerce"
+        )
+
+    invalidos = precios.isna().any(axis=1) | (
+        ~precios.apply(lambda col: col.map(
+            lambda valor: pd.notna(valor) and
+            float("-inf") < valor < float("inf")
+        )).all(axis=1)
+    )
+
+    if invalidos.any():
+        afectados = df.loc[invalidos]
+        codigos = afectados["CODIGO"].head(10).tolist()
+
+        raise ValueError(
+            f"TRANSMISIÓN BLOQUEADA: Se encontraron "
+            f"{len(afectados)} productos con precios Normal "
+            f"u Oferta vacíos o inválidos. "
+            f"Códigos: {codigos}. "
+            "Revise las fórmulas y los valores del Excel "
+            "y vuelva a cargar el archivo."
+        )
+
 
 def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
     preview = None
@@ -1058,6 +1100,8 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
         df["Normal"] = df["Normal"].apply(limpiar_precio)
         df["Normal"] = np.floor(df["Normal"] * 100) / 100
 
+    validar_precios_obligatorios(df)
+
     if fecha_desde:
         df["desde"] = fecha_desde
 
@@ -1213,6 +1257,8 @@ def existen_cenefas_repetidas(df, tipo_cenefa):
         conn.close()
 
 def guardar_cenefas_en_db(df, tipo_cenefa, usuario="sistema", lote_carga=None, sobrescribir=False):
+    
+    validar_precios_obligatorios(df)
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -1513,6 +1559,9 @@ def transmitir_folder():
         cambios = normalizar_cambios_preview(cambios_json)
         df = aplicar_cambios_preview(df, cambios)
 
+        # Validar antes de transmitir
+        validar_precios_obligatorios(df)
+
         # Guardamos el estado editado para no perder cambios si hay que
         # confirmar una sobrescritura en un segundo envío.
         guardar_temporal(lote_id, df)
@@ -1808,6 +1857,9 @@ def transmitir_ofertas():
 
         cambios = normalizar_cambios_preview(cambios_json)
         df = aplicar_cambios_preview(df, cambios)
+
+        # Validar antes de transmitir
+        validar_precios_obligatorios(df)
 
         # Persistimos las ediciones en Redis para conservarlas si aparece
         # la confirmación de sobrescritura.

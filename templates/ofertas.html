@@ -13,18 +13,32 @@
     <!-- ====================================================== -->
     <!-- MENSAJES -->
     <!-- ====================================================== -->
+     
+        {% if mensaje_error %}
+        <div class="alert alert-danger">
+            {{ mensaje_error }}
+        </div>
+        {% endif %}
 
-    {% if mensaje_error %}
-    <div class="alert alert-danger">
-        {{ mensaje_error }}
-    </div>
-    {% endif %}
+        <!-- POP-UP: PRECIOS VACÍOS O INVÁLIDOS -->
+        {% if mensaje_error and "TRANSMISIÓN BLOQUEADA" in mensaje_error %}
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            alert(
+                "ATENCIÓN - ARCHIVO INVÁLIDO\n\n" +
+                "Se encontraron precios Normal u Oferta vacíos o inválidos.\n\n" +
+                "La transmisión fue bloqueada.\n\n" +
+                "Verifique el Excel y vuelva a procesarlo."
+            );
+        });
+        </script>
+        {% endif %}
 
-    {% if mensaje_exito %}
-    <div class="alert alert-success">
-        {{ mensaje_exito }}
-    </div>
-    {% endif %}
+        {% if mensaje_exito %}
+        <div class="alert alert-success">
+            {{ mensaje_exito }}
+        </div>
+        {% endif %}
 
 
     <!-- ====================================================== -->
