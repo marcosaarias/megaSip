@@ -1066,6 +1066,14 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
     df = df.reset_index(drop=True)
 
+    print("=== PRECIOS FINALES ANTES DE PREVIEW ===", flush=True)
+    print(
+        df[["CODIGO", "Normal", "Oferta"]].head(20).to_string(index=False),
+        flush=True
+    )
+    print("NORMAL VACIOS:", df["Normal"].isna().sum(), flush=True)
+    print("OFERTA VACIOS:", df["Oferta"].isna().sum(), flush=True)
+
     total_registros = len(df)
 
     #df = df.fillna("")
