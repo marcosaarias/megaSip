@@ -150,6 +150,13 @@ def crear_dataframe_solo_valores(
         )
     )
 
+    print("=== RESULTADOS LEÍDOS DEL EXCEL ===")
+
+    for numero_fila, fila in enumerate(filas[:15], start=1):
+        print(f"Fila {numero_fila}: {fila}")
+
+    print("=================================")
+
     workbook.close()
     archivo.seek(0)
 
