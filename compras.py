@@ -892,6 +892,15 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
         df = df.rename(columns=column_mapping)
 
+        print("=== COLUMNAS DESPUÉS DEL MAPEO ===", flush=True)
+        print(df.columns.tolist(), flush=True)
+
+        print("=== PRECIOS DESPUÉS DEL MAPEO ===", flush=True)
+        print(
+            df[["CODIGO", "Normal", "Oferta"]].head(15).to_string(),
+            flush=True
+        )
+
         if "cenefa" not in df.columns:
             df["cenefa"] = "OFERTA"
         else:
