@@ -209,6 +209,12 @@ def diario():
                         for col in df.columns
                     ]
 
+                    # Reconocer encabezados utilizados en los archivos Diario
+                    df = df.rename(columns={
+                        "cenefas": "cenefa",
+                        "cenefa": "cenefa",
+                    })
+
                     column_mapping = {}
 
                     for header in HEADERS_DIARIO:
