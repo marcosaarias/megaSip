@@ -19,6 +19,7 @@ from psycopg2.extras import RealDictCursor
 from pathlib import Path
 from werkzeug.utils import secure_filename
 from openpyxl import load_workbook
+from decimal import Decimal, InvalidOperation, ROUND_DOWN
 from io import BytesIO
 
 
@@ -59,19 +60,45 @@ def get_db_connection():
         password=os.getenv("DB_PASSWORD", "Alberdi2026_db")
     )
 
+#def guardar_temporal(lote_id, df):
+#    redis_client.setex(
+#        lote_id,
+#        3600,  # expira en 1 hora
+#        df.to_json(orient="records")
+#    )
+
+#def recuperar_temporal(lote_id):
+#    data = redis_client.get(lote_id)
+#    if data:
+#        return pd.read_json(data, orient="records")
+#    return None
+
 def guardar_temporal(lote_id, df):
-    redis_client.setex(
-        lote_id,
-        3600,  # expira en 1 hora
-        df.to_json(orient="records")
+    registros = df.to_dict(orient="records")
+
+    contenido = json.dumps(
+        registros,
+        default=str,
+        ensure_ascii=False
     )
+
+    redis_client.setex(lote_id, 3600, contenido)
+
 
 def recuperar_temporal(lote_id):
     data = redis_client.get(lote_id)
-    if data:
-        return pd.read_json(data, orient="records")
-    return None
 
+    if not data:
+        return None
+
+    registros = json.loads(data)
+    df = pd.DataFrame(registros)
+
+    for columna in ("Normal", "Oferta"):
+        if columna in df.columns:
+            df[columna] = df[columna].apply(limpiar_precio)
+
+    return df
 
 
 #DB_PATH = os.path.join(os.path.dirname(__file__), "sip.s3db")
@@ -235,31 +262,63 @@ def limpiar_codigo(valor):
     return valor.lstrip("0")
 
 
+#def limpiar_precio(valor):
+#    print("ENTRADA:", repr(valor))
+#    if pd.isna(valor):
+#        return np.nan
+
+#    valor = str(valor).strip()
+
+#    if valor == "" or valor.lower() in ["nan", "none", "null"]:
+#        return np.nan
+
+#    # Formato inglés: 2,700.00
+#    if "," in valor and "." in valor:
+#        if valor.rfind(".") > valor.rfind(","):
+#            valor = valor.replace(",", "")
+#        else:
+#            valor = valor.replace(".", "").replace(",", ".")
+
+    # Formato argentino: 2700,00
+    #elif "," in valor:
+    #    valor = valor.replace(",", ".")
+
+    #try:
+    #    return float(valor)
+    #except:
+    #    return np.nan
+
 def limpiar_precio(valor):
-    print("ENTRADA:", repr(valor))
     if pd.isna(valor):
-        return np.nan
+        return None
 
     valor = str(valor).strip()
 
-    if valor == "" or valor.lower() in ["nan", "none", "null"]:
-        return np.nan
+    if valor == "" or valor.lower() in ("nan", "none", "null"):
+        return None
 
-    # Formato inglés: 2,700.00
     if "," in valor and "." in valor:
         if valor.rfind(".") > valor.rfind(","):
             valor = valor.replace(",", "")
         else:
             valor = valor.replace(".", "").replace(",", ".")
 
-    # Formato argentino: 2700,00
     elif "," in valor:
         valor = valor.replace(",", ".")
 
     try:
-        return float(valor)
-    except:
-        return np.nan
+        precio = Decimal(valor)
+
+        if not precio.is_finite():
+            return None
+
+        return precio.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_DOWN
+        )
+
+    except (InvalidOperation, ValueError):
+        return None
 
 
 def limpiar_ean(valor):
@@ -620,10 +679,10 @@ def aplicar_cambios_preview(
                     "ser negativo."
                 )
 
-            valor = (
-                np.floor(valor * 100)
-                / 100
-            )
+            #valor = (
+            #    np.floor(valor * 100)
+            #    / 100
+            #)
 
         # ====================================================
         # DESCRIPCION / CENEFA
@@ -1148,15 +1207,21 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
     if df is None:
         return None, None, mensaje_error, 0
 
+    #if "Oferta" in df.columns:
+    #    print("VALORES ORIGINALES OFERTA")
+    #    print(df["Oferta"].head(20).tolist())
+    #    df["Oferta"] = df["Oferta"].apply(limpiar_precio)
+    #    df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
+
+    #if "Normal" in df.columns:
+    #    df["Normal"] = df["Normal"].apply(limpiar_precio)
+    #    df["Normal"] = np.floor(df["Normal"] * 100) / 100
+
     if "Oferta" in df.columns:
-        print("VALORES ORIGINALES OFERTA")
-        print(df["Oferta"].head(20).tolist())
         df["Oferta"] = df["Oferta"].apply(limpiar_precio)
-        df["Oferta"] = np.floor(df["Oferta"] * 100) / 100
 
     if "Normal" in df.columns:
         df["Normal"] = df["Normal"].apply(limpiar_precio)
-        df["Normal"] = np.floor(df["Normal"] * 100) / 100
 
     validar_precios_obligatorios(df)
 
@@ -1218,17 +1283,28 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
 
 
 #funcion para formatear precios en vistas
-def formatear_precio_arg(valor):
+#def formatear_precio_arg(valor):
 
+#    if valor is None or valor == "":
+#        return ""
+
+#    try:
+#        valor = float(valor)
+#        return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+#    except:
+#        return valor
+
+
+def formatear_precio_arg(valor):
     if valor is None or valor == "":
         return ""
 
-    try:
-        valor = float(valor)
-        return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    except:
-        return valor
+    precio = limpiar_precio(valor)
 
+    if precio is None:
+        return ""
+
+    return f"{precio:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 #funcion para insertar registros vacios a bd
