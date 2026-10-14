@@ -249,7 +249,26 @@ def diario():
 
                     df = df.rename(columns=column_mapping)
 
-                    # Verificar encabezados duplicados después del mapeo
+                    # ==================================================
+                    # RESOLVER DUPLICADOS DE CENEFA
+                    # ==================================================
+                    if list(df.columns).count("cenefa") > 1:
+                        columnas_cenefa = df.loc[:, df.columns == "cenefa"]
+
+                        # Conservar el primer valor no vacío de cada fila
+                        columnas_cenefa = columnas_cenefa.replace(
+                            r"^\s*$", pd.NA, regex=True
+                        )
+
+                        cenefa_unificada = columnas_cenefa.bfill(axis=1).iloc[:, 0]
+
+                        # Eliminar todas las columnas cenefa duplicadas
+                        df = df.loc[:, df.columns != "cenefa"].copy()
+
+                        # Incorporar la columna unificada
+                        df["cenefa"] = cenefa_unificada
+
+                    # Verificar que no queden encabezados duplicados
                     duplicadas = df.columns[df.columns.duplicated()].tolist()
 
                     if duplicadas:
