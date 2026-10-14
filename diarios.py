@@ -204,10 +204,30 @@ def diario():
                     if df_check.dropna(how="all").empty:
                         continue
 
+                    #df.columns = [
+                    #    normalizar_texto(col).strip()
+                    #    for col in df.columns
+                    #]
+
+                    # Reconocer encabezados utilizados en los archivos Diario
+                    #df = df.rename(columns={
+                    #    "cenefas": "cenefa",
+                    #    "cenefa": "cenefa",
+                    #})
+
                     df.columns = [
                         normalizar_texto(col).strip()
                         for col in df.columns
                     ]
+
+                    # ==================================================
+                    # ELIMINAR COLUMNAS UTIL
+                    # No son necesarias para generar cenefas
+                    # ==================================================
+                    df = df.loc[
+                        :,
+                        df.columns.astype(str).str.strip().str.lower() != "util"
+                    ].copy()
 
                     # Reconocer encabezados utilizados en los archivos Diario
                     df = df.rename(columns={
@@ -228,6 +248,15 @@ def diario():
                                 break
 
                     df = df.rename(columns=column_mapping)
+
+                    # Verificar encabezados duplicados después del mapeo
+                    duplicadas = df.columns[df.columns.duplicated()].tolist()
+
+                    if duplicadas:
+                        raise ValueError(
+                            f"Hoja '{nombre_hoja}': columnas duplicadas "
+                            f"después del mapeo: {duplicadas}"
+                        )
 
                     if "CODIGO" in df.columns:
                         df["CODIGO"] = (
