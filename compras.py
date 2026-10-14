@@ -837,6 +837,76 @@ def validar_precios_obligatorios(df):
         )
 
 
+def completar_precios_combinados(
+    archivo,
+    hoja_objetivo,
+    fila_header,
+    df
+):
+    archivo.seek(0)
+
+    wb = load_workbook(
+        BytesIO(archivo.read()),
+        data_only=True,
+        read_only=False
+    )
+
+    try:
+        ws = wb[hoja_objetivo]
+
+        # Fila real de encabezados en Excel
+        fila_encabezado_excel = fila_header + 1
+
+        for rango in ws.merged_cells.ranges:
+
+            # Solo rangos verticales debajo del encabezado
+            if rango.min_row <= fila_encabezado_excel:
+                continue
+
+            if rango.min_col != rango.max_col:
+                continue
+
+            columna_excel = rango.min_col - 1
+
+            if columna_excel >= len(df.columns):
+                continue
+
+            nombre_columna = df.columns[columna_excel]
+
+            if nombre_columna not in ("Normal", "Oferta"):
+                continue
+
+            # Valor de la celda superior del rango combinado
+            valor = ws.cell(
+                row=rango.min_row,
+                column=rango.min_col
+            ).value
+
+            # Completar únicamente el rango combinado
+            for fila_excel in range(
+                rango.min_row + 1,
+                rango.max_row + 1
+            ):
+                indice_df = (
+                    fila_excel - fila_header - 2
+                )
+
+                if 0 <= indice_df < len(df):
+                    valor_actual = df.iat[indice_df, columna_excel]
+
+                    if pd.isna(valor_actual) or str(valor_actual).strip() == "":
+                        df.iat[indice_df, columna_excel] = valor
+
+        return df
+
+    finally:
+        wb.close()
+        archivo.seek(0)
+
+
+
+
+
 def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
     preview = None
     mensaje_error = None
@@ -954,36 +1024,24 @@ def procesar_archivo_cenefas(archivo, tipo, fecha_desde, fecha_hasta):
                 .fillna("OFERTA")
             )
 
-        if "sucursales" in df.columns:
-            df["sucursales"] = df["sucursales"].ffill()
+        #if "sucursales" in df.columns:
+            #df["sucursales"] = df["sucursales"].ffill()
+            #df = df.rename(columns=column_mapping)
 
-        #if "cenefa" in df.columns:
-        #    df["cenefa"] = df["cenefa"].ffill()
 
-        if "Oferta" in df.columns:
-            df["Oferta"] = df["Oferta"].ffill()
+        #if "Oferta" in df.columns:
+            #df["Oferta"] = df["Oferta"].ffill()
 
-        if "Normal" in df.columns:
-            df["Normal"] = df["Normal"].ffill()
+        #if "Normal" in df.columns:
+            #df["Normal"] = df["Normal"].ffill()
 
-        #for col in ["sucursales", "Oferta", "Normal"]:
-        #    if col in df.columns:
-        #        df[col] = (
-        #            df[col]
-        #            .replace(r"^\s*$", pd.NA, regex=True)
-        #            .replace(["nan", "NaN", "None", "none"], pd.NA)
-        #            .ffill()
-        #        )
 
-        #if "cenefa" in df.columns:
-        #    df["cenefa"] = (
-        #        df["cenefa"]
-        #        .replace(r"^\s*$", pd.NA, regex=True)
-        #        .replace(["nan", "NaN", "None", "none"], pd.NA)
-        #        .ffill()
-        #    )
-        #else:
-        #    df["cenefa"] = "OFERTA"
+        df = completar_precios_combinados(
+            archivo=archivo,
+            hoja_objetivo=hoja_objetivo,
+            fila_header=fila_header,
+            df=df
+        )
 
         if tipo in SUCURSAL_MAP:
 
