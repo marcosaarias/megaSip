@@ -723,6 +723,16 @@ def transmitir_diario(hoja):
         flush=True
     )
 
+    print("\n=== VERIFICACION ANTES DE TRANSMITIR ===", flush=True)
+    print("Total registros:", len(df), flush=True)
+    print(
+        df[df["CODIGO"].astype(str).isin(["2697", "99029"])][
+            ["CODIGO", "DESCRIPCION", "Normal", "Oferta", "cenefa"]
+        ].to_string(index=False),
+        flush=True
+    )
+    print("=====================================\n", flush=True)
+
     guardar_cenefas_en_db(
         df,
         tipo_cenefa,
