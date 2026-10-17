@@ -294,8 +294,48 @@ def diario():
                         df = df.dropna(subset=["CODIGO"])
                         df["CODIGO"] = df["CODIGO"].astype(int)
 
+
                     if df.empty:
                         continue
+
+                    # ================================================
+                    # EXCLUIR COMBO FERNET + COCA
+                    # ================================================
+                    CODIGO_FERNET = 2697
+                    CODIGO_COCA = 99029
+
+                    codigos = df["CODIGO"]
+
+                    es_combo = (
+                        (
+                            codigos.eq(CODIGO_FERNET)
+                            & (
+                                codigos.shift(1).eq(CODIGO_COCA)
+                                | codigos.shift(-1).eq(CODIGO_COCA)
+                            )
+                        )
+                        |
+                        (
+                            codigos.eq(CODIGO_COCA)
+                            & (
+                                codigos.shift(1).eq(CODIGO_FERNET)
+                                | codigos.shift(-1).eq(CODIGO_FERNET)
+                            )
+                        )
+                    )
+
+                    if es_combo.any():
+                        print(
+                            f"COMBO EXCLUIDO - Hoja: {nombre_hoja}",
+                            df.loc[es_combo, ["CODIGO", "DESCRIPCION"]].to_string(index=False),
+                            flush=True
+                        )
+
+                    df = df.loc[~es_combo].copy()
+
+                    if df.empty:
+                        continue
+
 
                     # Primero EAN, después departamento y dep
                     df = completar_ean(df)
