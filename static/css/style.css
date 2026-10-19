@@ -334,3 +334,102 @@ button:hover, .btn:hover {
 .submenu-group.open .submenu-nested {
   display: block;
 }
+
+/* =====================================
+   HISTORIAL DE CENEFAS
+===================================== */
+
+.historial-cenefas {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px 0;
+}
+
+/* Filtros del historial */
+.historial-cenefas form.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0;
+    row-gap: 12px;
+}
+
+.historial-cenefas form.row > .col-md-3 {
+    flex: 0 0 25%;
+    min-width: 0;
+}
+
+@media (max-width: 992px) {
+    .historial-cenefas form.row > .col-md-3 {
+        flex: 0 0 50%;
+    }
+}
+
+@media (max-width: 576px) {
+    .historial-cenefas form.row > .col-md-3 {
+        flex: 0 0 100%;
+    }
+}
+
+.historial-cenefas .form-control,
+.historial-cenefas .form-select {
+    width: 100%;
+    min-height: 38px;
+}
+
+/* Encabezado y botones */
+.historial-cenefas .card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.historial-cenefas .card-header > span {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.historial-cenefas .card-header .d-flex {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.historial-cenefas .card-header .btn {
+    width: auto;
+    padding: 8px 12px;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+/* Tabla */
+.historial-cenefas table {
+    width: 100%;
+    min-width: 1400px;
+    border-collapse: collapse;
+    border-radius: 0;
+    overflow: visible;
+}
+
+.historial-cenefas th,
+.historial-cenefas td {
+    padding: 7px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.historial-cenefas thead th {
+    background: #231F20;
+    color: #fff;
+}
+
+.historial-cenefas tbody td {
+    color: #333;
+}
+
+.historial-cenefas .card-body {
+    min-width: 0;
+}
