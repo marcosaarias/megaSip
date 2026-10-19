@@ -2414,40 +2414,47 @@ def archivar_folder_mayorista():
 
 
 
-
-
-
-
-
-
-# Historial cenefas
-
 @compras_bp.route("/historico")
 @login_requerido("sucursal")
 def historico_cenefas():
+
     filtro_codigo = request.args.get("codigo", "").strip()
     filtro_tipo = request.args.get("tipo", "").strip()
     filtro_lote = request.args.get("lote", "").strip()
 
-    #conn = sqlite3.connect(DB_PATH)
-    conn = get_db_connection()
-    #conn.row_factory = sqlite3.Row
-    #cursor = conn.cursor()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    estado = request.args.get("estado", "operativas").strip()
 
-    query = """
-        SELECT id, codigo, ean, dep, departamento, descripcion,
-            normal, oferta, cenefa,
+    if estado not in ("operativas", "archivadas"):
+        return "Estado de historial no válido.", 400
+
+    tabla = (
+        "public.cenefas_archivadas"
+        if estado == "archivadas"
+        else "public.cenefas"
+    )
+
+    campos_auditoria = (
+        "fecha_archivado, usuario_archivado"
+        if estado == "archivadas"
+        else "NULL::timestamp AS fecha_archivado, "
+             "NULL::text AS usuario_archivado"
+    )
+
+    query = f"""
+        SELECT
+            id, codigo, ean, dep, departamento,
+            descripcion, normal, oferta, cenefa,
             desde, hasta, sucursales, tipo_cenefa,
-            fecha_carga, lote_carga, usuario_carga
-        FROM cenefas
+            fecha_carga, lote_carga, usuario_carga,
+            {campos_auditoria}
+        FROM {tabla}
         WHERE 1=1
     """
+
     params = []
 
     if filtro_codigo:
-        #query += " AND Codigo LIKE %s"
-        query += " AND Codigo::text LIKE %s"
+        query += " AND codigo::text LIKE %s"
         params.append(f"%{filtro_codigo}%")
 
     if filtro_tipo:
@@ -2458,13 +2465,22 @@ def historico_cenefas():
         query += " AND lote_carga LIKE %s"
         params.append(f"%{filtro_lote}%")
 
-    query += " ORDER BY fecha_carga DESC, id DESC"
+    if estado == "archivadas":
+        query += " ORDER BY fecha_archivado DESC, id DESC"
+    else:
+        query += " ORDER BY fecha_carga DESC, id DESC"
 
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+    finally:
+        conn.close()
 
     datos = []
+
     for r in rows:
         datos.append({
             "id": r["id"],
@@ -2483,6 +2499,8 @@ def historico_cenefas():
             "fecha_carga": r["fecha_carga"],
             "lote_carga": r["lote_carga"],
             "usuario_carga": r["usuario_carga"],
+            "fecha_archivado": r["fecha_archivado"],
+            "usuario_archivado": r["usuario_archivado"],
         })
 
     return render_template(
@@ -2490,29 +2508,104 @@ def historico_cenefas():
         datos=datos,
         filtro_codigo=filtro_codigo,
         filtro_tipo=filtro_tipo,
-        filtro_lote=filtro_lote
+        filtro_lote=filtro_lote,
+        estado=estado
     )
 
-from sucursales.folder_mayorista_tucuman import (
-    registrar_rutas_folder_mayorista_tucuman,
-)
 
-registrar_rutas_folder_mayorista_tucuman(
-    compras_bp=compras_bp,
-    procesar_archivo_cenefas=procesar_archivo_cenefas,
-    guardar_cenefas_en_db=guardar_cenefas_en_db,
-    get_db_connection=get_db_connection,
-    limpiar_precio=limpiar_precio,
-    formatear_precio_arg=formatear_precio_arg,
-)
+# Historial cenefas
 
-from sucursales.administrar_cenefas import (
-    registrar_rutas_administrar_cenefas,
-)
+#@compras_bp.route("/historico")
+#@login_requerido("sucursal")
+#def historico_cenefas():
+#    filtro_codigo = request.args.get("codigo", "").strip()
+#    filtro_tipo = request.args.get("tipo", "").strip()
+#    filtro_lote = request.args.get("lote", "").strip()
+
+    #conn = sqlite3.connect(DB_PATH)
+#    conn = get_db_connection()
+    #conn.row_factory = sqlite3.Row
+    #cursor = conn.cursor()
+#    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+#    query = """
+#        SELECT id, codigo, ean, dep, departamento, descripcion,
+#            normal, oferta, cenefa,
+#            desde, hasta, sucursales, tipo_cenefa,
+#            fecha_carga, lote_carga, usuario_carga
+#        FROM cenefas
+#        WHERE 1=1
+#    """
+#    params = []
+
+#    if filtro_codigo:
+#        #query += " AND Codigo LIKE %s"
+#        query += " AND Codigo::text LIKE %s"
+#        params.append(f"%{filtro_codigo}%")
+
+#    if filtro_tipo:
+#        query += " AND tipo_cenefa = %s"
+#        params.append(filtro_tipo)
+
+#    if filtro_lote:
+#        query += " AND lote_carga LIKE %s"
+#        params.append(f"%{filtro_lote}%")
+
+#    query += " ORDER BY fecha_carga DESC, id DESC"
+
+#    cursor.execute(query, params)
+#    rows = cursor.fetchall()
+#    conn.close()
+
+#    datos = []
+#    for r in rows:
+#        datos.append({
+#            "id": r["id"],
+#            "codigo": r["codigo"],
+#            "ean": r["ean"],
+#            "dep": r["dep"],
+#            "departamento": r["departamento"],
+#            "descripcion": r["descripcion"],
+#            "Normal": r["normal"],
+#            "Oferta": r["oferta"],
+#            "cenefa": r["cenefa"],
+#            "desde": r["desde"],
+#            "hasta": r["hasta"],
+#            "sucursales": r["sucursales"],
+#            "tipo_cenefa": r["tipo_cenefa"],
+#            "fecha_carga": r["fecha_carga"],
+#            "lote_carga": r["lote_carga"],
+ #           "usuario_carga": r["usuario_carga"],
+ #       })
+
+  #  return render_template(
+  #      "historico_cenefas.html",
+  #      datos=datos,
+  #      filtro_codigo=filtro_codigo,
+  #      filtro_tipo=filtro_tipo,
+  #      filtro_lote=filtro_lote
+  #  )
+
+#from sucursales.folder_mayorista_tucuman import (
+#    registrar_rutas_folder_mayorista_tucuman,
+#)
+
+#registrar_rutas_folder_mayorista_tucuman(
+#    compras_bp=compras_bp,
+#    procesar_archivo_cenefas=procesar_archivo_cenefas,
+#    guardar_cenefas_en_db=guardar_cenefas_en_db,
+#    get_db_connection=get_db_connection,
+#    limpiar_precio=limpiar_precio,
+#    formatear_precio_arg=formatear_precio_arg,
+#)
+
+#from sucursales.administrar_cenefas import (
+#    registrar_rutas_administrar_cenefas,
+#)
 
 
-registrar_rutas_administrar_cenefas(
-    compras_bp=compras_bp,
-    get_db_connection=get_db_connection,
-    limpiar_precio=limpiar_precio,
-)
+#registrar_rutas_administrar_cenefas(
+#    compras_bp=compras_bp,
+#    get_db_connection=get_db_connection,
+#    limpiar_precio=limpiar_precio,
+#)
