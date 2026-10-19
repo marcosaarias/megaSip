@@ -58,73 +58,78 @@
     <!-- ====================================================== -->
     <!-- CARGAR ARCHIVO -->
     <!-- ====================================================== -->
+    <div class="row g-4 align-items-stretch">
 
-    <div class="row">
+      <div class="col-md-6 d-flex">
 
-        <div class="col-md-6">
+        <div class="card p-4 shadow-sm h-100 w-100">
 
-            <div class="card p-4 shadow-sm">
+            <h4>Folder Mayorista</h4>
 
-                <h4>
-                    Folder Mayorista
-                </h4>
+            <form
+                method="POST"
+                action="{{ url_for('compras.folder_mayorista') }}"
+                enctype="multipart/form-data"
+                class="folder-form d-flex flex-column flex-grow-1"
+            >
 
-                <form
-                    method="POST"
-                    action="{{ url_for('compras.folder_mayorista') }}"
-                    enctype="multipart/form-data"
-                    class="folder-form"
+                <input
+                    type="hidden"
+                    name="tipo"
+                    value="mayorista"
                 >
 
-                    <input
-                        type="hidden"
-                        name="tipo"
-                        value="mayorista"
-                    >
+                <input
+                    type="hidden"
+                    name="fecha_desde"
+                >
 
-                    <input
-                        type="hidden"
-                        name="fecha_desde"
-                    >
+                <input
+                    type="hidden"
+                    name="fecha_hasta"
+                >
 
-                    <input
-                        type="hidden"
-                        name="fecha_hasta"
-                    >
+                <div class="mb-3">
+
+                    <label class="mb-1">
+                        Seleccionar archivo:
+                    </label>
 
                     <input
                         type="file"
                         name="archivo"
-                        class="form-control mb-3"
+                        class="form-control"
                         required
                     >
 
-                    <button
-                        type="submit"
-                        class="btn btn-primary w-100"
-                    >
-                        Cargar Folder Mayorista
-                    </button>
+                </div>
 
-                </form>
+                <button
+                    type="submit"
+                    class="btn btn-primary w-100 mt-auto"
+                >
+                    Cargar Folder Mayorista
+                </button>
 
-            </div>
+            </form>
 
         </div>
 
+    </div>
     <!-- ====================================================== -->
     <!-- ARCHIVAR FOLDER -->
     <!-- ====================================================== -->
 
-    <div class="col-md-6">
+    <div class="col-md-6 d-flex">
 
-            <div class="card p-4 shadow-sm">
+            <div class="card p-4 shadow-sm h-100 w-100">
 
                 <h4>Archivar Folder</h4>
 
                 <form
                     method="POST"
                     action="#"
+                    class="d-flex flex-column flex-grow-1"
                     onsubmit="confirmarArchivado(this); return false;"
                 >
 
@@ -154,7 +159,7 @@
 
                     <button
                         type="submit"
-                        class="btn btn-outline-danger w-100"
+                        class="btn btn-outline-danger w-100 mt-auto"
                     >
                         Archivar
                     </button>
