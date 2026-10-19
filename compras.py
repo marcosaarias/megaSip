@@ -2269,6 +2269,157 @@ def farmacia_folder():
 
 
 
+#---------------------------------------------------------
+#                   ARCHIVAR CENEFAS
+#---------------------------------------------------------
+
+@compras_bp.route(
+    "/folder/mayorista/archivar",
+    methods=["POST"]
+)
+@login_requerido("compras")
+def archivar_folder_mayorista():
+
+    fecha_desde = request.form.get(
+        "fecha_desde", ""
+    ).strip()
+
+    fecha_hasta = request.form.get(
+        "fecha_hasta", ""
+    ).strip()
+
+    usuario = session.get(
+        "usuario_nombre", "desconocido"
+    )
+
+    # ==========================================
+    # VALIDAR FECHAS
+    # ==========================================
+
+    try:
+        desde = datetime.strptime(
+            fecha_desde, "%Y-%m-%d"
+        ).date()
+
+        hasta = datetime.strptime(
+            fecha_hasta, "%Y-%m-%d"
+        ).date()
+
+        if desde > hasta:
+            raise ValueError(
+                "La fecha Desde no puede superar Hasta."
+            )
+
+    except ValueError:
+        return (
+            "El período seleccionado no es válido.",
+            400
+        )
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+
+        with conn:
+            with conn.cursor() as cursor:
+
+                # ==========================================
+                # MOVER REGISTROS AL HISTORIAL
+                # ==========================================
+
+                cursor.execute(
+                    """
+                    WITH registros_movidos AS (
+                        DELETE FROM public.cenefas
+                        WHERE tipo_cenefa = 'mayorista'
+                          AND desde = %s
+                          AND hasta = %s
+                        RETURNING
+                            id, codigo, ean, dep,
+                            departamento, descripcion,
+                            normal, oferta, cenefa,
+                            desde, hasta, sucursales,
+                            tipo_cenefa, fecha_carga,
+                            lote_carga, usuario_carga
+                    )
+                    INSERT INTO public.cenefas_archivadas (
+                        id, codigo, ean, dep,
+                        departamento, descripcion,
+                        normal, oferta, cenefa,
+                        desde, hasta, sucursales,
+                        tipo_cenefa, fecha_carga,
+                        lote_carga, usuario_carga,
+                        fecha_archivado, usuario_archivado
+                    )
+                    SELECT
+                        id, codigo, ean, dep,
+                        departamento, descripcion,
+                        normal, oferta, cenefa,
+                        desde, hasta, sucursales,
+                        tipo_cenefa, fecha_carga,
+                        lote_carga, usuario_carga,
+                        CURRENT_TIMESTAMP, %s
+                    FROM registros_movidos
+                    """,
+                    (
+                        fecha_desde,
+                        fecha_hasta,
+                        usuario
+                    )
+                )
+
+                total_archivados = cursor.rowcount
+
+                if total_archivados == 0:
+                    raise ValueError(
+                        "No se encontraron cenefas "
+                        "mayoristas para ese período."
+                    )
+
+        # El bloque with conn confirma la transacción
+        # solamente si todas las operaciones finalizaron bien.
+
+        guardar_log_compras(
+            usuario=usuario,
+            nivel="INFO",
+            origen="backend",
+            modulo="folder",
+            accion="Archivar folder mayorista",
+            detalle=(
+                f"Período: {fecha_desde} a {fecha_hasta}. "
+                f"Registros archivados: {total_archivados}"
+            ),
+            estado="exitoso",
+            total_registros=total_archivados
+        )
+
+        return redirect(
+            url_for("compras.folder_mayorista")
+        )
+
+    except ValueError as error:
+        return str(error), 400
+
+    except Exception:
+        return (
+            "No se pudo archivar el folder. "
+            "La operación fue revertida.",
+            500
+        )
+
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+
+
+
+
+
+
+
 # Historial cenefas
 
 @compras_bp.route("/historico")

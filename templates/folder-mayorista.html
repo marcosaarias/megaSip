@@ -85,9 +85,9 @@
 
                 <form
                     method="POST"
-                    action="#"
+                    action="{{ url_for('compras.archivar_folder_mayorista') }}"
                     class="d-flex flex-column flex-grow-1"
-                    onsubmit="confirmarArchivado(this); return false;"
+                    onsubmit="return confirmarArchivado(this);"
                 >
 
                     <div class="row mb-3">
