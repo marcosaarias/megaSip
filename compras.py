@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import unicodedata
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash, current_app
 from sistemas import login_requerido
 from logs import guardar_log_compras
 from datetime import datetime
@@ -21,6 +21,14 @@ from werkzeug.utils import secure_filename
 from openpyxl import load_workbook
 from decimal import Decimal, InvalidOperation, ROUND_DOWN
 from io import BytesIO
+from utils.sucursales import SUCURSAL_MAP as DESTINOS_SUCURSALES
+
+
+# Tucumán se transmite con tipo mayorista. Identificar el grupo completo
+# de destinos evita archivar por accidente otro folder con la misma vigencia.
+DESTINOS_TUCUMAN = DESTINOS_SUCURSALES["Tucuman - Mayoristas"].split(",")
+SQL_DESTINOS = "regexp_split_to_array(upper(trim(coalesce(sucursales, ''))), '\\s*,\\s*')"
+SQL_ES_TUCUMAN = f"(coalesce(sucursales, '') <> '' AND {SQL_DESTINOS} <@ %s::text[])"
 
 
 SUCURSAL_MAP = {
@@ -2273,145 +2281,119 @@ def farmacia_folder():
 #                   ARCHIVAR CENEFAS
 #---------------------------------------------------------
 
-@compras_bp.route(
-    "/folder/mayorista/archivar",
-    methods=["POST"]
-)
-@login_requerido("compras")
-def archivar_folder_mayorista():
+FOLDERS_ARCHIVABLES = {
+    "mayorista": ("mayorista", "compras.folder_mayorista", "Mayorista"),
+    "mayorista_tucuman": (
+        "mayorista", "compras.folder_mayorista_tucuman", "Mayorista Tucumán"
+    ),
+    "minorista": ("minorista", "compras.folder_minorista", "Minorista"),
+}
 
-    fecha_desde = request.form.get(
-        "fecha_desde", ""
-    ).strip()
 
-    fecha_hasta = request.form.get(
-        "fecha_hasta", ""
-    ).strip()
-
-    usuario = session.get(
-        "usuario_nombre", "desconocido"
-    )
-
-    # ==========================================
-    # VALIDAR FECHAS
-    # ==========================================
-
+def _archivar_folder(folder):
+    tipo, destino, nombre = FOLDERS_ARCHIVABLES[folder]
+    fecha_desde = request.form.get("fecha_desde", "").strip()
+    fecha_hasta = request.form.get("fecha_hasta", "").strip()
+    usuario = session.get("usuario_nombre", "desconocido")
     try:
-        desde = datetime.strptime(
-            fecha_desde, "%Y-%m-%d"
-        ).date()
-
-        hasta = datetime.strptime(
-            fecha_hasta, "%Y-%m-%d"
-        ).date()
-
+        desde = datetime.strptime(fecha_desde, "%Y-%m-%d").date()
+        hasta = datetime.strptime(fecha_hasta, "%Y-%m-%d").date()
         if desde > hasta:
-            raise ValueError(
-                "La fecha Desde no puede superar Hasta."
-            )
-
+            raise ValueError()
     except ValueError:
-        return (
-            "El período seleccionado no es válido.",
-            400
+        flash("El período seleccionado no es válido.", "archivo_error")
+        return redirect(url_for(destino), code=303)
+
+    condiciones = "tipo_cenefa = %s AND desde = %s AND hasta = %s"
+    parametros = [tipo, desde, hasta]
+    if tipo == "mayorista":
+        condiciones += " AND " + (
+            SQL_ES_TUCUMAN if folder == "mayorista_tucuman"
+            else f"NOT {SQL_ES_TUCUMAN}"
         )
+        parametros.append(DESTINOS_TUCUMAN)
 
     conn = None
-
     try:
         conn = get_db_connection()
-
         with conn:
             with conn.cursor() as cursor:
-
-                # ==========================================
-                # MOVER REGISTROS AL HISTORIAL
-                # ==========================================
-
+                # DELETE + INSERT en una sola sentencia: si falla el INSERT,
+                # PostgreSQL restaura los originales. No se cambian los precios.
                 cursor.execute(
-                    """
+                    f"""
                     WITH registros_movidos AS (
                         DELETE FROM public.cenefas
-                        WHERE tipo_cenefa = 'mayorista'
-                          AND desde = %s
-                          AND hasta = %s
-                        RETURNING
-                            id, codigo, ean, dep,
-                            departamento, descripcion,
-                            normal, oferta, cenefa,
-                            desde, hasta, sucursales,
-                            tipo_cenefa, fecha_carga,
-                            lote_carga, usuario_carga
+                        WHERE {condiciones}
+                        RETURNING id, codigo, ean, dep, departamento, descripcion,
+                                  normal, oferta, cenefa, desde, hasta, sucursales,
+                                  tipo_cenefa, fecha_carga, lote_carga, usuario_carga
                     )
                     INSERT INTO public.cenefas_archivadas (
-                        id, codigo, ean, dep,
-                        departamento, descripcion,
-                        normal, oferta, cenefa,
-                        desde, hasta, sucursales,
-                        tipo_cenefa, fecha_carga,
-                        lote_carga, usuario_carga,
+                        id, codigo, ean, dep, departamento, descripcion,
+                        normal, oferta, cenefa, desde, hasta, sucursales,
+                        tipo_cenefa, fecha_carga, lote_carga, usuario_carga,
                         fecha_archivado, usuario_archivado
                     )
-                    SELECT
-                        id, codigo, ean, dep,
-                        departamento, descripcion,
-                        normal, oferta, cenefa,
-                        desde, hasta, sucursales,
-                        tipo_cenefa, fecha_carga,
-                        lote_carga, usuario_carga,
-                        CURRENT_TIMESTAMP, %s
+                    SELECT id, codigo, ean, dep, departamento, descripcion,
+                           normal, oferta, cenefa, desde, hasta, sucursales,
+                           tipo_cenefa, fecha_carga, lote_carga, usuario_carga,
+                           CURRENT_TIMESTAMP, %s
                     FROM registros_movidos
                     """,
-                    (
-                        fecha_desde,
-                        fecha_hasta,
-                        usuario
-                    )
+                    parametros + [usuario],
                 )
-
-                total_archivados = cursor.rowcount
-
-                if total_archivados == 0:
-                    raise ValueError(
-                        "No se encontraron cenefas "
-                        "mayoristas para ese período."
-                    )
-
-        # El bloque with conn confirma la transacción
-        # solamente si todas las operaciones finalizaron bien.
-
-        guardar_log_compras(
-            usuario=usuario,
-            nivel="INFO",
-            origen="backend",
-            modulo="folder",
-            accion="Archivar folder mayorista",
-            detalle=(
-                f"Período: {fecha_desde} a {fecha_hasta}. "
-                f"Registros archivados: {total_archivados}"
-            ),
-            estado="exitoso",
-            total_registros=total_archivados
-        )
-
-        return redirect(
-            url_for("compras.folder_mayorista")
-        )
-
-    except ValueError as error:
-        return str(error), 400
-
+                total = cursor.rowcount
     except Exception:
-        return (
-            "No se pudo archivar el folder. "
-            "La operación fue revertida.",
-            500
+        current_app.logger.exception("Error archivando folder %s", folder)
+        flash(
+            "No se pudo archivar el folder. La operación fue revertida.",
+            "archivo_error",
         )
-
+        return redirect(url_for(destino), code=303)
     finally:
         if conn is not None:
             conn.close()
 
+    if not total:
+        flash("No se encontraron cenefas de este folder con esa vigencia exacta.",
+              "archivo_error")
+    else:
+        # La auditoría principal queda en PostgreSQL en la misma transacción.
+        # Un fallo del log auxiliar no debe informar que se revirtió el archivado.
+        try:
+            guardar_log_compras(
+                usuario=usuario, nivel="INFO", origen="backend", modulo="folder",
+                accion=f"Archivar folder {nombre}",
+                detalle=f"Período: {fecha_desde} a {fecha_hasta}. Registros: {total}",
+                estado="exitoso", total_registros=total,
+            )
+        except Exception:
+            current_app.logger.exception("Error guardando log de archivado")
+        flash(
+            f"Folder {nombre} archivado: {total} cenefas. "
+            "Las sucursales pueden reimprimirlas desde Histórico de Cenefas → Archivadas.",
+            "archivo_success",
+        )
+    return redirect(url_for(destino), code=303)
+
+
+@compras_bp.route("/folder/mayorista/archivar", methods=["POST"])
+@login_requerido("compras")
+def archivar_folder_mayorista():
+    return _archivar_folder("mayorista")
+
+
+@compras_bp.route("/folder/mayorista/tucuman/archivar", methods=["POST"])
+@login_requerido("compras")
+def archivar_folder_mayorista_tucuman():
+    return _archivar_folder("mayorista_tucuman")
+
+
+@compras_bp.route("/folder/minorista/archivar", methods=["POST"])
+@login_requerido("compras")
+def archivar_folder_minorista():
+    return _archivar_folder("minorista")
 
 
 @compras_bp.route("/historico")
@@ -2448,16 +2430,22 @@ def historico_cenefas():
             fecha_carga, lote_carga, usuario_carga,
             {campos_auditoria}
         FROM {tabla}
-        WHERE 1=1
+        WHERE %s = ANY({SQL_DESTINOS})
     """
 
-    params = []
+    params = [session.get("usuario_nombre", "").strip().upper()]
 
     if filtro_codigo:
         query += " AND codigo::text LIKE %s"
         params.append(f"%{filtro_codigo}%")
 
-    if filtro_tipo:
+    if filtro_tipo in ("mayorista", "mayorista_tucuman"):
+        query += " AND tipo_cenefa = %s AND " + (
+            SQL_ES_TUCUMAN if filtro_tipo == "mayorista_tucuman"
+            else f"NOT {SQL_ES_TUCUMAN}"
+        )
+        params.extend(["mayorista", DESTINOS_TUCUMAN])
+    elif filtro_tipo:
         query += " AND tipo_cenefa = %s"
         params.append(filtro_tipo)
 
@@ -2489,11 +2477,11 @@ def historico_cenefas():
             "dep": r["dep"],
             "departamento": r["departamento"],
             "descripcion": r["descripcion"],
-            "Normal": r["normal"],
-            "Oferta": r["oferta"],
+            "Normal": formatear_precio_arg(r["normal"]),
+            "Oferta": formatear_precio_arg(r["oferta"]),
             "cenefa": r["cenefa"],
-            "desde": r["desde"],
-            "hasta": r["hasta"],
+            "desde": r["desde"].strftime("%d/%m/%Y") if r["desde"] else "",
+            "hasta": r["hasta"].strftime("%d/%m/%Y") if r["hasta"] else "",
             "sucursales": r["sucursales"],
             "tipo_cenefa": r["tipo_cenefa"],
             "fecha_carga": r["fecha_carga"],
@@ -2586,26 +2574,26 @@ def historico_cenefas():
   #      filtro_lote=filtro_lote
   #  )
 
-#from sucursales.folder_mayorista_tucuman import (
-#    registrar_rutas_folder_mayorista_tucuman,
-#)
+from sucursales.folder_mayorista_tucuman import (
+    registrar_rutas_folder_mayorista_tucuman,
+)
 
-#registrar_rutas_folder_mayorista_tucuman(
-#    compras_bp=compras_bp,
-#    procesar_archivo_cenefas=procesar_archivo_cenefas,
-#    guardar_cenefas_en_db=guardar_cenefas_en_db,
-#    get_db_connection=get_db_connection,
-#    limpiar_precio=limpiar_precio,
-#    formatear_precio_arg=formatear_precio_arg,
-#)
+registrar_rutas_folder_mayorista_tucuman(
+    compras_bp=compras_bp,
+    procesar_archivo_cenefas=procesar_archivo_cenefas,
+    guardar_cenefas_en_db=guardar_cenefas_en_db,
+    get_db_connection=get_db_connection,
+    limpiar_precio=limpiar_precio,
+    formatear_precio_arg=formatear_precio_arg,
+)
 
-#from sucursales.administrar_cenefas import (
-#    registrar_rutas_administrar_cenefas,
-#)
+from sucursales.administrar_cenefas import (
+    registrar_rutas_administrar_cenefas,
+)
 
 
-#registrar_rutas_administrar_cenefas(
-#    compras_bp=compras_bp,
-#    get_db_connection=get_db_connection,
-#    limpiar_precio=limpiar_precio,
-#)
+registrar_rutas_administrar_cenefas(
+    compras_bp=compras_bp,
+    get_db_connection=get_db_connection,
+    limpiar_precio=limpiar_precio,
+)

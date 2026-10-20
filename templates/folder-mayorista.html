@@ -2,6 +2,8 @@
 {% block title %}Folder Mayorista{% endblock %}
 
 {% block content %}
+{% from "sucursales/_archivar_folder.html" import formulario_archivado %}
+{% include "sucursales/_archivar_folder.html" %}
 
 <div class="container-fluid">
 
@@ -78,55 +80,8 @@
     <!-- ====================================================== -->
 
     <div class="col-md-6 d-flex">
-
-            <div class="card p-4 shadow-sm h-100 w-100">
-
-                <h4>Archivar Folder</h4>
-
-                <form
-                    method="POST"
-                    action="{{ url_for('compras.archivar_folder_mayorista') }}"
-                    class="d-flex flex-column flex-grow-1"
-                    onsubmit="return confirmarArchivado(this);"
-                >
-
-                    <div class="row mb-3">
-
-                        <div class="col-md-6">
-                            <label>Desde:</label>
-                            <input
-                                type="date"
-                                name="fecha_desde"
-                                class="form-control"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label>Hasta:</label>
-                            <input
-                                type="date"
-                                name="fecha_hasta"
-                                class="form-control"
-                                required
-                            >
-                        </div>
-
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="btn btn-outline-danger w-100 mt-auto"
-                    >
-                        Archivar
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-        
+        {{ formulario_archivado('compras.archivar_folder_mayorista', 'Mayorista') }}
+    </div>
     </div>
 
     <!-- ====================================================== -->
@@ -499,30 +454,6 @@ function prepararTransmision(form) {
         return confirm(
             "¿Está seguro que desea "
             + "transmitir el folder?"
-        );
-    }
-
-    /* ============================================================
-    CONFIRMAR ARCHIVADO
-    ============================================================ */
-
-    function confirmarArchivado(form) {
-
-        const desde = form.elements["fecha_desde"].value;
-        const hasta = form.elements["fecha_hasta"].value;
-
-        if (!desde || !hasta || desde > hasta) {
-            alert("Verifique las fechas seleccionadas.");
-            return false;
-        }
-
-        const formato = fecha =>
-            fecha.split("-").reverse().join("/");
-
-        return confirm(
-            "¿Está seguro de archivar el Folder Mayorista?\n\n"
-            + "Desde: " + formato(desde) + "\n"
-            + "Hasta: " + formato(hasta)
         );
     }
 

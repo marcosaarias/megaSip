@@ -2,6 +2,8 @@
 {% block title %}Folder Minorista{% endblock %}
 
 {% block content %}
+{% from "sucursales/_archivar_folder.html" import formulario_archivado %}
+{% include "sucursales/_archivar_folder.html" %}
 
 <div class="container-fluid">
 
@@ -112,6 +114,9 @@
 
         </div>
 
+    <div class="col-md-6 d-flex">
+        {{ formulario_archivado('compras.archivar_folder_minorista', 'Minorista') }}
+    </div>
     </div>
 
 

@@ -1,0 +1,44 @@
+{% macro formulario_archivado(endpoint, nombre) %}
+<div class="card p-4 shadow-sm h-100 w-100">
+    <h4>Archivar Folder {{ nombre }}</h4>
+    <p class="text-muted">
+        Ingrese la vigencia exacta del folder que desea archivar.
+        Sus cenefas seguirán disponibles para reimpresión en
+        Histórico de Cenefas → Archivadas, aunque todavía estén vigentes.
+    </p>
+    <form method="POST" action="{{ url_for(endpoint) }}"
+          class="d-flex flex-column flex-grow-1" onsubmit="return confirmarArchivoFolder(this);">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Desde:</label>
+                <input type="date" name="fecha_desde" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Hasta:</label>
+                <input type="date" name="fecha_hasta" class="form-control" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-outline-danger w-100 mt-auto">Archivar</button>
+    </form>
+</div>
+<script>
+function confirmarArchivoFolder(form) {
+    const desde = form.elements.fecha_desde.value;
+    const hasta = form.elements.fecha_hasta.value;
+    if (!desde || !hasta || desde > hasta) {
+        alert("Verifique las fechas seleccionadas.");
+        return false;
+    }
+    return confirm("¿Archivar el folder con vigencia desde "
+        + desde.split("-").reverse().join("/") + " hasta "
+        + hasta.split("-").reverse().join("/")
+        + "? Sus cenefas quedarán disponibles en el histórico para reimprimir.");
+}
+</script>
+{% endmacro %}
+
+{% for categoria, mensaje in get_flashed_messages(with_categories=true, category_filter=['archivo_error', 'archivo_success']) %}
+<div class="alert alert-{{ 'success' if categoria == 'archivo_success' else 'danger' }} mt-4" role="alert">
+    {{ mensaje }}
+</div>
+{% endfor %}
