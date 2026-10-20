@@ -2417,40 +2417,61 @@ def historico_cenefas():
     filtro_tipo = request.args.get("tipo", "").strip()
     filtro_lote = request.args.get("lote", "").strip()
 
-    estado = request.args.get("estado", "operativas").strip()
+    estado = request.args.get("estado", "todas").strip()
+    vigencia = request.args.get("vigencia", "vigentes").strip()
+    if vigencia not in ("vigentes", "proximas", "vencidas", "todas"):
+        return "Vigencia no válida.", 400
+    try:
+        pagina = max(1, int(request.args.get("pagina", "1")))
+    except ValueError:
+        pagina = 1
+    por_pagina = 100
 
-    if estado not in ("operativas", "archivadas"):
+    if estado not in ("todas", "operativas", "archivadas"):
         return "Estado de historial no válido.", 400
 
-    tabla = (
-        "public.cenefas_archivadas"
-        if estado == "archivadas"
-        else "public.cenefas"
-    )
-
-    campos_auditoria = (
-        "fecha_archivado, usuario_archivado"
-        if estado == "archivadas"
-        else "NULL::timestamp AS fecha_archivado, "
-             "NULL::text AS usuario_archivado"
-    )
+    columnas = """id, codigo, ean, dep, departamento, descripcion, normal,
+                  oferta, cenefa, desde, hasta, sucursales, tipo_cenefa,
+                  fecha_carga, lote_carga, usuario_carga"""
+    fuentes = []
+    if estado in ("todas", "operativas"):
+        fuentes.append(f"""SELECT {columnas}, 'operativas'::text AS origen,
+            NULL::timestamp AS fecha_archivado, NULL::text AS usuario_archivado
+            FROM public.cenefas""")
+    if estado in ("todas", "archivadas"):
+        fuentes.append(f"""SELECT {columnas}, 'archivadas'::text AS origen,
+            fecha_archivado, usuario_archivado FROM public.cenefas_archivadas""")
 
     query = f"""
-        SELECT
-            id, codigo, ean, dep, departamento,
-            descripcion, normal, oferta, cenefa,
-            desde, hasta, sucursales, tipo_cenefa,
-            fecha_carga, lote_carga, usuario_carga,
-            {campos_auditoria}
-        FROM {tabla}
+        FROM ({' UNION ALL '.join(fuentes)}) AS historial
         WHERE %s = ANY({SQL_DESTINOS})
     """
 
     params = [session.get("usuario_nombre", "").strip().upper()]
 
+    # Las vigencias son texto ISO en esta base. Admitir también DD/MM/YYYY
+    # sin castear datos antiguos que podrían contener fechas inválidas.
+    def fecha_sql(columna):
+        return f"""(CASE
+            WHEN trim({columna}::text) ~ '^\\d{{4}}-\\d{{2}}-\\d{{2}}$'
+                THEN trim({columna}::text)
+            WHEN trim({columna}::text) ~ '^\\d{{2}}/\\d{{2}}/\\d{{4}}$'
+                THEN substring(trim({columna}::text), 7, 4) || '-' ||
+                     substring(trim({columna}::text), 4, 2) || '-' ||
+                     substring(trim({columna}::text), 1, 2)
+            END)"""
+
+    hoy_sql = "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::date::text"
+    if vigencia == "vigentes":
+        query += f" AND {fecha_sql('desde')} <= {hoy_sql} AND {fecha_sql('hasta')} >= {hoy_sql}"
+    elif vigencia == "proximas":
+        query += f" AND {fecha_sql('desde')} > {hoy_sql}"
+    elif vigencia == "vencidas":
+        query += f" AND {fecha_sql('hasta')} < {hoy_sql}"
+
     if filtro_codigo:
-        query += " AND codigo::text LIKE %s"
-        params.append(f"%{filtro_codigo}%")
+        query += " AND (codigo::text ILIKE %s OR ean ILIKE %s OR descripcion ILIKE %s)"
+        params.extend([f"%{filtro_codigo}%"] * 3)
 
     if filtro_tipo in ("mayorista", "mayorista_tucuman"):
         query += " AND tipo_cenefa = %s AND " + (
@@ -2466,16 +2487,18 @@ def historico_cenefas():
         query += " AND lote_carga LIKE %s"
         params.append(f"%{filtro_lote}%")
 
-    if estado == "archivadas":
-        query += " ORDER BY fecha_archivado DESC, id DESC"
-    else:
-        query += " ORDER BY fecha_carga DESC, id DESC"
-
     conn = get_db_connection()
 
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(query, params)
+            cursor.execute("SELECT COUNT(*) AS total " + query, params)
+            total = cursor.fetchone()["total"]
+            paginas = max(1, (total + por_pagina - 1) // por_pagina)
+            pagina = min(pagina, paginas)
+            cursor.execute(
+                "SELECT * " + query + " ORDER BY desde DESC, fecha_carga DESC, origen, id DESC LIMIT %s OFFSET %s",
+                params + [por_pagina, (pagina - 1) * por_pagina],
+            )
             rows = cursor.fetchall()
     finally:
         conn.close()
@@ -2483,8 +2506,15 @@ def historico_cenefas():
     datos = []
 
     for r in rows:
+        destinos = {s.strip().upper() for s in (r["sucursales"] or "").split(",") if s.strip()}
+        tipo_folder = r["tipo_cenefa"]
+        if tipo_folder == "mayorista" and destinos and destinos <= set(DESTINOS_TUCUMAN):
+            tipo_folder = "mayorista_tucuman"
         datos.append({
             "id": r["id"],
+            "clave": f"{r['origen']}-{r['id']}",
+            "origen": r["origen"],
+            "tipo_folder": tipo_folder,
             "codigo": r["codigo"],
             "ean": r["ean"],
             "dep": r["dep"],
@@ -2510,7 +2540,14 @@ def historico_cenefas():
         filtro_codigo=filtro_codigo,
         filtro_tipo=filtro_tipo,
         filtro_lote=filtro_lote,
-        estado=estado
+        estado=estado,
+        vigencia=vigencia,
+        total=total,
+        pagina=pagina,
+        paginas=paginas,
+        inicio=(pagina - 1) * por_pagina + 1 if total else 0,
+        fin=min(pagina * por_pagina, total),
+        sucursal_codigo=session.get("usuario_nombre", "").strip().upper(),
     )
 
 

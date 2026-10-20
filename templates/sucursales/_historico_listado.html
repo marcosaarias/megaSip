@@ -1,0 +1,143 @@
+<style>
+.historial-cenefas { --hc-ink:#172b46; --hc-muted:#65758b; --hc-line:#e3e9f1; color:var(--hc-ink); padding-bottom:2rem; }
+.hc-hero { background:linear-gradient(115deg,#123958,#1c6575); color:#fff; border-radius:18px; padding:28px 30px; display:flex; justify-content:space-between; gap:20px; align-items:center; margin-bottom:22px; }
+.hc-hero h2 { font-size:1.8rem; font-weight:750; margin:5px 0 8px; color:#fff; }
+.hc-hero p { color:#e0edf4; margin:0; max-width:690px; }
+.hc-eyebrow { font-size:.73rem; text-transform:uppercase; letter-spacing:.14em; color:#b7dee5; }
+.hc-branch { background:#ffffff19; border:1px solid #ffffff35; border-radius:12px; padding:12px 18px; white-space:nowrap; }
+.hc-branch small { display:block; color:#cce3eb; }
+.hc-branch strong { font-size:1.4rem; }
+.hc-panel { background:#fff; border:1px solid var(--hc-line); border-radius:14px; margin-bottom:18px; box-shadow:0 3px 14px #19354b06; }
+.hc-filters { padding:22px; }
+.hc-filters label { font-size:.8rem; color:var(--hc-muted); font-weight:650; margin-bottom:6px; }
+.historial-cenefas .hc-filters .btn { padding:9px 10px; font-size:.82rem; }
+.historial-cenefas .btn-outline-secondary { background:#fff; color:#53677f; border:1px solid #d5dfeb; text-decoration:none; }
+.historial-cenefas .btn-link { background:transparent; color:#53677f; border-color:transparent; padding:7px; font-size:.8rem; }
+.historial-cenefas .btn-outline-secondary:hover, .historial-cenefas .btn-link:hover { background:#edf2f7; color:#172b46; }
+.hc-periods { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
+.hc-periods a { text-decoration:none; color:#53677f; padding:9px 16px; border-radius:9px; background:#f2f5f9; font-weight:600; font-size:.88rem; }
+.hc-periods a.active { background:#126775; color:#fff; }
+.hc-results { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:14px; padding:18px 22px; border-bottom:1px solid var(--hc-line); }
+.hc-results h3 { font-size:1.05rem; margin:0 0 4px; font-weight:700; }
+.hc-muted { color:var(--hc-muted); font-size:.82rem; }
+.hc-toolbar { display:flex; flex-wrap:wrap; gap:9px; align-items:center; padding:14px 22px; background:#f7f9fc; border-bottom:1px solid var(--hc-line); }
+.hc-selected { font-size:.83rem; font-weight:650; color:#176574; margin-right:auto; }
+.hc-table-wrap { overflow:auto; max-height:620px; }
+.historial-cenefas .hc-table { width:100%; min-width:900px; border-collapse:collapse; font-size:.85rem; }
+.historial-cenefas .hc-table th { background:#edf2f7; color:#586b82; text-transform:uppercase; font-size:.69rem; letter-spacing:.05em; padding:13px 14px; position:sticky; top:0; z-index:1; white-space:nowrap; }
+.historial-cenefas .hc-table td { padding:15px 14px; border:0; border-bottom:1px solid #edf1f6; vertical-align:middle; white-space:normal; }
+.historial-cenefas .hc-table th { border:0; border-bottom:1px solid #dce4ee; }
+.historial-cenefas .hc-table tbody tr:hover { background:#f5fafb; }
+.historial-cenefas .hc-table tbody tr.is-selected { background:#e9f6f6; }
+.hc-product { display:block; font-weight:650; min-width:220px; margin-bottom:3px; }
+.hc-price { font-weight:750; color:#126775; font-size:1rem; white-space:nowrap; }
+.hc-normal { color:var(--hc-muted); font-size:.78rem; white-space:nowrap; }
+.hc-tag { display:inline-block; padding:4px 8px; border-radius:6px; background:#e8f5ef; color:#28754e; font-size:.72rem; font-weight:650; white-space:nowrap; }
+.hc-tag.archive { background:#eef0fc; color:#5e58a0; }
+.hc-date { white-space:nowrap; font-size:.79rem; }
+.hc-details { font-size:.78rem; color:var(--hc-muted); }
+.hc-details summary { cursor:pointer; color:#466b8b; }
+.hc-details div { margin-top:6px; max-width:230px; overflow-wrap:anywhere; }
+.hc-footer { padding:16px 22px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; }
+.hc-empty { padding:52px 20px; text-align:center; }
+.hc-empty strong { display:block; font-size:1.1rem; margin:12px 0 8px; }
+@media(max-width:767px) { .hc-hero { padding:22px; align-items:flex-start; } .hc-hero h2 { font-size:1.4rem; } .hc-branch { padding:8px 12px; } .hc-toolbar { padding:14px; } }
+</style>
+{% set periodos = {'vigentes':'Vigentes hoy', 'proximas':'Próximas', 'vencidas':'Vencidas', 'todas':'Todas las fechas'} %}
+{% set tipos = {'mayorista':'Folder Mayorista', 'mayorista_tucuman':'Mayorista Tucumán', 'minorista':'Folder Minorista', 'competencia':'Competencia', 'interna':'Interna', 'vencimientos':'Vencimientos', 'farmacia':'Farmacia'} %}
+{% macro enlace(p=1, periodo=vigencia) %}{{ url_for('compras.historico_cenefas', estado=estado, vigencia=periodo, codigo=filtro_codigo, tipo=filtro_tipo, lote=filtro_lote, pagina=p) }}{% endmacro %}
+<div class="container-fluid historial-cenefas">
+    <header class="hc-hero">
+        <div>
+            <span class="hc-eyebrow">Sucursal · Consulta y reimpresión</span>
+            <h2>Histórico de cenefas</h2>
+            <p>Encontrá las cenefas de tu sucursal y volvé a imprimirlas. Al ingresar se muestran las vigentes de hoy, incluidas las archivadas.</p>
+        </div>
+        <div class="hc-branch"><small>Tu sucursal</small><strong>{{ sucursal_codigo }}</strong></div>
+    </header>
+    <section class="hc-panel hc-filters" aria-label="Buscar cenefas">
+        <nav class="hc-periods" aria-label="Vigencia de las cenefas">
+            {% for valor, etiqueta in periodos.items() %}
+            <a href="{{ enlace(periodo=valor) }}" class="{% if vigencia == valor %}active{% endif %}" {% if vigencia == valor %}aria-current="page"{% endif %}>{{ etiqueta }}</a>
+            {% endfor %}
+        </nav>
+        <form method="get" class="row g-3 align-items-end">
+            <input type="hidden" name="vigencia" value="{{ vigencia }}">
+            <div class="col-lg-4 col-md-6">
+                <label for="hc-busqueda">Buscar producto</label>
+                <input id="hc-busqueda" name="codigo" class="form-control" value="{{ filtro_codigo }}" placeholder="Código, EAN o descripción">
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label for="hc-tipo">Tipo de cenefa</label>
+                <select id="hc-tipo" name="tipo" class="form-select">
+                    <option value="">Todos los tipos</option>
+                    {% for valor, etiqueta in tipos.items() %}<option value="{{ valor }}" {% if filtro_tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label for="hc-estado">Ubicación</label>
+                <select id="hc-estado" name="estado" class="form-select">
+                    <option value="todas" {% if estado == 'todas' %}selected{% endif %}>Actuales y archivadas</option>
+                    <option value="operativas" {% if estado == 'operativas' %}selected{% endif %}>Actuales</option>
+                    <option value="archivadas" {% if estado == 'archivadas' %}selected{% endif %}>Archivadas</option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label for="hc-lote">Lote de carga</label>
+                <input id="hc-lote" name="lote" class="form-control" value="{{ filtro_lote }}" placeholder="Opcional">
+            </div>
+            <div class="col-lg-2 d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                <a class="btn btn-outline-secondary" href="{{ url_for('compras.historico_cenefas') }}">Limpiar</a>
+            </div>
+        </form>
+    </section>
+    <section class="hc-panel" aria-label="Resultados">
+        <div class="hc-results">
+            <div><h3>{{ periodos[vigencia] }} <span class="hc-muted">· {{ total }} cenefas</span></h3>
+                <span class="hc-muted">{% if vigencia == 'vigentes' %}Su vigencia incluye el día de hoy.{% elif vigencia == 'proximas' %}Folders que todavía no comenzaron, disponibles para preparar la impresión.{% elif vigencia == 'vencidas' %}Cenefas cuyo período de vigencia ya finalizó.{% else %}Se incluyen todas las vigencias de tu sucursal.{% endif %}</span>
+            </div>
+            <span class="hc-muted">Mostrando {{ inicio }}–{{ fin }} de {{ total }}</span>
+        </div>
+        <div class="hc-toolbar">
+            <span class="hc-selected" id="contadorSeleccion" aria-live="polite">0 seleccionadas en esta página</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="seleccionarTodas()" {% if not datos %}disabled{% endif %}>Seleccionar esta página</button>
+            <button type="button" class="btn btn-link btn-sm" onclick="limpiarSeleccion()">Quitar selección</button>
+            <label for="cantidadCenefas" class="visually-hidden">Cenefas por hoja</label>
+            <select id="cantidadCenefas" class="form-select form-select-sm" style="width:135px" aria-label="Cenefas por hoja">
+                {% for cantidad in [1,2,3,5] %}<option value="{{ cantidad }}">{{ cantidad }} por hoja</option>{% endfor %}
+            </select>
+            <button id="imprimirCenefas" type="button" class="btn btn-success btn-sm" onclick="imprimirSeleccionadas()" disabled>Imprimir seleccionadas</button>
+        </div>
+        {% if datos %}
+        <div class="hc-table-wrap">
+            <table class="hc-table">
+                <thead><tr><th><input type="checkbox" id="seleccionarPagina" aria-label="Seleccionar toda esta página"></th><th>Producto</th><th>Precio</th><th>Vigencia</th><th>Cenefa</th><th>Ubicación</th><th>Detalle</th></tr></thead>
+                <tbody>
+                {% for item in datos %}
+                <tr>
+                    <td><input type="checkbox" class="check-cenefa" value="{{ item.clave }}" aria-label="Seleccionar {{ item.descripcion }}"></td>
+                    <td><span class="hc-product">{{ item.descripcion }}</span><span class="hc-muted">Código {{ item.codigo }} · EAN {{ item.ean or 'Sin EAN' }}</span></td>
+                    <td><div class="hc-price">$ {{ item.Oferta }}</div><div class="hc-normal">Normal: $ {{ item.Normal }}</div></td>
+                    <td><div class="hc-date">Desde {{ item.desde }}<br><strong>Hasta {{ item.hasta }}</strong></div></td>
+                    <td><strong>{{ item.cenefa }}</strong><br><span class="hc-muted">{{ tipos.get(item.tipo_folder, item.tipo_cenefa|capitalize) }}</span></td>
+                    <td><span class="hc-tag {% if item.origen == 'archivadas' %}archive{% endif %}">{{ 'Archivada' if item.origen == 'archivadas' else 'Actual' }}</span></td>
+                    <td><details class="hc-details"><summary>Ver lote y carga</summary><div>Lote: {{ item.lote_carga or 'Sin lote' }}<br>Carga: {{ item.fecha_carga or '—' }}<br>Usuario: {{ item.usuario_carga or '—' }}{% if item.origen == 'archivadas' %}<br>Archivado: {{ item.fecha_archivado or '—' }}<br>Por: {{ item.usuario_archivado or '—' }}{% endif %}</div></details></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="hc-empty"><span class="hc-tag">{{ periodos[vigencia] }}</span><strong>No hay cenefas para esta búsqueda</strong><p class="hc-muted">Probá con otro producto o tipo. Para un folder enviado por adelantado, elegí “Próximas”.</p><a class="btn btn-outline-primary btn-sm" href="{{ enlace(periodo='proximas') }}">Ver próximas cenefas</a></div>
+        {% endif %}
+        <footer class="hc-footer">
+            <span class="hc-muted">La selección e impresión corresponden a esta página.</span>
+            <nav class="d-flex align-items-center gap-3" aria-label="Páginas de resultados">
+                {% if pagina > 1 %}<a class="btn btn-outline-secondary btn-sm" href="{{ enlace(p=pagina-1) }}">← Anterior</a>{% endif %}
+                <span class="hc-muted">Página {{ pagina }} de {{ paginas }}</span>
+                {% if pagina < paginas %}<a class="btn btn-outline-secondary btn-sm" href="{{ enlace(p=pagina+1) }}">Siguiente →</a>{% endif %}
+            </nav>
+        </footer>
+    </section>
+</div>

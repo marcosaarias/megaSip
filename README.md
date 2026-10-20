@@ -17,6 +17,13 @@ tipo o lote, seleccionar e imprimir con los precios y fechas conservados. Cada
 sucursal ve solamente los registros que la incluyen como destino. No se exige
 que el folder haya vencido ni se eliminan sus cenefas al vencer.
 
+El histórico abre con las cenefas vigentes de hoy, tanto actuales como archivadas,
+y muestra hasta 100 por página. Las opciones «Próximas», «Vencidas» y «Todas las
+fechas» permiten cambiar la vigencia; «Ubicación» permite filtrar las archivadas.
+La búsqueda admite código, EAN o descripción. La selección para imprimir se
+realiza por página. La vigencia considera el día local de Argentina, incluidos
+ambos extremos del período.
+
 Tucumán utiliza el tipo `mayorista`: se reconoce cuando todos los destinos del
 registro pertenecen a CO24, CO25 y CO27. Los demás registros mayoristas pertenecen
 al folder general. Se conservan el ID original, lote y usuario de carga, y se
