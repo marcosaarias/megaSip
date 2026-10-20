@@ -2305,7 +2305,7 @@ def _archivar_folder(folder):
         return redirect(url_for(destino), code=303)
 
     condiciones = "tipo_cenefa = %s AND desde = %s AND hasta = %s"
-    parametros = [tipo, desde, hasta]
+    parametros = [tipo, desde.isoformat(), hasta.isoformat()]
     if tipo == "mayorista":
         condiciones += " AND " + (
             SQL_ES_TUCUMAN if folder == "mayorista_tucuman"
@@ -2396,6 +2396,19 @@ def archivar_folder_minorista():
     return _archivar_folder("minorista")
 
 
+def _fecha_historico(valor):
+    if not valor:
+        return ""
+    if hasattr(valor, "strftime"):
+        return valor.strftime("%d/%m/%Y")
+    for formato in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(str(valor).strip(), formato).strftime("%d/%m/%Y")
+        except ValueError:
+            continue
+    return str(valor)
+
+
 @compras_bp.route("/historico")
 @login_requerido("sucursal")
 def historico_cenefas():
@@ -2480,8 +2493,8 @@ def historico_cenefas():
             "Normal": formatear_precio_arg(r["normal"]),
             "Oferta": formatear_precio_arg(r["oferta"]),
             "cenefa": r["cenefa"],
-            "desde": r["desde"].strftime("%d/%m/%Y") if r["desde"] else "",
-            "hasta": r["hasta"].strftime("%d/%m/%Y") if r["hasta"] else "",
+            "desde": _fecha_historico(r["desde"]),
+            "hasta": _fecha_historico(r["hasta"]),
             "sucursales": r["sucursales"],
             "tipo_cenefa": r["tipo_cenefa"],
             "fecha_carga": r["fecha_carga"],
