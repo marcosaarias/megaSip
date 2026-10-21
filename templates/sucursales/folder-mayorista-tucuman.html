@@ -3,7 +3,7 @@
 {% block title %}Folder Mayorista Tucumán{% endblock %}
 
 {% block content %}
-{% from "sucursales/_archivar_folder.html" import formulario_archivado %}
+{% from "sucursales/_folder_tarjetas.html" import tarjetas_folder with context %}
 {% include "sucursales/_archivar_folder.html" %}
 
 <div class="container-fluid">
@@ -12,115 +12,7 @@
         Gestión de Folder Mayorista Tucumán
     </h2>
 
-    <!-- ===================================================== -->
-    <!-- FECHAS -->
-    <!-- ===================================================== -->
-
-    <div class="card p-4 shadow-sm mb-4">
-
-        <div class="row">
-
-            <div class="col-md-3">
-                <label for="fecha_desde">
-                    <strong>Desde:</strong>
-                </label>
-
-                <input
-                    type="date"
-                    id="fecha_desde"
-                    class="form-control"
-                    value="{{ fecha_desde }}"
-                    required
-                >
-            </div>
-
-            <div class="col-md-3">
-                <label for="fecha_hasta">
-                    <strong>Hasta:</strong>
-                </label>
-
-                <input
-                    type="date"
-                    id="fecha_hasta"
-                    class="form-control"
-                    value="{{ fecha_hasta }}"
-                    required
-                >
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ===================================================== -->
-    <!-- CARGA DEL EXCEL -->
-    <!-- ===================================================== -->
-
-    <div class="row">
-
-        <div class="col-md-6">
-
-            <div class="card p-4 shadow-sm">
-
-                <h4>
-                    Folder Mayorista Tucumán
-                </h4>
-
-                <p class="text-muted">
-                    Destino:
-                    <strong>
-                        {{ sucursales_destino|default("CO25") }}
-                    </strong>
-                </p>
-
-                <form
-                    method="POST"
-                    action="{{ url_for('compras.folder_mayorista_tucuman') }}"
-                    enctype="multipart/form-data"
-                    class="folder-form"
-                >
-
-                    <input
-                        type="hidden"
-                        name="fecha_desde"
-                    >
-
-                    <input
-                        type="hidden"
-                        name="fecha_hasta"
-                    >
-
-                    <input
-                        type="file"
-                        name="archivo"
-                        class="form-control mb-3"
-                        accept=".xlsx,.xls"
-                        required
-                    >
-
-                    <button
-                        type="submit"
-                        class="btn btn-primary w-100"
-                    >
-                        Cargar Folder Mayorista
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-
-    <div class="col-md-6 d-flex">
-        {{ formulario_archivado('compras.archivar_folder_mayorista_tucuman', 'Mayorista Tucumán') }}
-    </div>
-    </div>
-
-
-    <!-- ===================================================== -->
-    <!-- MENSAJES -->
-    <!-- ===================================================== -->
+    {{ tarjetas_folder('Mayorista Tucumán', 'mayorista', 'compras.folder_mayorista_tucuman', 'compras.archivar_folder_mayorista_tucuman', sucursales_destino) }}
 
     {% if mensaje_error %}
 
@@ -418,75 +310,6 @@
 
 
 <script>
-
-/* ============================================================
-   CARGAR FECHAS AL FORMULARIO DE CARGA
-   ============================================================ */
-
-function cargarFechasEnFormulario(form) {
-
-    const fechaDesde =
-        document.getElementById("fecha_desde").value;
-
-    const fechaHasta =
-        document.getElementById("fecha_hasta").value;
-
-
-    if (!fechaDesde || !fechaHasta) {
-
-        alert(
-            "Debe seleccionar fecha desde y fecha hasta."
-        );
-
-        return false;
-    }
-
-
-    const inputDesde =
-        form.querySelector(
-            'input[name="fecha_desde"]'
-        );
-
-    const inputHasta =
-        form.querySelector(
-            'input[name="fecha_hasta"]'
-        );
-
-
-    if (inputDesde) {
-        inputDesde.value = fechaDesde;
-    }
-
-    if (inputHasta) {
-        inputHasta.value = fechaHasta;
-    }
-
-
-    return true;
-}
-
-
-/* ============================================================
-   FORMULARIO DE CARGA
-   ============================================================ */
-
-document
-    .querySelectorAll(".folder-form")
-    .forEach(form => {
-
-        form.addEventListener(
-            "submit",
-            function(event) {
-
-                if (!cargarFechasEnFormulario(this)) {
-                    event.preventDefault();
-                }
-
-            }
-        );
-
-    });
-
 
 /* ============================================================
    OBTENER CAMBIOS DE LA PREVISUALIZACIÓN

@@ -1,0 +1,54 @@
+{% from "sucursales/_archivar_folder.html" import formulario_archivado %}
+
+{% macro tarjetas_folder(nombre, tipo, endpoint_carga, endpoint_archivo, destinos=None) %}
+<div class="row g-4 align-items-stretch">
+    <div class="col-md-6 d-flex">
+        <div class="card p-4 shadow-sm h-100 w-100">
+            <h4>Folder {{ nombre }}</h4>
+            {% if destinos %}
+            <p class="text-muted">Destino: <strong>{{ destinos }}</strong></p>
+            {% endif %}
+            <form method="POST" action="{{ url_for(endpoint_carga) }}"
+                  enctype="multipart/form-data"
+                  class="folder-form d-flex flex-column flex-grow-1">
+                <input type="hidden" name="tipo" value="{{ tipo }}">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="fecha_desde">Desde:</label>
+                        <input type="date" id="fecha_desde" name="fecha_desde"
+                               class="form-control" value="{{ fecha_desde }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="fecha_hasta">Hasta:</label>
+                        <input type="date" id="fecha_hasta" name="fecha_hasta"
+                               class="form-control" value="{{ fecha_hasta }}" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="archivo-folder" class="mb-1">Seleccionar archivo:</label>
+                    <input type="file" id="archivo-folder" name="archivo"
+                           class="form-control" accept=".xlsx,.xls" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-auto">
+                    Cargar Folder {{ nombre }}
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-6 d-flex">
+        {{ formulario_archivado(endpoint_archivo, nombre) }}
+    </div>
+</div>
+<script>
+document.querySelectorAll(".folder-form").forEach(form => {
+    form.addEventListener("submit", function(event) {
+        const desde = this.elements.fecha_desde.value;
+        const hasta = this.elements.fecha_hasta.value;
+        if (!desde || !hasta || desde > hasta) {
+            event.preventDefault();
+            alert("Verifique el período de carga: Desde no puede superar Hasta.");
+        }
+    });
+});
+</script>
+{% endmacro %}

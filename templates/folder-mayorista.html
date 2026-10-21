@@ -2,7 +2,7 @@
 {% block title %}Folder Mayorista{% endblock %}
 
 {% block content %}
-{% from "sucursales/_archivar_folder.html" import formulario_archivado %}
+{% from "sucursales/_folder_tarjetas.html" import tarjetas_folder with context %}
 {% include "sucursales/_archivar_folder.html" %}
 
 <div class="container-fluid">
@@ -11,82 +11,7 @@
         Gestión de Folder Mayorista
     </h2>
 
-    <!-- ====================================================== -->
-    <!-- CARGAR ARCHIVO -->
-    <!-- ====================================================== -->
-    <div class="row g-4 align-items-stretch">
-
-      <div class="col-md-6 d-flex">
-
-        <div class="card p-4 shadow-sm h-100 w-100">
-
-            <h4>Folder Mayorista</h4>
-
-            <form
-                method="POST"
-                action="{{ url_for('compras.folder_mayorista') }}"
-                enctype="multipart/form-data"
-                class="folder-form d-flex flex-column flex-grow-1"
-            >
-
-                <input
-                    type="hidden"
-                    name="tipo"
-                    value="mayorista"
-                >
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label>Desde:</label>
-                        <input type="date" name="fecha_desde"
-                               class="form-control" value="{{ fecha_desde }}" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label>Hasta:</label>
-                        <input type="date" name="fecha_hasta"
-                               class="form-control" value="{{ fecha_hasta }}" required>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-
-                    <label class="mb-1">
-                        Seleccionar archivo:
-                    </label>
-
-                    <input
-                        type="file"
-                        name="archivo"
-                        class="form-control"
-                        required
-                    >
-
-                </div>
-
-                <button
-                    type="submit"
-                    class="btn btn-primary w-100 mt-auto"
-                >
-                    Cargar Folder Mayorista
-                </button>
-
-            </form>
-
-        </div>
-
-    </div>
-    <!-- ====================================================== -->
-    <!-- ARCHIVAR FOLDER -->
-    <!-- ====================================================== -->
-
-    <div class="col-md-6 d-flex">
-        {{ formulario_archivado('compras.archivar_folder_mayorista', 'Mayorista') }}
-    </div>
-    </div>
-
-    <!-- ====================================================== -->
-    <!-- MENSAJE ERROR -->
-    <!-- ====================================================== -->
+    {{ tarjetas_folder('Mayorista', 'mayorista', 'compras.folder_mayorista', 'compras.archivar_folder_mayorista') }}
 
     {% if mensaje_error %}
 
@@ -329,21 +254,6 @@
 <!-- ========================================================== -->
 
 <script>
-
-/* ============================================================
-   VALIDAR FECHAS DEL FOLDER ANTES DE CARGAR
-   ============================================================ */
-
-document.querySelectorAll(".folder-form").forEach(form => {
-    form.addEventListener("submit", function(event) {
-        const desde = this.elements["fecha_desde"].value;
-        const hasta = this.elements["fecha_hasta"].value;
-        if (!desde || !hasta || desde > hasta) {
-            event.preventDefault();
-            alert("Verifique el período de carga: Desde no puede superar Hasta.");
-        }
-    });
-});
 
 /* ============================================================
    OBTENER CAMPOS MODIFICADOS
